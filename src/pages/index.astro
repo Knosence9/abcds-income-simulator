@@ -1,0 +1,588 @@
+---
+const defaultInputs = {
+  starting: 60450,
+  paycheck: 750,
+  dividendYield: 22,
+  dividendGrowth: 4,
+  inflation: 7,
+  monthlyExpenses: 2600,
+  projectionYears: 5,
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ABCDs Income Engine</title>
+    <style>
+      :root {
+        --bg: #f6f0e4;
+        --paper: #fffdf7;
+        --paper-2: #fbf6ea;
+        --ink: #17243a;
+        --muted: #617086;
+        --line: rgba(23, 36, 58, 0.15);
+        --a: #203f69;
+        --b: #bf7327;
+        --c: #617f3e;
+        --d: #aa463d;
+        --gold: #c79a2c;
+        --shadow: 0 28px 90px rgba(42, 31, 13, 0.15);
+        --serif: Georgia, 'Times New Roman', serif;
+        --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 5%, rgba(199,154,44,.22), transparent 27rem),
+          radial-gradient(circle at 88% 13%, rgba(32,63,105,.16), transparent 26rem),
+          radial-gradient(circle at 75% 90%, rgba(97,127,62,.14), transparent 24rem),
+          linear-gradient(90deg, rgba(23,36,58,.035) 1px, transparent 1px),
+          linear-gradient(rgba(23,36,58,.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: auto, auto, auto, 30px 30px, 30px 30px, auto;
+      }
+      a { color: inherit; }
+      .shell { width: min(1440px, calc(100vw - 28px)); margin: 0 auto; padding: 22px 0 64px; }
+      .nav {
+        position: sticky; top: 12px; z-index: 20;
+        display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;
+        width: fit-content; max-width: 100%; margin: 0 auto 18px;
+        padding: 8px; border: 1px solid var(--line); border-radius: 999px;
+        background: rgba(255,253,247,.78); backdrop-filter: blur(18px); box-shadow: 0 16px 40px rgba(42,31,13,.12);
+      }
+      .nav a, .pill {
+        border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px;
+        background: rgba(255,255,255,.55); text-decoration: none; color: var(--a); font-weight: 850; font-size: 13px;
+      }
+      .hero, .panel {
+        border: 1px solid var(--line); border-radius: 34px; background: rgba(255,253,247,.91);
+        box-shadow: var(--shadow); overflow: hidden;
+      }
+      .hero {
+        min-height: 75vh; display: grid; grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr); gap: 28px; align-items: center;
+        padding: clamp(28px, 5vw, 70px); position: relative;
+      }
+      .hero::before { content:""; position:absolute; inset: 22px; border:1px dashed rgba(32,63,105,.18); border-radius:26px; pointer-events:none; }
+      .eyebrow { font: 850 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--d); }
+      h1 { margin: 12px 0 18px; font: 950 clamp(46px, 8vw, 112px)/.86 var(--serif); letter-spacing: -.065em; color: var(--a); }
+      h2 { margin: 0; font: 950 clamp(30px, 5vw, 62px)/.92 var(--serif); letter-spacing: -.045em; color: var(--a); }
+      h3 { margin: 0 0 8px; color: var(--a); font-size: 20px; }
+      p { color: #49576c; line-height: 1.58; }
+      .lead { font-size: clamp(18px, 2vw, 24px); max-width: 780px; }
+      .hero-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+      .button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:999px; padding:0 16px; text-decoration:none; font-weight:900; border:1px solid var(--line); }
+      .button.primary { background: var(--a); color: var(--paper); border-color: var(--a); }
+      .button.secondary { background: rgba(255,255,255,.6); color: var(--a); }
+      .engine-card { position: relative; min-height: 520px; display:grid; place-items:center; }
+      .engine-ring { position:absolute; inset: 5%; border-radius:50%; border:1px solid rgba(32,63,105,.18); }
+      .engine-ring.r2 { inset: 19%; border-style:dashed; }
+      .engine-ring.r3 { inset: 32%; }
+      .engine-core { position:relative; z-index:2; width:220px; aspect-ratio:1; border-radius:999px; display:grid; place-items:center; text-align:center; padding:22px; background:var(--a); color:var(--paper); box-shadow:0 28px 80px rgba(32,63,105,.28); }
+      .engine-core b { font:950 48px/.9 var(--serif); }
+      .orbit { position:absolute; width:178px; border:1px solid var(--line); border-radius:22px; padding:13px; background:rgba(255,253,247,.95); box-shadow:0 14px 34px rgba(42,31,13,.11); font-size:13px; }
+      .orbit b { display:block; margin-bottom:4px; color:var(--a); }
+      .oa { top:1%; left:34%; border-color: color-mix(in srgb, var(--a) 45%, transparent); }
+      .ob { top:32%; right:0; border-color: color-mix(in srgb, var(--b) 45%, transparent); }
+      .oc { bottom:5%; right:17%; border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+      .od { bottom:8%; left:7%; border-color: color-mix(in srgb, var(--d) 45%, transparent); }
+      .om { top:31%; left:0; }
+      .panel { margin-top: 28px; padding: clamp(24px, 4vw, 48px); }
+      .section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom: 24px; }
+      .grid { display:grid; gap:16px; }
+      .cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+      .cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .card { border:1px solid var(--line); border-radius:24px; background:rgba(255,255,255,.48); padding:18px; min-height:166px; position:relative; }
+      .card[data-letter]::after { content:attr(data-letter); position:absolute; right:14px; top:6px; font:950 54px/.9 var(--serif); opacity:.13; }
+      .a-soft { background: color-mix(in srgb, var(--a) 12%, white); }
+      .b-soft { background: color-mix(in srgb, var(--b) 13%, white); }
+      .c-soft { background: color-mix(in srgb, var(--c) 13%, white); }
+      .d-soft { background: color-mix(in srgb, var(--d) 13%, white); }
+      .label { font:850 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--d); }
+      .flow { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap:11px; align-items:stretch; }
+      .step { position:relative; border:1px solid var(--line); border-radius:20px; background:var(--paper); padding:15px; min-height:150px; }
+      .step:not(:last-child)::after { content:'→'; position:absolute; right:-16px; top:44%; color:var(--gold); font:950 24px var(--serif); z-index:3; }
+      .num { font:850 12px var(--mono); color:var(--gold); }
+      .rules { display:grid; grid-template-columns: .9fr 1.1fr; gap:18px; align-items:stretch; }
+      .rule-list { display:grid; gap:10px; }
+      .rule { display:grid; grid-template-columns: 88px 1fr; gap:14px; border:1px solid var(--line); border-radius:18px; padding:14px; background:var(--paper); }
+      .badge { display:grid; place-items:center; height:42px; border-radius:14px; color:white; font:950 20px var(--serif); }
+      .badge.a { background:var(--a); } .badge.b { background:var(--b); } .badge.c { background:var(--c); } .badge.d { background:var(--d); }
+      .sim { position:relative; display:block; }
+      .controls-toggle { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:54px; margin-bottom:14px; border:2px solid rgba(255,253,247,.9); border-radius:999px; padding:0 22px; background:linear-gradient(135deg, var(--a), #315f99); color:var(--paper); font-weight:950; font-size:16px; cursor:pointer; box-shadow:0 16px 38px rgba(32,63,105,.28), 0 0 0 5px rgba(32,63,105,.10); animation:pulseHint 2.4s ease-in-out infinite; }
+      .controls-toggle::before { content:'☰'; font-size:18px; }
+      @keyframes pulseHint { 0%,100% { transform:translateY(0); box-shadow:0 16px 38px rgba(32,63,105,.28), 0 0 0 5px rgba(32,63,105,.10); } 50% { transform:translateY(-1px); box-shadow:0 20px 44px rgba(32,63,105,.34), 0 0 0 8px rgba(191,115,39,.14); } }
+      .controls { position:absolute; left:16px; top:58px; z-index:10; width:min(390px, calc(100% - 32px)); max-height:min(680px, calc(100vh - 120px)); overflow:auto; border:1px solid var(--line); border-radius:26px; padding:18px; background:rgba(251,246,234,.96); backdrop-filter:blur(18px); box-shadow:0 26px 80px rgba(42,31,13,.22); opacity:0; pointer-events:none; transform:translateY(-8px) scale(.98); transition:opacity .18s ease, transform .18s ease; }
+      .sim.controls-open .controls { opacity:1; pointer-events:auto; transform:translateY(0) scale(1); }
+      .field { display:grid; gap:7px; margin-bottom:14px; }
+      .field label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:850; color:var(--a); }
+      .field input[type='range'] { width:100%; accent-color: var(--a); }
+      .field input[type='number'] { width:130px; border:1px solid var(--line); border-radius:12px; padding:8px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
+      .seg { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin: 14px 0; }
+      .seg button { border:1px solid var(--line); border-radius:14px; padding:10px; background:var(--paper); color:var(--a); font-weight:900; cursor:pointer; }
+      .seg button.active { background:var(--a); color:var(--paper); }
+      .chart-wrap { border:1px solid var(--line); border-radius:26px; background:linear-gradient(180deg, rgba(32,63,105,.05), rgba(255,253,247,.7)); padding:18px; min-height: 560px; }
+      .stats { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+      .stat { border:1px solid var(--line); border-radius:18px; padding:12px; background:rgba(255,255,255,.62); }
+      .stat strong { display:block; font:950 26px var(--serif); color:var(--a); }
+      svg { width:100%; height:auto; display:block; }
+      .axis { stroke: rgba(23,36,58,.28); stroke-width:1.2; }
+      .plot-bg { fill: rgba(255,253,247,.62); stroke: rgba(32,63,105,.18); stroke-width: 1; }
+      .gridline { stroke: rgba(32,63,105,.38); stroke-width:1.25; }
+      .minor-gridline { stroke: rgba(32,63,105,.20); stroke-width:1; }
+      .income-line { fill:none; stroke:var(--b); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+      .real-income-line { fill:none; stroke:var(--c); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+      .expense-line { fill:none; stroke:var(--d); stroke-width:3; stroke-dasharray:8 8; stroke-linecap:round; stroke-linejoin:round; }
+      .plot-dot { stroke: var(--paper); stroke-width: 2; }
+      .legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; color:var(--muted); font-size:13px; }
+      .legend span { display:inline-flex; align-items:center; gap:7px; }
+      .swatch { width:18px; height:4px; border-radius:999px; display:inline-block; }
+      .example { border-left:6px solid var(--gold); border-radius:18px; padding:18px 20px; background:rgba(199,154,44,.13); }
+      .timeline { display:grid; gap:16px; }
+      .life-row { display:grid; grid-template-columns: 210px minmax(520px, 1.3fr) minmax(300px, .75fr); gap:28px; align-items:center; border:1px solid var(--line); border-radius:28px; padding:28px; background:var(--paper); }
+      .mini-bars { display:grid; grid-template-columns: repeat(4, 1fr); gap:18px; align-items:end; height:230px; }
+      .bar-stack { height:230px; display:grid; grid-template-rows:auto 1fr; gap:10px; align-items:end; }
+      .bar-label { text-align:center; font:900 16px var(--mono); color:var(--a); line-height:1.15; }
+      .mini-bar { width:100%; border-radius:18px 18px 8px 8px; color:white; display:block; min-height:20px; }
+      .bar-a { background:var(--a); } .bar-b { background:var(--b); } .bar-c { background:var(--c); } .bar-d { background:var(--d); }
+      .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
+      .plain-list { margin: 10px 0 0; padding-left: 1.1rem; color:#49576c; line-height:1.55; }
+      .plain-list li { margin: 6px 0; }
+      .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.5); }
+      table { width:100%; border-collapse:collapse; min-width:760px; }
+      th, td { padding:13px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; color:#49576c; }
+      th { color:var(--a); font:900 12px var(--mono); text-transform:uppercase; letter-spacing:.08em; background:rgba(32,63,105,.06); }
+      tr:last-child td { border-bottom:0; }
+      .callout { border-left:6px solid var(--gold); border-radius:18px; padding:16px 18px; background:rgba(199,154,44,.13); }
+      .danger { border-left-color:var(--d); background:color-mix(in srgb, var(--d) 12%, white); }
+      .compact { min-height:auto; }
+      .rulebook { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
+      .money-rules { counter-reset: money; display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+      .money-rule { counter-increment: money; display:grid; grid-template-columns:42px 1fr; gap:12px; align-items:start; border:1px solid var(--line); border-radius:18px; padding:13px; background:var(--paper); }
+      .money-rule::before { content:counter(money); display:grid; place-items:center; width:34px; height:34px; border-radius:12px; background:var(--a); color:white; font:900 14px var(--mono); }
+      .gear-table td:nth-child(2) { font:900 13px var(--mono); color:var(--a); white-space:nowrap; }
+      .strategy-flow { margin:22px auto 0; max-width:1040px; display:grid; justify-items:center; gap:0; }
+      .flow-node { width:min(640px,100%); border:2px solid rgba(32,63,105,.18); border-radius:22px; background:var(--paper); padding:18px 22px; color:#49576c; box-shadow:0 14px 36px rgba(42,31,13,.08); text-align:center; }
+      .flow-node h3 { margin:0 0 8px; font-size:24px; }
+      .flow-node p { margin:0; }
+      .flow-arrow-down { width:2px; height:42px; background:rgba(42,31,13,.28); position:relative; }
+      .flow-arrow-down::after { content:''; position:absolute; left:50%; bottom:-1px; transform:translateX(-50%); border-top:12px solid rgba(42,31,13,.38); border-left:8px solid transparent; border-right:8px solid transparent; }
+      .flow-decision-row { width:100%; display:grid; grid-template-columns:1fr 160px 1fr; align-items:center; gap:12px; }
+      .decision-diamond { width:160px; height:160px; transform:rotate(45deg); border:2px solid rgba(32,63,105,.35); background:rgba(255,253,247,.9); display:grid; place-items:center; box-shadow:0 12px 30px rgba(42,31,13,.08); }
+      .decision-diamond > div { transform:rotate(-45deg); text-align:center; color:var(--a); font-weight:900; line-height:1.25; }
+      .branch-line { height:2px; background:rgba(42,31,13,.25); position:relative; }
+      .branch-line::after { content:''; position:absolute; top:50%; transform:translateY(-50%); border-left:10px solid rgba(42,31,13,.35); border-top:7px solid transparent; border-bottom:7px solid transparent; }
+      .branch-left::after { right:-1px; }
+      .branch-right::after { right:-1px; }
+      .pause-node { border-color:rgba(170,70,61,.38); background:color-mix(in srgb, var(--d) 13%, white); color:#6e2923; width:min(360px,100%); justify-self:start; }
+      .invest-node { border-color:rgba(70,55,150,.38); background:rgba(70,55,150,.12); }
+      .pillar-split { width:100%; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:stretch; position:relative; padding-top:42px; }
+      .pillar-split::before { content:''; position:absolute; left:8%; right:8%; top:20px; height:2px; background:rgba(42,31,13,.26); }
+      .pillar-card { border:2px solid rgba(32,63,105,.18); border-radius:18px; padding:16px; text-align:center; background:var(--paper); color:#49576c; }
+      .pillar-card h3 { margin:0 0 8px; }
+      .pillar-a,.pillar-c { background:color-mix(in srgb, var(--a) 12%, white); }
+      .pillar-b,.pillar-d { background:color-mix(in srgb, var(--b) 16%, white); }
+      .merge-node { border-color:rgba(191,115,39,.35); background:color-mix(in srgb, var(--b) 13%, white); }
+      .bridge-node { border-color:rgba(80,80,75,.28); background:rgba(80,80,75,.10); }
+      .repeat-node { border-color:rgba(70,55,150,.38); background:rgba(70,55,150,.12); }
+      .fire-node { border-color:rgba(97,127,62,.35); background:color-mix(in srgb, var(--c) 15%, white); }
+      .flow-legend { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:18px; color:var(--muted); font-weight:850; }
+      .flow-legend span { display:inline-flex; align-items:center; gap:8px; }
+      .legend-box { width:14px; height:14px; border-radius:4px; display:inline-block; border:2px solid currentColor; }
+
+      @media (max-width: 1100px) {
+        .hero, .rules { grid-template-columns: 1fr; }
+        .hero { min-height: auto; }
+        .cols-4, .cols-3, .cols-2, .flow, .stats, .rulebook, .money-rules { grid-template-columns: 1fr; }
+        .step:not(:last-child)::after { content:'↓'; top:auto; right:50%; bottom:-22px; }
+        .flow-decision-row,.pillar-split { grid-template-columns:1fr; }
+        .branch-line { display:none; }
+        .pause-node { justify-self:center; }
+        .pillar-split::before { display:none; }
+        .life-row { grid-template-columns:1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <nav class="nav" aria-label="Page navigation">
+        <a href="#overview">Overview</a><a href="#pillars">Pillars</a><a href="#rules">Rules</a><a href="#positions">Positions</a><a href="#gears">Gears</a><a href="#cashflow">Cash Flow</a><a href="#simulator">Simulator</a><a href="#lifecycle">Lifecycle</a><a href="#examples">Examples</a>
+      </nav>
+
+      <header id="overview" class="hero">
+        <div>
+          <div class="eyebrow">A one-page income engine map</div>
+          <h1>Build a portfolio where every dollar has a job.</h1>
+          <p class="lead">The ABCD model separates holdings by function: foundation, income boost, compounding engine, and power generation. Use the rules, then test the path with the simulator.</p>
+          <div class="hero-actions"><a class="button primary" href="#simulator">Run the simulator</a><a class="button secondary" href="#rules">See classification rules</a></div>
+        </div>
+        <div class="engine-card" aria-label="ABCD system map">
+          <div class="engine-ring"></div><div class="engine-ring r2"></div><div class="engine-ring r3"></div>
+          <div class="orbit oa"><b>A — Anchors</b>Growth + stability. DRIP ON.</div>
+          <div class="orbit ob"><b>B — Boosters</b>Income workhorses. DRIP OFF.</div>
+          <div class="orbit oc"><b>C — Closed-end</b>Share-count compounding. DRIP ON.</div>
+          <div class="orbit od"><b>D — Dynamos</b>Maximum cash flow. DRIP OFF.</div>
+          <div class="orbit om"><b>Cash pressure</b>B/D income helps cover expenses and margin while A/C compound.</div>
+          <div class="engine-core"><div><b>ABCD</b><br/>the portfolio machine</div></div>
+        </div>
+      </header>
+
+      <section id="pillars" class="panel">
+        <div class="section-head"><h2>Four jobs, one system</h2><span class="pill">usable by anyone</span></div>
+        <div class="grid cols-4">
+          <div class="card a-soft" data-letter="A"><div class="label">Anchor</div><h3>Keep the base stable</h3><p>Use broad, durable holdings for appreciation and moderate income. These reduce the urge to chase yield.</p><p><b>Typical behavior:</b> DRIP ON.</p></div>
+          <div class="card b-soft" data-letter="B"><div class="label">Booster</div><h3>Increase cash flow</h3><p>Use diversified income instruments or documented tactical positions to produce spendable cash.</p><p><b>Typical behavior:</b> DRIP OFF.</p></div>
+          <div class="card c-soft" data-letter="C"><div class="label">Closed-end</div><h3>Compound shares quietly</h3><p>Use funds where reinvestment mechanics are the edge. The goal is automatic share accumulation.</p><p><b>Typical behavior:</b> DRIP ON.</p></div>
+          <div class="card d-soft" data-letter="D"><div class="label">Dynamo</div><h3>Generate power, then retire</h3><p>Use higher-risk, high-output positions as a temporary accelerator, not the permanent identity of the portfolio.</p><p><b>Typical behavior:</b> DRIP OFF.</p></div>
+        </div>
+      </section>
+
+      <section id="rules" class="panel">
+        <div class="section-head"><h2>Classify before you buy</h2><span class="pill">less guessing</span></div>
+        <div class="rules">
+          <div class="rule-list">
+            <div class="rule"><div class="badge a">A</div><div><h3>Composite/index + under 25%</h3><p>Foundation holding. Growth and stability matter more than maximum income.</p></div></div>
+            <div class="rule"><div class="badge b">B</div><div><h3>Composite + 25–60%</h3><p>Income workhorse. Cash can route to expenses, margin, or new buys.</p></div></div>
+            <div class="rule"><div class="badge c">C</div><div><h3>CEF / reinvestment edge</h3><p>The holding belongs here when the reinvestment mechanism is the main engine.</p></div></div>
+            <div class="rule"><div class="badge d">D</div><div><h3>Single-stock or over 60%</h3><p>Highest scrutiny. Useful for acceleration, but should not become unchecked concentration.</p></div></div>
+          </div>
+          <div class="example">
+            <h3>Example using Dario’s current framing</h3>
+            <p><b>SPYI / QQQI</b> are treated as Anchors because they track broad indexes even though they produce income. <b>XDTE / RDTE / YMAX</b> behave like Boosters because they are diversified cash-flow tools. <b>CLM / CRF / GOF</b> sit in Closed-end because DRIP mechanics matter. <b>MRNY / PLTY / TSII</b> are Dynamos because single-stock exposure carries a different risk profile.</p>
+            <p>Document exceptions instead of hiding them. If something breaks the rule, write down why.</p>
+          </div>
+        </div>
+      </section>
+
+
+      <section id="positions" class="panel">
+        <div class="section-head"><h2>The full rulebook</h2><span class="pill">classification · DRIP · risk</span></div>
+        <div class="rulebook">
+          <div class="card a-soft compact">
+            <div class="label">A — Anchors</div><h3>Foundation rules</h3>
+            <ul class="plain-list">
+              <li>Composite/index underlying plus yield under 25% belongs here.</li>
+              <li>Dividend-growth ETFs and pure growth positions can belong here even with low yield.</li>
+              <li>Primary job: appreciation, equity stability, and steady compounding.</li>
+              <li>DRIP stays ON because growth and reinvestment are the point.</li>
+              <li>SPYI and QQQI remain Anchors because they track broad indexes; income does not make them Dynamos.</li>
+            </ul>
+          </div>
+          <div class="card b-soft compact">
+            <div class="label">B — Boosters</div><h3>Income engine rules</h3>
+            <ul class="plain-list">
+              <li>Composite covered-call ETFs with 25–60% yield belong here.</li>
+              <li>Documented tactical positions can live here even if they bend the normal yield rule.</li>
+              <li>DRIP stays OFF so cash can pay expenses, margin interest, or fund new buys.</li>
+              <li>If a Booster’s yield is above 60% for a sustained 6-month average, evaluate reclassification to Dynamo.</li>
+              <li>Examples of documented exceptions: NVII and WNTR.</li>
+            </ul>
+          </div>
+          <div class="card c-soft compact">
+            <div class="label">C — Closed-end</div><h3>Compounding engine rules</h3>
+            <ul class="plain-list">
+              <li>Closed-end funds and non-covered-call income/preservation positions can belong here.</li>
+              <li>The edge is DRIP mechanics: CLM and CRF at NAV; GOF at discount.</li>
+              <li>DRIP stays ON and should not be casually turned off.</li>
+              <li>Purpose: grow share count automatically until the pillar becomes self-sustaining.</li>
+              <li>Monitor discounts, premiums, distribution sustainability, and total return.</li>
+            </ul>
+          </div>
+          <div class="card d-soft compact">
+            <div class="label">D — Dynamos</div><h3>Power generator rules</h3>
+            <ul class="plain-list">
+              <li>Any single-stock covered-call ETF is a Dynamo regardless of yield.</li>
+              <li>Any composite covered-call ETF above 60% yield is a Dynamo unless documented as tactical Booster.</li>
+              <li>DRIP stays OFF because cash flow is the job.</li>
+              <li>Evaluate by total return, not price chart alone.</li>
+              <li>Lifecycle: spin up → generate → route cash → wind down → disconnect.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px"><b>Core operating law:</b> classification drives four behaviors — DRIP setting, rebalancing target, risk-monitoring tier, and income attribution. A position must belong to exactly one pillar, and exceptions need a written reason.</div>
+      </section>
+
+      <section id="operating-rules" class="panel">
+        <div class="section-head"><h2>13 ABCDs operating rules</h2><span class="pill">plain-English rulebook</span></div>
+        <p class="lead">The source notes mention the Ten Rules of Money but do not preserve the numbered list in the files I found. So this section captures the practical rulebook already present across the ABCDs documents and expands it into 13 clear operating rules.</p>
+        <div class="money-rules">
+          <div class="money-rule"><div><h3>Always Be Compounding Dividends</h3><p>The whole system starts here: every paycheck, dividend, and spare dollar should keep working toward more future income.</p></div></div>
+          <div class="money-rule"><div><h3>Every holding belongs to one pillar</h3><p>A position is an Anchor, Booster, Closed-end holding, or Dynamo. Do not leave holdings unclassified.</p></div></div>
+          <div class="money-rule"><div><h3>Classification controls behavior</h3><p>The pillar determines DRIP setting, rebalancing target, risk tier, and income attribution.</p></div></div>
+          <div class="money-rule"><div><h3>Anchors compound</h3><p>Anchors are for growth, stability, and moderate income. DRIP stays ON unless there is a documented reason.</p></div></div>
+          <div class="money-rule"><div><h3>Boosters pay cash</h3><p>Boosters are income workhorses. DRIP stays OFF so cash can support expenses, margin, or new buys.</p></div></div>
+          <div class="money-rule"><div><h3>Closed-end is the quiet engine</h3><p>CEF positions are held for share-count compounding. DRIP at NAV or discount is the point of the pillar.</p></div></div>
+          <div class="money-rule"><div><h3>Dynamos are temporary power</h3><p>Dynamos maximize cash flow but should wind down as the system matures. They are accelerators, not the forever foundation.</p></div></div>
+          <div class="money-rule"><div><h3>Single-stock equals Dynamo</h3><p>Any single-stock covered-call ETF is treated as highest-risk Dynamo exposure unless an exception is explicitly documented.</p></div></div>
+          <div class="money-rule"><div><h3>The 60% rule matters</h3><p>Composite covered-call ETFs above 60% yield require Dynamo evaluation unless they serve a documented tactical purpose.</p></div></div>
+          <div class="money-rule"><div><h3>Respect concentration limits</h3><p>Flag any position above 5%, act around 7%, limit duplicate underlying exposure, and cap active Dynamos.</p></div></div>
+          <div class="money-rule"><div><h3>The 60/70 contribution rule</h3><p>If margin equity drops below 60%, stop contributing new buys and let cash/dividends repair the account. Once it gets back above 70%, contributions can resume.</p></div></div>
+          <div class="money-rule"><div><h3>Judge yield by total return</h3><p>High distributions do not automatically mean success. Compare dividends received against NAV loss, unrealized gain/loss, and yield on cost.</p></div></div>
+          <div class="money-rule"><div><h3>Write down exceptions</h3><p>Exceptions are allowed only when the reason is named. If the rule bends silently, the system stops being a system.</p></div></div>
+        </div>
+      </section>
+
+      <section id="screening" class="panel">
+        <div class="section-head"><h2>Screening, weighting, and monitoring</h2><span class="pill">the guardrails</span></div>
+        <div class="grid cols-3">
+          <div class="card compact"><div class="label">Screening</div><h3>Covered-call ETF checks</h3><ul class="plain-list"><li>Yield target: at least 7% for income candidates.</li><li>AUM target: at least $100M.</li><li>No distribution cuts in the last 12 months.</li><li>Expense ratio under 1.5% when possible.</li><li>Know whether the fund is index, composite, sector, tactical, or single-stock.</li></ul></div>
+          <div class="card compact"><div class="label">Diversification</div><h3>Position limits</h3><ul class="plain-list"><li>No single position should exceed 5% without a flag.</li><li>Act when a position reaches 7%.</li><li>Maximum two covered-call ETFs per underlying index.</li><li>Maximum four active Dynamos.</li><li>Diversify provider, underlying, sector, and strategy type.</li></ul></div>
+          <div class="card compact"><div class="label">Scoreboard</div><h3>What to measure</h3><ul class="plain-list"><li>Monthly dividend income.</li><li>Yield on cost.</li><li>Total return: dividends plus unrealized gain/loss.</li><li>Pillar income attribution.</li><li>NAV erosion: destructive vs non-destructive return of capital.</li></ul></div>
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Rule</th><th>Threshold</th><th>Action</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>Position size</td><td>5% flag / 7% act</td><td>Review, trim, or route new money elsewhere</td><td>Prevents high-yield temptation from becoming concentration risk.</td></tr>
+              <tr><td>Margin equity</td><td>Below 60% stop / above 70% resume</td><td>Stop new contributions below 60%; resume only after equity is back above 70%</td><td>Creates a safety band instead of constantly switching on one line.</td></tr>
+              <tr><td>Composite yield</td><td>Over 60%</td><td>Evaluate as Dynamo</td><td>Very high yield usually means a different risk tier.</td></tr>
+              <tr><td>Single-stock exposure</td><td>Any yield</td><td>Classify as Dynamo unless explicitly documented otherwise</td><td>Single-stock volatility is the risk, not only the yield.</td></tr>
+              <tr><td>CEF DRIP</td><td>NAV or discount</td><td>Keep ON</td><td>The compounding mechanism is the reason for the pillar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="gears" class="panel">
+        <div class="section-head"><h2>Contribution gears</h2><span class="pill">choose by desired effect</span></div>
+        <div class="table-wrap">
+          <table class="gear-table">
+            <thead><tr><th>Gear</th><th>A/B/C/D split</th><th>Use when</th><th>Purpose</th><th>Risk</th></tr></thead>
+            <tbody>
+              <tr><td>Quarters</td><td>25 / 25 / 25 / 25</td><td>Starting out, below base expenses, volatile market, or when unsure.</td><td>Simple balanced building with no decision burden.</td><td>Slower than aggressive income gears.</td></tr>
+              <tr><td>AT&T Forward</td><td>40 / 30 / 20 / 10</td><td>Income covers expenses or portfolio needs more stability.</td><td>Move weight toward Anchors while keeping income alive.</td><td>Less immediate cash flow than D-heavy gears.</td></tr>
+              <tr><td>AT&T Reverse</td><td>10 / 20 / 30 / 40</td><td>Need to accelerate income fast: job loss, expense spike, sprint to base expenses.</td><td>Use Dynamos for cash and C for compounding buildout.</td><td>Aggressive; requires close monitoring.</td></tr>
+              <tr><td>Income Optimum</td><td>10 / 40 / 10 / 40</td><td>Need maximum cash now; margin interest or expenses are pressing.</td><td>80% routes to DRIP-OFF cash-flow positions.</td><td>Low growth and possible NAV erosion if used too long.</td></tr>
+              <tr><td>Growth Optimum</td><td>45 / 10 / 35 / 10</td><td>Income targets are met; bull market; portfolio value growth is priority.</td><td>80% routes to DRIP-ON growth/compounding positions.</td><td>Less near-term cash flow.</td></tr>
+              <tr><td>Margin Optimum</td><td>35 / 40 / 10 / 15</td><td>Margin equity is creeping toward the ceiling.</td><td>Two levers: A grows equity; B generates paydown cash.</td><td>Still uses leverage; stop if the ceiling is hit.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid cols-4" style="margin-top:16px">
+          <div class="card compact"><div class="label">B.E.</div><h3>$2,200/mo</h3><p>Base expenses — the floor.</p></div>
+          <div class="card compact"><div class="label">M.E.</div><h3>$2,600/mo</h3><p>Max expenses — the ceiling.</p></div>
+          <div class="card compact"><div class="label">B.I.</div><h3>$2,800/mo</h3><p>Base income — lowest paycheck.</p></div>
+          <div class="card compact"><div class="label">M.I.</div><h3>$4,000/mo</h3><p>Max income — highest paycheck.</p></div>
+        </div>
+      </section>
+
+      <section id="cashflow" class="panel">
+        <div class="section-head"><h2>The ABCD Strategy Flow</h2><span class="pill">simple version</span></div>
+        <p class="lead">Think of the flow as four plain moves: money comes in, safety gets checked, the ABCD jobs do their work, then the cycle repeats.</p>
+        <div class="strategy-flow">
+          <div class="flow-node"><h3>Paycheck 100%</h3><p>W-2 income enters the system</p></div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node"><h3>Fidelity brokerage</h3><p>Cash auto-reduces margin balance</p></div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-decision-row">
+            <div class="branch-line branch-left" aria-hidden="true"></div>
+            <div class="decision-diamond"><div>Equity<br/>below 60%?</div></div>
+            <div class="flow-node pause-node"><h3>Pause buying</h3><p>Dividends pay down margin until equity is back above 70%</p></div>
+          </div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node invest-node"><h3>Invest across ABCDs</h3><p>Deploy capital to all four pillars</p></div>
+          <div class="pillar-split">
+            <div class="pillar-card pillar-a"><h3>[A] Anchors</h3><p>DRIP ON<br/>Grows with market</p></div>
+            <div class="pillar-card pillar-b"><h3>[B] Boosters</h3><p>DRIP OFF<br/>Pays margin + bills</p></div>
+            <div class="pillar-card pillar-c"><h3>[C] Closed-end</h3><p>DRIP ON @ NAV<br/>Compounds silently</p></div>
+            <div class="pillar-card pillar-d"><h3>[D] Dynamos</h3><p>DRIP OFF<br/>Max cash flow</p></div>
+          </div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node merge-node"><h3>Cash from B + D</h3><p>Covers margin interest + expenses</p></div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node bridge-node"><h3>Margin bridges the rest</h3><p>Buys more income assets while the system is building</p></div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node repeat-node"><h3>Repeat every paycheck</h3><p>Always be compounding dividends</p></div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node"><h3>Crossover point</h3><p>Dividends &gt; monthly expenses</p></div>
+          <div class="flow-arrow-down" aria-hidden="true"></div>
+          <div class="flow-node fire-node"><h3>F.I.R.E.</h3><p>Financial independence achieved</p></div>
+        </div>
+        <div class="flow-legend"><span><i class="legend-box" style="color:var(--a)"></i>DRIP ON — compounds shares</span><span><i class="legend-box" style="color:var(--b)"></i>DRIP OFF — generates cash</span><span><i class="legend-box" style="color:var(--d)"></i>Pause condition</span></div>
+        <div class="grid cols-2" style="margin-top:16px">
+          <div class="callout"><b>Business spread:</b> borrow around the margin rate and invest only when the blended yield spread justifies the risk. The spread is the engine, but leverage is still risk.</div>
+          <div class="callout danger"><b>Endgame sequence:</b> mortgage dies first, then margin dies. The documented strategy is to use margin to clear the mortgage only when the portfolio is large enough, then use dividend surplus to clear margin debt.</div>
+        </div>
+      </section>
+
+      <section id="tax-risk" class="panel">
+        <div class="section-head"><h2>Tax, hedge, and review rules</h2><span class="pill">do not skip</span></div>
+        <div class="grid cols-3">
+          <div class="card compact"><div class="label">Tax</div><h3>Wash-sale awareness</h3><p>Watch the 61-day window. DRIP inside the window can count as repurchase. Use similar-but-not-identical replacements when harvesting losses.</p></div>
+          <div class="card compact"><div class="label">Tax</div><h3>Margin interest</h3><p>Margin interest may be deductible as investment interest expense, but it has rules and limits. Track it cleanly.</p></div>
+          <div class="card compact"><div class="label">Hedge</div><h3>Downside protection</h3><p>Possible tools include SPY/QQQ puts, small SQQQ/SPXU positions, and documented built-in hedges such as WNTR against BTCI exposure.</p></div>
+        </div>
+      </section>
+
+      <section id="simulator" class="panel">
+        <div class="section-head"><h2>Income path simulator</h2><span class="pill">start here: open inputs</span></div>
+        <div class="sim" id="simulatorShell">
+          <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="simulatorControls">Open simulator inputs</button>
+          <aside class="controls" id="simulatorControls">
+            <div class="field"><label>Starting portfolio <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
+            <div class="field"><label>Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" step="25" /></label><input id="paycheck" type="range" value={defaultInputs.paycheck} min="0" max="5000" step="25" /></div>
+            <div class="callout compact"><b>Paid bi-weekly?</b> Divide your paycheck contribution by 2 and enter that weekly amount here. Example: if you contribute $1,500 every two weeks, enter $750.</div>
+            <div class="field"><label>Portfolio dividend % <input id="yieldNumber" type="number" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></label><input id="yield" type="range" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label>Dividend growth % <input id="growthNumber" type="number" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></label><input id="growth" type="range" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></div>
+            <div class="field"><label>Inflation % <input id="inflationNumber" type="number" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></label><input id="inflation" type="range" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></div>
+            <div class="field"><label>Monthly expenses <input id="expensesNumber" type="number" value={defaultInputs.monthlyExpenses} min="0" step="50" /></label><input id="expenses" type="range" value={defaultInputs.monthlyExpenses} min="0" max="15000" step="50" /></div>
+            <div class="field"><label>Projection years <input id="projectionYearsNumber" type="number" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></label><input id="projectionYears" type="range" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></div>
+            <p class="footer-note"><b>Beginner version:</b> enter what you have now, what you can add each week, your expected dividend yield, your monthly bills, and how many years you want to project. The graph shows whether projected monthly dividend income is catching up to expenses.</p>
+          </aside>
+          <div class="chart-wrap">
+            <div class="stats">
+              <div class="stat"><span>Final portfolio</span><strong id="finalPortfolio">—</strong></div>
+              <div class="stat"><span>Monthly income</span><strong id="periodIncome">—</strong></div>
+              <div class="stat"><span>Annual income</span><strong id="annualIncome">—</strong></div>
+              <div class="stat"><span>Inflation-adjusted</span><strong id="realIncome">—</strong></div>
+            </div>
+            <p class="footer-note" style="margin-top:0"><b>How to read it:</b> orange = projected monthly dividends, green = today-dollar buying power, red = expenses after inflation. The grid is just a ruler so the slopes are easier to compare.</p>
+            <svg id="chart" viewBox="0 0 900 440" role="img" aria-label="Line plot of projected dividend income"></svg>
+            <div class="legend"><span><i class="swatch" style="background:var(--b)"></i>Nominal dividend income</span><span><i class="swatch" style="background:var(--c)"></i>Inflation-adjusted income</span><span><i class="swatch" style="background:var(--d)"></i>Inflated expense target</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="lifecycle" class="panel">
+        <div class="section-head"><h2>Lifecycle without cramped alignment</h2><span class="pill">fixed diagram</span></div>
+        <div class="timeline">
+          <div class="life-row"><h3>Start</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>25%</div><div class="mini-bar bar-a" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>25%</div><div class="mini-bar bar-b" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>25%</div><div class="mini-bar bar-c" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>25%</div><div class="mini-bar bar-d" style="height:58px"></div></div></div><p><b>Adjustment target:</b> keep all four pillars even. Build balance before optimizing for income or growth.</p></div>
+          <div class="life-row"><h3>Grow</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>30%</div><div class="mini-bar bar-a" style="height:76px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>30%</div><div class="mini-bar bar-b" style="height:76px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>25%</div><div class="mini-bar bar-c" style="height:64px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>15%</div><div class="mini-bar bar-d" style="height:44px"></div></div></div><p><b>Adjustment target:</b> let Anchors and Boosters carry more of the workload while Closed-end keeps compounding and Dynamos start shrinking.</p></div>
+          <div class="life-row"><h3>Mature</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>40%</div><div class="mini-bar bar-a" style="height:96px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>30%</div><div class="mini-bar bar-b" style="height:88px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>20%</div><div class="mini-bar bar-c" style="height:70px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>10%</div><div class="mini-bar bar-d" style="height:42px"></div></div></div><p><b>Adjustment target:</b> shift toward durable growth and repeatable income. Dynamos become a small accelerator, not the engine.</p></div>
+          <div class="life-row"><h3>Crossover</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>45%</div><div class="mini-bar bar-a" style="height:108px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>35%</div><div class="mini-bar bar-b" style="height:104px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>20%</div><div class="mini-bar bar-c" style="height:78px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>0–5%</div><div class="mini-bar bar-d" style="height:18px"></div></div></div><p><b>Adjustment target:</b> dividends can cover expenses. Dynamos are optional; Anchors and Boosters sustain while Closed-end keeps compounding.</p></div>
+        </div>
+      </section>
+
+      <section id="examples" class="panel">
+        <div class="section-head"><h2>How anyone can use it</h2><span class="pill">with examples</span></div>
+        <div class="grid cols-3">
+          <div class="card compact"><div class="label">Beginner</div><h3>Small starting point</h3><p>Start with broad Anchors, one simple income Booster, and strict concentration limits. Do not begin with all Dynamos just because the cash flow looks exciting.</p></div>
+          <div class="card compact"><div class="label">Builder</div><h3>Income target phase</h3><p>Use the simulator to ask: “What contribution, yield, and dividend-growth path gets me to my monthly expense number after inflation?” Then pick a gear that matches the need.</p></div>
+          <div class="card compact"><div class="label">Dario example</div><h3>Family framework</h3><p>Current examples include Fidelity, Snowball tracking, ABCD pillar labels, margin discipline, income milestones, and family portfolios for Dario, wife, and son.</p></div>
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Portfolio</th><th>Starting frame</th><th>Example implementation</th><th>Teaching point</th></tr></thead>
+            <tbody>
+              <tr><td>Dario</td><td>Primary P2P portfolio</td><td>24-position ABCD structure, Fidelity, Snowball category tracking, margin discipline.</td><td>Portfolio as cash-flow generator, not only store of value.</td></tr>
+              <tr><td>Wife</td><td>Secondary portfolio</td><td>Simplified ABCD allocation from a smaller starting base.</td><td>Same rules can scale down if position count stays manageable.</td></tr>
+              <tr><td>Son</td><td>Custodial learning portfolio</td><td>VOO, SCHD, XDTE-style split with DRIP settings used as a lesson.</td><td>Real money teaches compounding, income, and trade-offs.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const pairs = [
+        ['starting', 'startingNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']
+      ];
+      const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+      const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+      function sync(a, b) {
+        $(a).addEventListener('input', () => { $(b).value = $(a).value; render(); });
+        $(b).addEventListener('input', () => { $(a).value = $(b).value; render(); });
+      }
+      pairs.forEach(([a,b]) => sync(a,b));
+      const simulatorShell = $('simulatorShell');
+      const controlsToggle = $('controlsToggle');
+      controlsToggle.addEventListener('click', () => {
+        const isOpen = simulatorShell.classList.toggle('controls-open');
+        controlsToggle.setAttribute('aria-expanded', String(isOpen));
+        controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs';
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          simulatorShell.classList.remove('controls-open');
+          controlsToggle.setAttribute('aria-expanded', 'false');
+          controlsToggle.textContent = 'Open simulator inputs';
+        }
+      });
+      function getInputs() {
+        return {
+          starting: Number($('starting').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100,
+          g: Number($('growth').value) / 100, i: Number($('inflation').value) / 100,
+          monthlyExpenses: Number($('expenses').value),
+          projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))),
+        };
+      }
+      function periodCount() { return 12; }
+      function periodLabel() { return 'month'; }
+      function simulate() {
+        const input = getInputs();
+        const periods = periodCount();
+        const totalPeriods = periods * input.projectionYears;
+        const contribution = (input.paycheck * 52) / periods;
+        let portfolio = input.starting;
+        const rows = [];
+        for (let t = 0; t <= totalPeriods; t++) {
+          const year = t / periods;
+          const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year));
+          const annualIncome = portfolio * currentYield;
+          const periodIncome = annualIncome / periods;
+          const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year);
+          rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed });
+          portfolio += contribution + periodIncome;
+        }
+        return rows;
+      }
+      function render() {
+        const rows = simulate();
+        const last = rows[rows.length - 1];
+        const input = getInputs();
+        const periods = periodCount();
+        $('finalPortfolio').textContent = fmt.format(last.portfolio);
+        $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel();
+        $('annualIncome').textContent = fmt.format(last.annualIncome);
+        $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears));
+        const svg = $('chart');
+        const W = 900, H = 440, p = { l: 72, r: 26, t: 30, b: 56 };
+        const years = Array.from({ length: input.projectionYears }, (_, index) => index + 1);
+        const points = years.map((year) => rows[Math.min(rows.length - 1, Math.round(year * periods))]);
+        const incomeValue = (r) => r.annualIncome / periods;
+        const realIncomeValue = (r) => (r.annualIncome / Math.pow(1 + input.i, r.year)) / periods;
+        const expenseValue = (r) => r.inflationNeed / periods;
+        const maxY = Math.max(...points.map(incomeValue), ...points.map(realIncomeValue), ...points.map(expenseValue)) * 1.12 || 1;
+        const x = (r) => p.l + (input.projectionYears === 1 ? 0.5 : ((r.year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r);
+        const y = (value) => p.t + (1 - value / maxY) * (H - p.t - p.b);
+        const pointPath = (valueFor) => points.map((r, idx) => `${idx ? 'L' : 'M'} ${x(r)} ${y(valueFor(r))}`).join(' ');
+        const incomePath = pointPath(incomeValue);
+        const realIncomePath = pointPath(realIncomeValue);
+        const expensePath = pointPath(expenseValue);
+        let grid = `<rect x="${p.l}" y="${p.t}" width="${W-p.l-p.r}" height="${H-p.t-p.b}" rx="10" fill="rgba(255,253,247,.72)" stroke="rgba(32,63,105,.18)" stroke-width="1" />`;
+        for (let i = 0; i <= 16; i++) {
+          const gy = p.t + i * (H - p.t - p.b) / 16;
+          grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.075)" stroke-width="1" />`;
+        }
+        if (input.projectionYears > 1) {
+          for (let i = 0; i <= (input.projectionYears - 1) * 2; i++) {
+            const gx = p.l + (i / ((input.projectionYears - 1) * 2)) * (W - p.l - p.r);
+            grid += `<line x1="${gx}" y1="${p.t}" x2="${gx}" y2="${H-p.b}" stroke="rgba(32,63,105,.065)" stroke-width="1" />`;
+          }
+        }
+        for (let i = 0; i <= 4; i++) {
+          const value = (maxY * (4 - i)) / 4;
+          const gy = p.t + i * (H - p.t - p.b) / 4;
+          grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.15)" stroke-width="1" />`;
+          grid += `<text x="${p.l - 10}" y="${gy + 4}" text-anchor="end" fill="#617086" font-size="12">${fmt.format(value)}</text>`;
+        }
+        years.forEach((year) => {
+          const gx = p.l + (input.projectionYears === 1 ? 0.5 : ((year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r);
+          grid += `<line x1="${gx}" y1="${p.t}" x2="${gx}" y2="${H-p.b}" stroke="rgba(32,63,105,.15)" stroke-width="1" />`;
+          grid += `<text x="${gx}" y="${H-20}" text-anchor="middle" fill="#617086" font-size="12">Y${year}</text>`;
+        });
+        const dots = points.map((r) => `<circle cx="${x(r)}" cy="${y(incomeValue(r))}" r="5" fill="#bf7327" stroke="#fffdf7" stroke-width="2"/><circle cx="${x(r)}" cy="${y(realIncomeValue(r))}" r="5" fill="#617f3e" stroke="#fffdf7" stroke-width="2"/><circle cx="${x(r)}" cy="${y(expenseValue(r))}" r="5" fill="#aa463d" stroke="#fffdf7" stroke-width="2"/>`).join('');
+        svg.innerHTML = `${grid}<path d="${incomePath}" fill="none" stroke="#bf7327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${realIncomePath}" fill="none" stroke="#617f3e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${expensePath}" fill="none" stroke="#aa463d" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" stroke-linejoin="round"/>${dots}<line x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><text x="${p.l}" y="18" fill="#617086" font-size="12">Line plot: monthly dollars · weekly contributions</text><text x="${W-p.r}" y="18" text-anchor="end" fill="#617086" font-size="12">${input.projectionYears}-year projection</text>`;
+      }
+      render();
+    </script>
+  </body>
+</html>
