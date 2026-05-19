@@ -179,10 +179,10 @@ const defaultInputs = {
       .decision-diamond { grid-column:2; grid-row:1 / span 2; width:150px; height:150px; transform:rotate(45deg); border:2px solid rgba(32,63,105,.35); background:rgba(255,253,247,.95); display:grid; place-items:center; box-shadow:0 12px 30px rgba(42,31,13,.08); justify-self:center; z-index:2; }
       .decision-diamond > div { transform:rotate(-45deg); text-align:center; color:var(--a); font-weight:900; line-height:1.25; }
       .decision-label { font:900 12px var(--mono); letter-spacing:.08em; color:var(--muted); text-transform:uppercase; }
-      .decision-label.yes { grid-column:2; grid-row:2; align-self:start; justify-self:center; margin-top:80px; }
-      .decision-label.no { grid-column:3; grid-row:1; align-self:center; justify-self:center; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:7px 10px; z-index:2; }
-      .no-arrow { grid-column:3; grid-row:1; height:2px; width:100%; background:rgba(42,31,13,.28); position:relative; align-self:center; }
-      .no-arrow::after { content:''; position:absolute; right:-1px; top:50%; transform:translateY(-50%); border-left:10px solid rgba(42,31,13,.38); border-top:7px solid transparent; border-bottom:7px solid transparent; }
+      .decision-label.down { grid-column:2; grid-row:2; align-self:start; justify-self:center; margin-top:80px; }
+      .decision-label.side { grid-column:3; grid-row:1; align-self:center; justify-self:center; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:7px 10px; z-index:2; }
+      .side-arrow { grid-column:3; grid-row:1; height:2px; width:100%; background:rgba(42,31,13,.28); position:relative; align-self:center; }
+      .side-arrow::after { content:''; position:absolute; right:-1px; top:50%; transform:translateY(-50%); border-left:10px solid rgba(42,31,13,.38); border-top:7px solid transparent; border-bottom:7px solid transparent; }
       .pause-node { grid-column:4; grid-row:1; border-color:rgba(170,70,61,.38); background:color-mix(in srgb, var(--d) 13%, white); color:#6e2923; width:min(520px,100%); justify-self:start; position:relative; }
       .invest-node { border-color:rgba(70,55,150,.38); background:rgba(70,55,150,.12); }
       .pillar-split { width:100%; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:stretch; position:relative; padding-top:42px; }
@@ -205,9 +205,9 @@ const defaultInputs = {
         .cols-4, .cols-3, .cols-2, .flow, .stats, .rulebook, .money-rules { grid-template-columns: 1fr; }
         .step:not(:last-child)::after { content:'↓'; top:auto; right:50%; bottom:-22px; }
         .flow-decision-row,.pillar-split { grid-template-columns:1fr; grid-template-rows:auto; }
-        .decision-diamond,.pause-node,.decision-label.yes,.decision-label.no,.no-arrow { grid-column:auto; grid-row:auto; }
-        .decision-label.yes { margin-top:0; }
-        .no-arrow { display:none; }
+        .decision-diamond,.pause-node,.decision-label.down,.decision-label.side,.side-arrow { grid-column:auto; grid-row:auto; }
+        .decision-label.down { margin-top:0; }
+        .side-arrow { display:none; }
         .pause-node { justify-self:center; }
         .pillar-split::before { display:none; }
         .life-row { grid-template-columns:1fr; }
@@ -387,10 +387,10 @@ const defaultInputs = {
           <div class="flow-arrow-down" aria-hidden="true"></div>
           <div class="flow-decision-row">
             <div class="decision-diamond"><div>Equity<br/>below 60%?</div></div>
-            <div class="no-arrow" aria-hidden="true"></div>
-            <div class="decision-label no">NO</div>
+            <div class="side-arrow" aria-hidden="true"></div>
+            <div class="decision-label side">YES</div>
             <div class="flow-node pause-node"><h3>Pause buying</h3><p>Dividends pay down margin until equity is back above 70%</p></div>
-            <div class="decision-label yes">YES ↓</div>
+            <div class="decision-label down">NO ↓</div>
           </div>
           <div class="flow-arrow-down" aria-hidden="true"></div>
           <div class="flow-node invest-node"><h3>Invest across ABCDs</h3><p>Deploy capital to all four pillars</p></div>
