@@ -77,9 +77,13 @@ const defaultInputs = {
       p { color: #49576c; line-height: 1.58; }
       .lead { font-size: clamp(18px, 2vw, 24px); max-width: 780px; }
       .hero-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
-      .button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:999px; padding:0 16px; text-decoration:none; font-weight:900; border:1px solid var(--line); }
+      .button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:999px; padding:0 16px; text-decoration:none; font-weight:900; border:1px solid var(--line); cursor:pointer; }
       .button.primary { background: var(--a); color: var(--paper); border-color: var(--a); }
       .button.secondary { background: rgba(255,255,255,.6); color: var(--a); }
+      .signin-card { margin-top:20px; border:1px solid var(--line); border-radius:22px; padding:16px; background:rgba(255,255,255,.54); max-width:560px; }
+      .signin-card p { margin:8px 0 0; font-size:14px; }
+      .signin-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+      .signin-status { color:var(--muted); font-size:13px; font-weight:750; }
       .engine-card { position: relative; min-height: 520px; display:grid; place-items:center; }
       .engine-ring { position:absolute; inset: 5%; border-radius:50%; border:1px solid rgba(32,63,105,.18); }
       .engine-ring.r2 { inset: 19%; border-style:dashed; }
@@ -222,6 +226,14 @@ const defaultInputs = {
           <h1>Build a portfolio where every dollar has a job.</h1>
           <p class="lead">The ABCD model separates holdings by function: foundation, income boost, compounding engine, and power generation. Use the rules, then test the path with the simulator.</p>
           <div class="hero-actions"><a class="button primary" href="#simulator">Run the simulator</a><a class="button secondary" href="#rules">See classification rules</a></div>
+          <div class="signin-card" id="signinCard">
+            <div class="signin-row">
+              <button class="button secondary" id="googleSignIn" type="button">Sign in with Google</button>
+              <button class="button secondary" id="googleSignOut" type="button" hidden>Sign out</button>
+              <span class="signin-status" id="signinStatus">Optional: sign in to let Dario know you visited.</span>
+            </div>
+            <p>Visitor logging only runs after Google sign-in. It records the signed-in profile, page, referrer, and time so visits are not anonymous guesses.</p>
+          </div>
         </div>
         <div class="engine-card" aria-label="ABCD system map">
           <div class="engine-ring"></div><div class="engine-ring r2"></div><div class="engine-ring r3"></div>
@@ -583,6 +595,73 @@ const defaultInputs = {
         svg.innerHTML = `${grid}<path d="${incomePath}" fill="none" stroke="#bf7327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${realIncomePath}" fill="none" stroke="#617f3e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${expensePath}" fill="none" stroke="#aa463d" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" stroke-linejoin="round"/>${dots}<line x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><text x="${p.l}" y="18" fill="#617086" font-size="12">Line plot: monthly dollars · weekly contributions</text><text x="${W-p.r}" y="18" text-anchor="end" fill="#617086" font-size="12">${input.projectionYears}-year projection</text>`;
       }
       render();
+    </script>
+    <script type="module">
+      import { initializeApp } from 'firebase/app';
+      import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+      import { getFirestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+
+      const firebaseConfig = {
+        apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+        authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+      };
+
+      const hasFirebaseConfig = Object.values(firebaseConfig).every(Boolean);
+      const signInButton = document.getElementById('googleSignIn');
+      const signOutButton = document.getElementById('googleSignOut');
+      const signInStatus = document.getElementById('signinStatus');
+
+      if (!hasFirebaseConfig) {
+        signInButton.disabled = true;
+        signInStatus.textContent = 'Google sign-in needs Firebase environment variables on Vercel.';
+      } else {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        async function logVisit(user) {
+          await addDoc(collection(db, 'visitorLog'), {
+            uid: user.uid,
+            displayName: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL,
+            path: window.location.pathname,
+            referrer: document.referrer || null,
+            userAgent: navigator.userAgent,
+            signedInAt: serverTimestamp(),
+          });
+        }
+
+        signInButton.addEventListener('click', async () => {
+          signInStatus.textContent = 'Opening Google sign-in…';
+          try {
+            const result = await signInWithPopup(auth, provider);
+            await logVisit(result.user);
+            signInStatus.textContent = `Signed in as ${result.user.displayName || result.user.email}. Visit logged.`;
+          } catch (error) {
+            signInStatus.textContent = `Sign-in failed: ${error.message}`;
+          }
+        });
+
+        signOutButton.addEventListener('click', async () => {
+          await signOut(auth);
+        });
+
+        onAuthStateChanged(auth, (user) => {
+          signInButton.hidden = Boolean(user);
+          signOutButton.hidden = !user;
+          if (user) {
+            signInStatus.textContent = `Signed in as ${user.displayName || user.email}.`;
+          } else {
+            signInStatus.textContent = 'Optional: sign in to let Dario know you visited.';
+          }
+        });
+      }
     </script>
   </body>
 </html>
