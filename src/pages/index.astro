@@ -263,7 +263,7 @@ const defaultInputs = {
       <div class="nav-shell" id="pageMenu">
         <button class="nav-toggle" id="pageMenuToggle" type="button" aria-expanded="false" aria-controls="pageMenuNav">Menu</button>
         <nav class="nav" id="pageMenuNav" aria-label="Page navigation">
-          <a href="#overview">Overview</a><a href="#pillars">Pillars</a><a href="#rules">Rules</a><a href="#positions">Positions</a><a href="#gears">Gears</a><a href="#cashflow">Cash Flow</a><a href="#simulator">Simulator</a><a href="#lifecycle">Lifecycle</a><a href="#examples">Examples</a>
+          <a href="#overview">Overview</a><a href="#pillars">Pillars</a><a href="#rules">Rules</a><a href="#positions">Positions</a><a href="#gears">Gears</a><a href="#lifecycle">Lifecycle</a><a href="#cashflow">Cash Flow</a><a href="#simulator">Simulator</a><a href="#examples">Examples</a>
         </nav>
       </div>
 
@@ -424,6 +424,16 @@ const defaultInputs = {
         </div>
       </section>
 
+      <section id="lifecycle" class="panel">
+        <div class="section-head"><h2>Lifecycle</h2><span class="pill">phase targets</span></div>
+        <div class="timeline">
+          <div class="life-row"><h3>Start</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>25%</div><div class="mini-bar bar-a" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>25%</div><div class="mini-bar bar-b" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>25%</div><div class="mini-bar bar-c" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>25%</div><div class="mini-bar bar-d" style="height:58px"></div></div></div><p><b>Adjustment target:</b> keep all four pillars even. Build balance before optimizing for income or growth.</p></div>
+          <div class="life-row"><h3>Grow</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>30%</div><div class="mini-bar bar-a" style="height:76px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>30%</div><div class="mini-bar bar-b" style="height:76px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>25%</div><div class="mini-bar bar-c" style="height:64px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>15%</div><div class="mini-bar bar-d" style="height:44px"></div></div></div><p><b>Adjustment target:</b> let Anchors and Boosters carry more of the workload while Closed-end keeps compounding and Dynamos start shrinking.</p></div>
+          <div class="life-row"><h3>Mature</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>40%</div><div class="mini-bar bar-a" style="height:96px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>30%</div><div class="mini-bar bar-b" style="height:88px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>20%</div><div class="mini-bar bar-c" style="height:70px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>10%</div><div class="mini-bar bar-d" style="height:42px"></div></div></div><p><b>Adjustment target:</b> shift toward durable growth and repeatable income. Dynamos become a small accelerator, not the engine.</p></div>
+          <div class="life-row"><h3>Crossover</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>45%</div><div class="mini-bar bar-a" style="height:108px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>35%</div><div class="mini-bar bar-b" style="height:104px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>20%</div><div class="mini-bar bar-c" style="height:78px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>0–5%</div><div class="mini-bar bar-d" style="height:18px"></div></div></div><p><b>Adjustment target:</b> dividends can cover expenses. Dynamos are optional; Anchors and Boosters sustain while Closed-end keeps compounding.</p></div>
+        </div>
+      </section>
+
       <section id="cashflow" class="panel">
         <div class="section-head"><h2>The ABCD Strategy Flow</h2><span class="pill">simple version</span></div>
         <p class="lead">Think of the flow as four plain moves: money comes in, safety gets checked, the ABCD jobs do their work, then the cycle repeats.</p>
@@ -500,16 +510,6 @@ const defaultInputs = {
             <svg id="chart" viewBox="0 0 900 440" role="img" aria-label="Line plot of projected dividend income"></svg>
             <div class="legend"><span><i class="swatch" style="background:var(--b)"></i>Nominal dividend income</span><span><i class="swatch" style="background:var(--c)"></i>Inflation-adjusted income</span><span><i class="swatch" style="background:var(--d)"></i>Inflated expense target</span></div>
           </div>
-        </div>
-      </section>
-
-      <section id="lifecycle" class="panel">
-        <div class="section-head"><h2>Lifecycle</h2><span class="pill">phase targets</span></div>
-        <div class="timeline">
-          <div class="life-row"><h3>Start</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>25%</div><div class="mini-bar bar-a" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>25%</div><div class="mini-bar bar-b" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>25%</div><div class="mini-bar bar-c" style="height:58px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>25%</div><div class="mini-bar bar-d" style="height:58px"></div></div></div><p><b>Adjustment target:</b> keep all four pillars even. Build balance before optimizing for income or growth.</p></div>
-          <div class="life-row"><h3>Grow</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>30%</div><div class="mini-bar bar-a" style="height:76px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>30%</div><div class="mini-bar bar-b" style="height:76px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>25%</div><div class="mini-bar bar-c" style="height:64px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>15%</div><div class="mini-bar bar-d" style="height:44px"></div></div></div><p><b>Adjustment target:</b> let Anchors and Boosters carry more of the workload while Closed-end keeps compounding and Dynamos start shrinking.</p></div>
-          <div class="life-row"><h3>Mature</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>40%</div><div class="mini-bar bar-a" style="height:96px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>30%</div><div class="mini-bar bar-b" style="height:88px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>20%</div><div class="mini-bar bar-c" style="height:70px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>10%</div><div class="mini-bar bar-d" style="height:42px"></div></div></div><p><b>Adjustment target:</b> shift toward durable growth and repeatable income. Dynamos become a small accelerator, not the engine.</p></div>
-          <div class="life-row"><h3>Crossover</h3><div class="mini-bars"><div class="bar-stack"><div class="bar-label">A<br/>45%</div><div class="mini-bar bar-a" style="height:108px"></div></div><div class="bar-stack"><div class="bar-label">B<br/>35%</div><div class="mini-bar bar-b" style="height:104px"></div></div><div class="bar-stack"><div class="bar-label">C<br/>20%</div><div class="mini-bar bar-c" style="height:78px"></div></div><div class="bar-stack"><div class="bar-label">D<br/>0–5%</div><div class="mini-bar bar-d" style="height:18px"></div></div></div><p><b>Adjustment target:</b> dividends can cover expenses. Dynamos are optional; Anchors and Boosters sustain while Closed-end keeps compounding.</p></div>
         </div>
       </section>
 
