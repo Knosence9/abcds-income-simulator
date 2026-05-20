@@ -1,0 +1,192 @@
+---
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>ABCD Budget Guide</title>
+    <style>
+      :root {
+        --bg: #f6f0e4;
+        --paper: #fffdf7;
+        --paper-2: #fbf6ea;
+        --ink: #17243a;
+        --muted: #617086;
+        --line: rgba(23, 36, 58, 0.15);
+        --a: #203f69;
+        --b: #bf7327;
+        --c: #617f3e;
+        --d: #aa463d;
+        --gold: #c79a2c;
+        --shadow: 0 28px 90px rgba(42, 31, 13, 0.15);
+        --serif: Georgia, 'Times New Roman', serif;
+        --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 5%, rgba(199,154,44,.22), transparent 27rem),
+          radial-gradient(circle at 88% 13%, rgba(32,63,105,.16), transparent 26rem),
+          radial-gradient(circle at 75% 90%, rgba(97,127,62,.14), transparent 24rem),
+          linear-gradient(90deg, rgba(23,36,58,.035) 1px, transparent 1px),
+          linear-gradient(rgba(23,36,58,.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: auto, auto, auto, 30px 30px, 30px 30px, auto;
+      }
+      a { color: inherit; }
+      .shell { width: min(1200px, calc(100vw - 28px)); margin: 0 auto; padding: 22px 0 64px; }
+      .hero, .panel {
+        border: 1px solid var(--line);
+        border-radius: 34px;
+        background: rgba(255,253,247,.91);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .hero { padding: clamp(28px, 5vw, 70px); position: relative; }
+      .hero::before { content:""; position:absolute; inset: 22px; border:1px dashed rgba(32,63,105,.18); border-radius:26px; pointer-events:none; }
+      .eyebrow { font: 850 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--d); }
+      h1 { margin: 12px 0 18px; font: 950 clamp(44px, 8vw, 90px)/.9 var(--serif); letter-spacing: -.06em; color: var(--a); }
+      h2 { margin: 0; font: 950 clamp(30px, 5vw, 58px)/.92 var(--serif); letter-spacing: -.045em; color: var(--a); }
+      h3 { margin: 0 0 8px; color: var(--a); font-size: 20px; }
+      p { color: #49576c; line-height: 1.58; }
+      .lead { font-size: clamp(18px, 2vw, 24px); max-width: 900px; }
+      .hero-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+      .button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:999px; padding:0 16px; text-decoration:none; font-weight:900; border:1px solid var(--line); cursor:pointer; }
+      .button.primary { background: var(--a); color: var(--paper); border-color: var(--a); }
+      .button.secondary { background: rgba(255,255,255,.6); color: var(--a); }
+      .panel { margin-top: 28px; padding: clamp(24px, 4vw, 48px); }
+      .section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom: 24px; }
+      .pill {
+        border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px;
+        background: rgba(255,255,255,.55); text-decoration: none; color: var(--a); font-weight: 850; font-size: 13px;
+      }
+      .grid { display:grid; gap:16px; }
+      .cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+      .cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .card { border:1px solid var(--line); border-radius:24px; background:rgba(255,255,255,.48); padding:18px; min-height:166px; }
+      .compact { min-height:auto; }
+      .label { font:850 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--d); }
+      .callout { border-left:6px solid var(--gold); border-radius:18px; padding:16px 18px; background:rgba(199,154,44,.13); }
+      .danger { border-left-color:var(--d); background:color-mix(in srgb, var(--d) 12%, white); }
+      .plain-list { margin: 10px 0 0; padding-left: 1.1rem; color:#49576c; line-height:1.55; }
+      .plain-list li { margin: 6px 0; }
+      .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.5); }
+      table { width:100%; border-collapse:collapse; min-width:760px; }
+      th, td { padding:13px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; color:#49576c; }
+      th { color:var(--a); font:900 12px var(--mono); text-transform:uppercase; letter-spacing:.08em; background:rgba(32,63,105,.06); }
+      tr:last-child td { border-bottom:0; }
+      .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
+      @media (max-width: 1100px) {
+        .cols-4, .cols-3, .cols-2 { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div class="eyebrow">Companion guide</div>
+        <h1>Budget the strategy before you fund the strategy.</h1>
+        <p class="lead">The ABCD system works best when money is translated into weekly decisions. This page is not about making a budget look pretty. It is about figuring out what you can actually sustain, what belongs to survival, what belongs to growth, and how to assign a realistic weekly contribution before the portfolio starts asking for bigger jobs.</p>
+        <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/#getting-started">See the getting-started flow</a></div>
+      </header>
+
+      <section class="panel">
+        <div class="section-head"><h2>Start with the weekly number</h2><span class="pill">make it actionable</span></div>
+        <div class="grid cols-2">
+          <div class="card compact">
+            <div class="label">Why weekly</div>
+            <h3>Weekly is easier to control than monthly</h3>
+            <p>Monthly budgets sound organized, but weekly budgets are easier to obey. A weekly number tells you what you can do right now with the next check. It prevents a plan from feeling fine on paper while breaking apart in the middle of the month.</p>
+            <p>This page assumes that whatever your pay schedule is, you convert it into a weekly frame first. Then you decide what portion belongs to essentials, what portion can safely become contribution fuel, and what portion needs to remain flexible.</p>
+          </div>
+          <div class="card compact">
+            <div class="label">Conversion rule</div>
+            <h3>Translate pay and targets into one weekly rhythm</h3>
+            <ul class="plain-list">
+              <li>If you are paid weekly, use that number directly.</li>
+              <li>If you are paid bi-weekly, divide by <b>2</b>.</li>
+              <li>If you are paid monthly, divide by <b>4</b>.</li>
+              <li>If a contribution goal is monthly, divide it by <b>4</b>.</li>
+              <li>If a bill target is monthly, divide it by <b>4</b>.</li>
+            </ul>
+            <div class="callout"><b>Example:</b> $1,400 every two weeks becomes <b>$700 per week</b>. A $100 monthly contribution target becomes <b>$25 per week</b>. A $200 monthly bill target becomes <b>$50 per week</b>.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><h2>How to choose a starting contribution</h2><span class="pill">survivable first</span></div>
+        <div class="grid cols-3">
+          <div class="card compact"><div class="label">Step 1</div><h3>Protect essentials first</h3><p>Housing, food, transportation, utilities, insurance, minimum debt obligations, and genuine family responsibilities come before contribution ambition. The strategy only works when the base life remains stable.</p></div>
+          <div class="card compact"><div class="label">Step 2</div><h3>Find the repeatable amount</h3><p>The right starting contribution is not the biggest number you can force once. It is the number you can repeat without breaking your normal life the next week.</p></div>
+          <div class="card compact"><div class="label">Step 3</div><h3>Leave breathing room</h3><p>If the plan has zero room for small surprises, it is not disciplined. It is brittle. Keep some cash-flow flexibility so the contribution habit survives ordinary life.</p></div>
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Weekly pay</th><th>Contribution style</th><th>Weekly contribution</th><th>Monthly equivalent</th><th>When it fits</th></tr></thead>
+            <tbody>
+              <tr><td>$700</td><td>Very tight</td><td>$25</td><td>$100/month</td><td>Useful when the budget is thin and the priority is proving consistency first.</td></tr>
+              <tr><td>$700</td><td>Conservative</td><td>$40</td><td>$160/month</td><td>Good when essentials are covered but flexibility still matters a lot.</td></tr>
+              <tr><td>$700</td><td>Steady build</td><td>$75</td><td>$300/month</td><td>Works when the paycheck has enough room for a visible sprint toward the first threshold.</td></tr>
+              <tr><td>$700</td><td>Aggressive</td><td>$100</td><td>$400/month</td><td>Only appropriate when the base budget is stable and the higher contribution does not create strain elsewhere.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><h2>How to think about expenses</h2><span class="pill">what the portfolio is trying to take over</span></div>
+        <div class="grid cols-2">
+          <div class="card compact">
+            <div class="label">Essentials</div>
+            <h3>Start by naming the fixed responsibilities</h3>
+            <p>List the bills and obligations that are real, recurring, and hard to avoid. Rent or mortgage, utilities, groceries, transportation, insurance, and minimum debt payments belong here. These are not the bills you want the portfolio to cover first. These are the bills that tell you whether your contribution plan is honest.</p>
+          </div>
+          <div class="card compact">
+            <div class="label">First target</div>
+            <h3>Choose a smaller bill before a major one</h3>
+            <p>Once the portfolio reaches the stage where it can start helping with real expenses, choose one smaller recurring bill first. A smaller target creates a cleaner training loop. It lets you measure whether the system is working without pretending the portfolio has already replaced your paycheck.</p>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px"><b>Important distinction:</b> budgeting for this strategy is not just “cut spending and invest the rest.” It is deciding what money must keep life stable, what money can be repeated weekly, and what expense target the portfolio is supposed to absorb next.</div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><h2>A simple week-to-week budgeting flow</h2><span class="pill">repeatable sequence</span></div>
+        <div class="grid cols-4">
+          <div class="card compact"><div class="label">1</div><h3>Calculate weekly pay</h3><p>Convert your actual pay schedule into a weekly number so you have one usable operating frame.</p></div>
+          <div class="card compact"><div class="label">2</div><h3>Cover essential obligations</h3><p>Make sure the base bills and necessities remain protected before assigning contribution money.</p></div>
+          <div class="card compact"><div class="label">3</div><h3>Pick the weekly contribution</h3><p>Choose the number you can sustain, not the number that only works in a perfect month.</p></div>
+          <div class="card compact"><div class="label">4</div><h3>Review and raise carefully</h3><p>As income grows or expenses ease, raise the contribution deliberately instead of emotionally.</p></div>
+        </div>
+        <div class="grid cols-2" style="margin-top:16px">
+          <div class="card compact">
+            <div class="label">Monthly to weekly</div>
+            <h3>Use bill goals to set contribution goals</h3>
+            <p>If the bill you want the portfolio to help cover is $100 per month, that translates into a weekly planning number of $25. If a future target is $200 per month, its weekly planning number is $50. Weekly targets are easier to build toward than vague monthly hopes.</p>
+          </div>
+          <div class="card compact">
+            <div class="label">Scaling rule</div>
+            <h3>Raise the system only after the current layer feels stable</h3>
+            <p>Do not add a second responsibility to the portfolio just because the idea feels exciting. Add the next layer when the current contribution habit is stable, the first target is working, and the broader budget still feels controlled.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><h2>How this page fits the main ABCD guide</h2><span class="pill">companion logic</span></div>
+        <div class="grid cols-2">
+          <div class="callout"><b>Relationship to the main guide:</b> the main ABCD page explains the machine — pillars, rules, contribution gears, lifecycle, simulator, and risk logic. This budget page explains the money discipline that feeds the machine before the machine can be expected to do meaningful work.</div>
+          <div class="callout danger"><b>Not financial advice:</b> this is not personal financial advice. It is an explanation of how I have approached the process and how someone else might structure a similar path. Use your own judgment, your own numbers, and your own risk limits — especially before using margin.</div>
+        </div>
+        <p class="footer-note">Suggested navigation role: keep this as a dedicated companion page linked from the hero, the getting-started section, and the examples area of the main guide.</p>
+      </section>
+    </div>
+  </body>
+</html>
