@@ -132,20 +132,50 @@ import { ViewTransitions } from 'astro:transitions';
 
     <script>
       const seed = {
-        blue: Array.from({ length: 20 }, (_, index) => {
-          const layer = Math.floor(index / 5);
-          const col = index % 5;
-          return {
-            label: `B${index + 1}`,
-            x: -40 - (col * 28) - (layer * 10),
-            y: -30 - (layer * 62) + ((col - 2) * 24),
-          };
-        }),
-        red: Array.from({ length: 20 }, (_, index) => ({
-          label: `R${index + 1}`,
-          x: 21,
-          y: -79 - (index * 52),
-        })),
+        blue: [
+          { label: 'B1', x: -54, y: -66 },
+          { label: 'B2', x: -83, y: -20 },
+          { label: 'B3', x: -78, y: 34 },
+          { label: 'B4', x: -57, y: -124 },
+          { label: 'B5', x: -100, y: -90 },
+          { label: 'B6', x: -128, y: -43 },
+          { label: 'B7', x: -134, y: 12 },
+          { label: 'B8', x: -56, y: -176 },
+          { label: 'B9', x: -106, y: -152 },
+          { label: 'B10', x: -145, y: -113 },
+          { label: 'B11', x: -173, y: -67 },
+          { label: 'B12', x: -183, y: -16 },
+          { label: 'B13', x: -180, y: 37 },
+          { label: 'B14', x: -58, y: -227 },
+          { label: 'B15', x: -107, y: -207 },
+          { label: 'B16', x: -149, y: -178 },
+          { label: 'B17', x: -189, y: -144 },
+          { label: 'B18', x: -218, y: -97 },
+          { label: 'B19', x: -230, y: -44 },
+          { label: 'B20', x: -235, y: 10 },
+        ],
+        red: [
+          { label: 'R1', x: 38, y: -75 },
+          { label: 'R2', x: -5, y: -115 },
+          { label: 'R3', x: 39, y: -147 },
+          { label: 'R4', x: -6, y: -186 },
+          { label: 'R5', x: 39, y: -218 },
+          { label: 'R6', x: -5, y: -258 },
+          { label: 'R7', x: 39, y: -290 },
+          { label: 'R8', x: -4, y: -329 },
+          { label: 'R9', x: 39, y: -363 },
+          { label: 'R10', x: -5, y: -401 },
+          { label: 'R11', x: 39, y: -434 },
+          { label: 'R12', x: -7, y: -474 },
+          { label: 'R13', x: 40, y: -507 },
+          { label: 'R14', x: 21, y: -755 },
+          { label: 'R15', x: 21, y: -807 },
+          { label: 'R16', x: 21, y: -859 },
+          { label: 'R17', x: 21, y: -911 },
+          { label: 'R18', x: 21, y: -963 },
+          { label: 'R19', x: 21, y: -1015 },
+          { label: 'R20', x: 21, y: -1067 },
+        ],
       };
 
       const icons = {
