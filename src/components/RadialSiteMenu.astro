@@ -304,128 +304,141 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
 </nav>
 
 <script define:vars={{ id }}>
-  const menu = document.getElementById(id);
-  const trigger = menu?.querySelector('.radial-site-menu__trigger');
   const shiftDurationMs = 180;
   const collapseDurationMs = 420;
-  let shiftTimer;
-  let closeTimer;
 
-  const usesStagedMobileOpen = () => window.matchMedia('(max-width: 720px)').matches;
-  const usesTwoTapMobileItems = () => window.matchMedia('(max-width: 720px)').matches;
-  const clearMenuTimers = () => {
-    window.clearTimeout(shiftTimer);
-    window.clearTimeout(closeTimer);
-  };
+  const initRadialSiteMenu = () => {
+    const menu = document.getElementById(id);
+    if (!menu || menu.dataset.menuBound === 'true') return;
 
-  const clearArmedItems = () => {
-    menu?.querySelectorAll('.radial-site-menu__item.is-tap-armed').forEach((item) => {
-      item.classList.remove('is-tap-armed');
+    const trigger = menu.querySelector('.radial-site-menu__trigger');
+    if (!trigger) return;
+
+    let shiftTimer;
+    let closeTimer;
+    let sectionObserver;
+
+    menu.dataset.menuBound = 'true';
+
+    const usesStagedMobileOpen = () => window.matchMedia('(max-width: 720px)').matches;
+    const usesTwoTapMobileItems = () => window.matchMedia('(max-width: 720px)').matches;
+    const clearMenuTimers = () => {
+      window.clearTimeout(shiftTimer);
+      window.clearTimeout(closeTimer);
+    };
+
+    const clearArmedItems = () => {
+      menu.querySelectorAll('.radial-site-menu__item.is-tap-armed').forEach((item) => {
+        item.classList.remove('is-tap-armed');
+      });
+    };
+
+    const openMenu = () => {
+      clearMenuTimers();
+      clearArmedItems();
+      menu.classList.add('is-open', 'is-shifted');
+      trigger.setAttribute('aria-expanded', 'true');
+
+      if (usesStagedMobileOpen()) {
+        shiftTimer = window.setTimeout(() => {
+          menu.classList.add('is-expanded');
+        }, shiftDurationMs);
+        return;
+      }
+
+      menu.classList.add('is-expanded');
+    };
+
+    const closeMenu = () => {
+      clearMenuTimers();
+      clearArmedItems();
+      menu.classList.remove('is-expanded');
+      trigger.setAttribute('aria-expanded', 'false');
+
+      if (usesStagedMobileOpen()) {
+        closeTimer = window.setTimeout(() => {
+          menu.classList.remove('is-shifted', 'is-open');
+        }, collapseDurationMs);
+        return;
+      }
+
+      menu.classList.remove('is-shifted', 'is-open');
+    };
+
+    trigger.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (menu.classList.contains('is-open')) {
+        closeMenu();
+        return;
+      }
+      openMenu();
     });
-  };
 
-  const openMenu = () => {
-    if (!menu || !trigger) return;
-    clearMenuTimers();
-    clearArmedItems();
-    menu.classList.add('is-open', 'is-shifted');
-    trigger.setAttribute('aria-expanded', 'true');
+    menu.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest('.radial-site-menu__item');
+      if (!link) return;
 
-    if (usesStagedMobileOpen()) {
-      shiftTimer = window.setTimeout(() => {
-        menu.classList.add('is-expanded');
-      }, shiftDurationMs);
-      return;
-    }
-
-    menu.classList.add('is-expanded');
-  };
-
-  const close = () => {
-    if (!menu || !trigger) return;
-    clearMenuTimers();
-    clearArmedItems();
-    menu.classList.remove('is-expanded');
-    trigger.setAttribute('aria-expanded', 'false');
-
-    if (usesStagedMobileOpen()) {
-      closeTimer = window.setTimeout(() => {
-        menu.classList.remove('is-shifted', 'is-open');
-      }, collapseDurationMs);
-      return;
-    }
-
-    menu.classList.remove('is-shifted', 'is-open');
-  };
-
-  trigger?.addEventListener('click', (event) => {
-    event.stopPropagation();
-    if (menu?.classList.contains('is-open')) {
-      close();
-      return;
-    }
-    openMenu();
-  });
-
-  menu?.addEventListener('click', (event) => {
-    if (!(event.target instanceof Element)) return;
-    const link = event.target.closest('.radial-site-menu__item');
-    if (!link) return;
-
-    if (usesTwoTapMobileItems()) {
-      if (!link.classList.contains('is-tap-armed')) {
+      if (usesTwoTapMobileItems() && !link.classList.contains('is-tap-armed')) {
         event.preventDefault();
         clearArmedItems();
         link.classList.add('is-tap-armed');
         return;
       }
-    }
 
-    close();
-  });
-
-  document.addEventListener('click', (event) => {
-    if (menu && !menu.contains(event.target)) close();
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    close();
-  });
-
-  const samePageHashLinks = [...(menu?.querySelectorAll('[data-menu-href*="#"]') ?? [])]
-    .filter((link) => {
-      const url = new URL(link.getAttribute('href'), window.location.href);
-      return url.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '');
+      closeMenu();
     });
 
-  if ('IntersectionObserver' in window && samePageHashLinks.length) {
-    const linksById = new Map();
-    for (const link of samePageHashLinks) {
-      const id = new URL(link.getAttribute('href'), window.location.href).hash.slice(1);
-      const section = document.getElementById(id);
-      if (section) linksById.set(id, link);
-    }
+    document.addEventListener('click', (event) => {
+      if (!menu.contains(event.target)) closeMenu();
+    });
 
-    const setCurrent = (id) => {
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      closeMenu();
+    });
+
+    const samePageHashLinks = [...menu.querySelectorAll('[data-menu-href*="#"]')]
+      .filter((link) => {
+        const url = new URL(link.getAttribute('href'), window.location.href);
+        return url.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '');
+      });
+
+    if ('IntersectionObserver' in window && samePageHashLinks.length) {
+      const linksById = new Map();
       for (const link of samePageHashLinks) {
-        link.classList.remove('is-current-section');
-        if (link.getAttribute('aria-current') === 'location') link.removeAttribute('aria-current');
+        const targetId = new URL(link.getAttribute('href'), window.location.href).hash.slice(1);
+        const section = document.getElementById(targetId);
+        if (section) linksById.set(targetId, link);
       }
-      const active = linksById.get(id);
-      active?.classList.add('is-current-section');
-      active?.setAttribute('aria-current', 'location');
-    };
 
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible?.target?.id) setCurrent(visible.target.id);
-    }, { rootMargin: '-20% 0px -55% 0px', threshold: [0.08, 0.18, 0.32] });
+      const setCurrent = (targetId) => {
+        for (const link of samePageHashLinks) {
+          link.classList.remove('is-current-section');
+          if (link.getAttribute('aria-current') === 'location') link.removeAttribute('aria-current');
+        }
+        const active = linksById.get(targetId);
+        active?.classList.add('is-current-section');
+        active?.setAttribute('aria-current', 'location');
+      };
 
-    for (const id of linksById.keys()) observer.observe(document.getElementById(id));
-  }
+      sectionObserver = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setCurrent(visible.target.id);
+      }, { rootMargin: '-20% 0px -55% 0px', threshold: [0.08, 0.18, 0.32] });
+
+      for (const targetId of linksById.keys()) {
+        const section = document.getElementById(targetId);
+        if (section) sectionObserver.observe(section);
+      }
+    }
+  };
+
+  initRadialSiteMenu();
+  document.addEventListener('astro:page-load', initRadialSiteMenu);
+  window.addEventListener('pageshow', initRadialSiteMenu);
 </script>
 
 <style>
