@@ -27,7 +27,7 @@ import { ViewTransitions } from 'astro:transitions';
       }
       .shell { width:min(1400px, calc(100vw - 28px)); margin:0 auto; padding:22px 0 56px; }
       .topbar { display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px; }
-      .pill, button {
+      .pill, .ui-button {
         border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.6); color:var(--a);
         min-height:42px; padding:0 14px; font:850 13px var(--sans); cursor:pointer;
       }
@@ -95,7 +95,7 @@ import { ViewTransitions } from 'astro:transitions';
     <div class="shell">
       <div class="topbar">
         <a class="pill" href="/simulator">← Back to simulator</a>
-        <button id="copyConfig" type="button">Copy layout JSON</button>
+        <button class="ui-button" id="copyConfig" type="button">Copy layout JSON</button>
       </div>
 
       <div class="layout">
@@ -107,8 +107,8 @@ import { ViewTransitions } from 'astro:transitions';
           </div>
           <div class="controls">
             <div class="row">
-              <button id="resetLayout" type="button">Reset layout</button>
-              <button id="toggleGuides" type="button">Hide guides</button>
+              <button class="ui-button" id="resetLayout" type="button">Reset layout</button>
+              <button class="ui-button" id="toggleGuides" type="button">Hide guides</button>
             </div>
             <textarea id="configOutput" spellcheck="false"></textarea>
           </div>
