@@ -103,7 +103,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/#getting-started">See the getting-started flow</a><a class="button secondary" href="/#simulator">Open the simulator</a></div>
       </header>
 
-      <section class="panel">
+      <section id="weekly-number" class="panel">
         <div class="section-head"><h2>Start with the weekly number</h2><span class="pill">make it actionable</span></div>
         <div class="grid cols-2">
           <div class="card compact">
@@ -127,7 +127,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         </div>
       </section>
 
-      <section class="panel">
+      <section id="contribution" class="panel">
         <div class="section-head"><h2>How to choose a starting contribution</h2><span class="pill">survivable first</span></div>
         <div class="grid cols-3">
           <div class="card compact"><div class="label">Step 1</div><h3>Protect essentials first</h3><p>Housing, food, transportation, utilities, insurance, minimum debt obligations, and genuine family responsibilities come before contribution ambition. The strategy only works when the base life remains stable.</p></div>
@@ -147,7 +147,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         </div>
       </section>
 
-      <section class="panel">
+      <section id="expenses" class="panel">
         <div class="section-head"><h2>How to think about expenses</h2><span class="pill">what the portfolio is trying to take over</span></div>
         <div class="grid cols-2">
           <div class="card compact">
@@ -164,7 +164,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         <div class="callout" style="margin-top:16px"><b>Important distinction:</b> budgeting for this strategy is not just “cut spending and invest the rest.” It is deciding what money must keep life stable, what money can be repeated weekly, and what expense target the portfolio is supposed to absorb next.</div>
       </section>
 
-      <section class="panel">
+      <section id="budget-flow" class="panel">
         <div class="section-head"><h2>A simple week-to-week budgeting flow</h2><span class="pill">repeatable sequence</span></div>
         <div class="grid cols-4">
           <div class="card compact"><div class="label">1</div><h3>Calculate weekly pay</h3><p>Convert your actual pay schedule into a weekly number so you have one usable operating frame.</p></div>
@@ -186,7 +186,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         </div>
       </section>
 
-      <section class="panel">
+      <section id="using-guide" class="panel">
         <div class="section-head"><h2>How to use this page with the main guide</h2><span class="pill">recommended order</span></div>
         <div class="grid cols-4">
           <div class="card compact"><div class="label">1</div><h3>Read getting started</h3><p>Use the zero-to-operational section first so the account setup and weekly rhythm make sense.</p></div>
@@ -196,7 +196,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         </div>
       </section>
 
-      <section class="panel">
+      <section id="fits-main-guide" class="panel">
         <div class="section-head"><h2>How this page fits the main ABCD guide</h2><span class="pill">companion logic</span></div>
         <div class="grid cols-2">
           <div class="callout"><b>Relationship to the main guide:</b> the main ABCD page explains the machine — pillars, rules, contribution gears, lifecycle, simulator, and risk logic. This budget page explains the money discipline that feeds the machine before the machine can be expected to do meaningful work.</div>
@@ -206,6 +206,6 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
       </section>
     </div>
 
-    <RadialSiteMenu />
+    <RadialSiteMenu page="budget" />
   </body>
 </html>

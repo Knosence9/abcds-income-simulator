@@ -5,29 +5,73 @@ type MenuItem = {
   href: string;
 };
 
+type MenuPage = 'home' | 'budget';
+
 interface Props {
+  /** Page preset to use when custom items are not provided. */
+  page?: MenuPage;
+  /** Replace the radial priority actions. */
   roundItems?: MenuItem[];
+  /** Replace the vertical section actions. */
   lineItems?: MenuItem[];
+  /** Append extra actions without rebuilding the preset. */
+  extraRoundItems?: MenuItem[];
+  extraLineItems?: MenuItem[];
+  /** Override current path for active-state matching. Defaults to Astro.url.pathname. */
+  activePath?: string;
   label?: string;
 }
 
+const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuItem[] }> = {
+  home: {
+    roundItems: [
+      { label: 'Overview', icon: 'overview', href: '/#overview' },
+      { label: 'Budget', icon: 'budget', href: '/budget' },
+      { label: 'Simulator', icon: 'simulator', href: '/#simulator' },
+    ],
+    lineItems: [
+      { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
+      { label: 'Rules', icon: 'rules', href: '/#rules' },
+      { label: 'Positions', icon: 'positions', href: '/#positions' },
+      { label: 'Gears', icon: 'gears', href: '/#gears' },
+      { label: 'Lifecycle', icon: 'lifecycle', href: '/#lifecycle' },
+      { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
+      { label: 'Examples', icon: 'examples', href: '/#examples' },
+    ],
+  },
+  budget: {
+    roundItems: [
+      { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Budget', icon: 'budget', href: '/budget' },
+      { label: 'Simulator', icon: 'simulator', href: '/#simulator' },
+    ],
+    lineItems: [
+      { label: 'Weekly Number', icon: 'weekly', href: '/budget#weekly-number' },
+      { label: 'Contribution', icon: 'contribution', href: '/budget#contribution' },
+      { label: 'Expenses', icon: 'expenses', href: '/budget#expenses' },
+      { label: 'Budget Flow', icon: 'flow', href: '/budget#budget-flow' },
+      { label: 'Using Guide', icon: 'examples', href: '/budget#using-guide' },
+      { label: 'How It Fits', icon: 'lifecycle', href: '/budget#fits-main-guide' },
+    ],
+  },
+};
+
 const {
-  roundItems = [
-    { label: 'Overview', icon: 'overview', href: '/#overview' },
-    { label: 'Budget', icon: 'budget', href: '/budget' },
-    { label: 'Simulator', icon: 'simulator', href: '/#simulator' },
-  ],
-  lineItems = [
-    { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
-    { label: 'Rules', icon: 'rules', href: '/#rules' },
-    { label: 'Positions', icon: 'positions', href: '/#positions' },
-    { label: 'Gears', icon: 'gears', href: '/#gears' },
-    { label: 'Lifecycle', icon: 'lifecycle', href: '/#lifecycle' },
-    { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
-    { label: 'Examples', icon: 'examples', href: '/#examples' },
-  ],
+  page = 'home',
+  roundItems,
+  lineItems,
+  extraRoundItems = [],
+  extraLineItems = [],
+  activePath = Astro.url.pathname,
   label = 'Open site navigation',
 } = Astro.props;
+
+const preset = menuPresets[page];
+const resolvedRoundItems = [...(roundItems ?? preset.roundItems), ...extraRoundItems];
+const resolvedLineItems = [...(lineItems ?? preset.lineItems), ...extraLineItems];
+
+const normalizePath = (path: string) => path.split('#')[0].replace(/\/$/, '') || '/';
+const isActive = (href: string) => normalizePath(href) === normalizePath(activePath);
 
 const icons: Record<string, string[]> = {
   overview: ['M3.5 11.3 12 4.5l8.5 6.8', 'M5.5 10.5v9h5v-5h3v5h5v-9'],
@@ -39,6 +83,10 @@ const icons: Record<string, string[]> = {
   gears: ['M5 8h14', 'M5 16h14', 'M9 5.5v5', 'M15 13.5v5'],
   lifecycle: ['M7 7a7 7 0 0 1 10 0l2 2', 'M17 3v4h4', 'M17 17a7 7 0 0 1-10 0l-2-2', 'M7 21v-4H3'],
   cashflow: ['M4.5 8h15v10h-15z', 'M12 8v10', 'M7.5 13h1', 'M15.5 13h1'],
+  weekly: ['M7 4.5v3', 'M17 4.5v3', 'M4.5 9h15', 'M6.5 6h11A2.5 2.5 0 0 1 20 8.5v9A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-9A2.5 2.5 0 0 1 6.5 6z'],
+  contribution: ['M12 4.5v15', 'M8.5 8.5h5.3a2.2 2.2 0 0 1 0 4.4h-3.6a2.2 2.2 0 0 0 0 4.4h5.3'],
+  expenses: ['M6 5h12v14H6z', 'M8.5 9h7', 'M8.5 12.5h7', 'M8.5 16h4'],
+  flow: ['M5 7h8a3 3 0 0 1 0 6H8', 'M8 10l-3 3 3 3', 'M19 17h-8a3 3 0 0 1 0-6h5', 'M16 8l3 3-3 3'],
   examples: ['M5 5.5h6a3 3 0 0 1 3 3v11a3 3 0 0 0-3-3H5z', 'M14 8.5a3 3 0 0 1 3-3h2v11h-2a3 3 0 0 0-3 3'],
 };
 
@@ -52,8 +100,8 @@ const roundPositions = [
 
 <nav id={id} class="radial-site-menu" aria-label="Site navigation">
   <div class="radial-site-menu__round">
-    {roundItems.map((item, index) => (
-      <a class="radial-site-menu__item is-round" style={roundPositions[index] ?? roundPositions[roundPositions.length - 1]} href={item.href} aria-label={item.label} title={item.label}>
+    {resolvedRoundItems.map((item, index) => (
+      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': isActive(item.href) }]} style={roundPositions[index] ?? roundPositions[roundPositions.length - 1]} href={item.href} aria-label={item.label} title={item.label} aria-current={isActive(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -65,8 +113,8 @@ const roundPositions = [
   </div>
 
   <div class="radial-site-menu__line">
-    {lineItems.map((item, index) => (
-      <a class="radial-site-menu__item is-line" style={`--stack: ${index + 1}; --delay: ${260 + index * 34}ms; --z: ${index + 1};`} href={item.href} aria-label={item.label} title={item.label}>
+    {resolvedLineItems.map((item, index) => (
+      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': isActive(item.href) }]} style={`--stack: ${index + 1}; --delay: ${260 + index * 34}ms; --z: ${index + 1};`} href={item.href} aria-label={item.label} title={item.label} aria-current={isActive(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -254,6 +302,10 @@ const roundPositions = [
     background: linear-gradient(145deg, var(--d, #aa463d), #87332c);
     transition-duration: 300ms;
     transition-delay: 220ms;
+  }
+
+  .radial-site-menu__item.is-active {
+    box-shadow: var(--shadow), 0 0 0 4px color-mix(in srgb, var(--gold, #c79a2c) 44%, transparent);
   }
 
   .radial-site-menu.is-open .radial-site-menu__bar--top { transform: translateY(5px) rotate(45deg); }
