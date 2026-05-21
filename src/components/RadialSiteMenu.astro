@@ -5,7 +5,7 @@ type MenuItem = {
   href: string;
 };
 
-type MenuPage = 'home' | 'getting-started' | 'budget' | 'simulator';
+type MenuPage = 'home' | 'getting-started' | 'budget' | 'simulator' | 'demo-10';
 
 interface Props {
   /** Page preset to use when custom items are not provided. */
@@ -82,6 +82,27 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Gears', icon: 'gears', href: '/#gears' },
       { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
       { label: 'Examples', icon: 'examples', href: '/#examples' },
+    ],
+  },
+  'demo-10': {
+    roundItems: [
+      { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
+      { label: 'Budget', icon: 'budget', href: '/budget' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+      { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
+      { label: 'Rules', icon: 'rules', href: '/#rules' },
+      { label: 'Positions', icon: 'positions', href: '/#positions' },
+      { label: 'Gears', icon: 'gears', href: '/#gears' },
+      { label: 'Lifecycle', icon: 'lifecycle', href: '/#lifecycle' },
+      { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
+    ],
+    lineItems: [
+      { label: 'Examples', icon: 'examples', href: '/#examples' },
+      { label: 'Weekly Number', icon: 'weekly', href: '/budget#weekly-number' },
+      { label: 'Contribution', icon: 'contribution', href: '/budget#contribution' },
+      { label: 'Expenses', icon: 'expenses', href: '/budget#expenses' },
+      { label: 'Budget Flow', icon: 'flow', href: '/budget#budget-flow' },
     ],
   },
 };
