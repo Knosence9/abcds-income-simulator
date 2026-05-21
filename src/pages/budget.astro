@@ -41,6 +41,10 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
       }
       a { color: inherit; }
       .shell { width: min(1200px, calc(100vw - 28px)); margin: 0 auto; padding: 22px 0 64px; }
+      .donate-strip { display:flex; justify-content:flex-end; margin-bottom:14px; }
+      .donate-link { display:inline-flex; align-items:center; gap:9px; min-height:42px; border:1px solid color-mix(in srgb, var(--b) 42%, transparent); border-radius:999px; padding:0 15px; background:color-mix(in srgb, var(--b) 12%, var(--paper)); color:var(--a); text-decoration:none; font-weight:950; box-shadow:0 12px 28px rgba(42,31,13,.1); }
+      .donate-link::before { content:'$'; display:grid; place-items:center; width:26px; height:26px; border-radius:999px; background:var(--b); color:var(--paper); font:950 14px var(--mono); }
+      .donate-link:hover { transform:translateY(-1px); box-shadow:0 16px 34px rgba(42,31,13,.14); }
       .hero, .panel {
         border: 1px solid var(--line);
         border-radius: 34px;
@@ -90,6 +94,8 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
   </head>
   <body>
     <div class="shell">
+      <div class="donate-strip"><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
+
       <header class="hero">
         <div class="eyebrow">Companion guide</div>
         <h1>Budget the strategy before you fund the strategy.</h1>
