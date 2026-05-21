@@ -312,14 +312,22 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
   let closeTimer;
 
   const usesStagedMobileOpen = () => window.matchMedia('(max-width: 720px)').matches;
+  const usesTwoTapMobileItems = () => window.matchMedia('(max-width: 720px)').matches;
   const clearMenuTimers = () => {
     window.clearTimeout(shiftTimer);
     window.clearTimeout(closeTimer);
   };
 
+  const clearArmedItems = () => {
+    menu?.querySelectorAll('.radial-site-menu__item.is-tap-armed').forEach((item) => {
+      item.classList.remove('is-tap-armed');
+    });
+  };
+
   const openMenu = () => {
     if (!menu || !trigger) return;
     clearMenuTimers();
+    clearArmedItems();
     menu.classList.add('is-open', 'is-shifted');
     trigger.setAttribute('aria-expanded', 'true');
 
@@ -336,6 +344,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
   const close = () => {
     if (!menu || !trigger) return;
     clearMenuTimers();
+    clearArmedItems();
     menu.classList.remove('is-expanded');
     trigger.setAttribute('aria-expanded', 'false');
 
@@ -359,7 +368,20 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
   });
 
   menu?.addEventListener('click', (event) => {
-    if (event.target instanceof Element && event.target.closest('a')) close();
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest('.radial-site-menu__item');
+    if (!link) return;
+
+    if (usesTwoTapMobileItems()) {
+      if (!link.classList.contains('is-tap-armed')) {
+        event.preventDefault();
+        clearArmedItems();
+        link.classList.add('is-tap-armed');
+        return;
+      }
+    }
+
+    close();
   });
 
   document.addEventListener('click', (event) => {
@@ -554,7 +576,8 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
   }
 
   .radial-site-menu__item:hover,
-  .radial-site-menu__item:focus-visible {
+  .radial-site-menu__item:focus-visible,
+  .radial-site-menu__item.is-tap-armed {
     width: max-content;
     min-width: 9.75rem;
     grid-template-columns: var(--item-size) 1fr;
@@ -563,7 +586,8 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
   }
 
   .radial-site-menu__item:hover .radial-site-menu__label,
-  .radial-site-menu__item:focus-visible .radial-site-menu__label {
+  .radial-site-menu__item:focus-visible .radial-site-menu__label,
+  .radial-site-menu__item.is-tap-armed .radial-site-menu__label {
     max-width: 8rem;
     padding-right: 1.05rem;
     opacity: 1;
