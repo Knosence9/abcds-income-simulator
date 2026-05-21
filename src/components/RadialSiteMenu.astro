@@ -573,6 +573,13 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     transition-delay: var(--delay);
   }
 
+  @media (max-width: 720px) {
+    .radial-site-menu {
+      --menu-offset-x: 4.4rem;
+      --menu-offset-y: 4.9rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .radial-site-menu__trigger,
     .radial-site-menu__bar,
