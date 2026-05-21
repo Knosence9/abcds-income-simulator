@@ -123,10 +123,10 @@ const icons: Record<string, string[]> = {
 
 const id = `radial-site-menu-${Math.random().toString(36).slice(2)}`;
 const roundPositions = [
-  '--x: 0.05rem; --y: -6.25rem; --delay: 150ms; --z: 5;',
-  '--x: -3.7rem; --y: -5.55rem; --delay: 100ms; --z: 4;',
-  '--x: -6.15rem; --y: -3.25rem; --delay: 50ms; --z: 3;',
-  '--x: -6.85rem; --y: -0.15rem; --delay: 0ms; --z: 2;',
+  '--x: 0rem; --y: -6.35rem; --delay: 150ms; --z: 5;',
+  '--x: -2.68rem; --y: -5.75rem; --delay: 100ms; --z: 4;',
+  '--x: -5.2rem; --y: -3.64rem; --delay: 50ms; --z: 3;',
+  '--x: -6.35rem; --y: 0rem; --delay: 0ms; --z: 2;',
 ];
 ---
 
@@ -402,13 +402,13 @@ const roundPositions = [
   }
 
   .radial-site-menu.is-open .radial-site-menu__item.is-line {
-    transform: translateY(calc(-1 * (6.1rem + (3.7rem * var(--stack))))) scale(1);
+    transform: translateY(calc(-1 * (6.85rem + (3.8rem * var(--stack))))) scale(1);
     transition-delay: var(--delay);
   }
 
   @media (max-height: 720px) {
     .radial-site-menu.is-open .radial-site-menu__item.is-line {
-      transform: translateY(calc(-1 * (4.7rem + (3.15rem * var(--stack))))) scale(1);
+      transform: translateY(calc(-1 * (5.25rem + (3.2rem * var(--stack))))) scale(1);
     }
   }
 
