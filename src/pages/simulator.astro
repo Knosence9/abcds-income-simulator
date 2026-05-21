@@ -12,21 +12,20 @@ const defaultInputs = {
   projectionYears: 5,
 };
 
-const demoRoundPositions = [
-  { x: -39, y: -72 },
-  { x: -74, y: -25 },
-  { x: -69, y: 32 },
-  { x: -37, y: -124 },
-  { x: -85, y: -98 },
-  { x: -120, y: -54 },
-  { x: -126, y: 4 },
-  { x: -37, y: -184 },
-];
+const blueIcons = ['overview', 'start', 'budget', 'simulator', 'pillars', 'rules', 'positions', 'gears', 'lifecycle', 'cashflow'];
+const redIcons = ['examples', 'weekly', 'contribution', 'expenses', 'flow', 'gears', 'cashflow', 'lifecycle', 'rules', 'positions'];
 
-const demoLinePositions = [
-  { x: 21, y: -79 },
-  { x: 21, y: -130 },
-];
+const demoRoundItems = Array.from({ length: 20 }, (_, index) => ({
+  label: `Route ${index + 1}`,
+  icon: blueIcons[index % blueIcons.length],
+  href: `/demo/route-${index + 1}`,
+}));
+
+const demoLineItems = Array.from({ length: 20 }, (_, index) => ({
+  label: `Action ${index + 1}`,
+  icon: redIcons[index % redIcons.length],
+  href: `/demo/action-${index + 1}`,
+}));
 ---
 <!doctype html>
 <html lang="en">
@@ -93,7 +92,7 @@ const demoLinePositions = [
         <div class="eyebrow">Projection lab</div>
         <h1>Run the income path projection.</h1>
         <p class="lead">Test contribution pace, yield assumptions, dividend growth, inflation, and expense targets without scrolling through the full guide.</p>
-        <p class="footer-note"><b>Menu demo:</b> this page is temporarily showing a 10-page routing layout so we can inspect how the generated arc levels behave. Need to place items manually? Open the <a href="/menu-lab">menu layout lab</a>.</p>
+        <p class="footer-note"><b>Menu demo:</b> this page is temporarily showing a 20 blue / 20 red stress test so we can inspect how the layout behaves at high density. Need to place items manually? Open the <a href="/menu-lab">menu layout lab</a>.</p>
         <div class="hero-actions"><a class="button primary" href="#simulator">Open inputs</a><a class="button secondary" href="/getting-started">Start from zero</a><a class="button secondary" href="/budget">Budget first</a><a class="button secondary" href="/#gears">Choose a gear</a></div>
       </header>
 
@@ -127,7 +126,7 @@ const demoLinePositions = [
       </section>
     </div>
 
-    <RadialSiteMenu page="demo-10" roundPositions={demoRoundPositions} linePositions={demoLinePositions} />
+    <RadialSiteMenu roundItems={demoRoundItems} lineItems={demoLineItems} label="Open 20 by 20 menu demo" />
 
     <script>
       const $ = (id) => document.getElementById(id);

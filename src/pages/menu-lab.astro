@@ -130,20 +130,20 @@ import { ViewTransitions } from 'astro:transitions';
 
     <script>
       const seed = {
-        blue: [
-          { label: 'B1', x: -39, y: -72 },
-          { label: 'B2', x: -74, y: -25 },
-          { label: 'B3', x: -69, y: 32 },
-          { label: 'B4', x: -37, y: -124 },
-          { label: 'B5', x: -85, y: -98 },
-          { label: 'B6', x: -120, y: -54 },
-          { label: 'B7', x: -126, y: 4 },
-          { label: 'B8', x: -37, y: -184 },
-        ],
-        red: [
-          { label: 'R1', x: 21, y: -79 },
-          { label: 'R2', x: 21, y: -130 },
-        ],
+        blue: Array.from({ length: 20 }, (_, index) => {
+          const layer = Math.floor(index / 5);
+          const col = index % 5;
+          return {
+            label: `B${index + 1}`,
+            x: -40 - (col * 28) - (layer * 10),
+            y: -30 - (layer * 62) + ((col - 2) * 24),
+          };
+        }),
+        red: Array.from({ length: 20 }, (_, index) => ({
+          label: `R${index + 1}`,
+          x: 21,
+          y: -79 - (index * 52),
+        })),
       };
 
       const icons = {
