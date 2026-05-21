@@ -5,7 +5,7 @@ type MenuItem = {
   href: string;
 };
 
-type MenuPage = 'home' | 'budget' | 'simulator';
+type MenuPage = 'home' | 'getting-started' | 'budget' | 'simulator';
 
 interface Props {
   /** Page preset to use when custom items are not provided. */
@@ -30,6 +30,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
       { label: 'Rules', icon: 'rules', href: '/#rules' },
       { label: 'Positions', icon: 'positions', href: '/#positions' },
@@ -37,6 +38,20 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Lifecycle', icon: 'lifecycle', href: '/#lifecycle' },
       { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
       { label: 'Examples', icon: 'examples', href: '/#examples' },
+    ],
+  },
+  'getting-started': {
+    roundItems: [
+      { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
+      { label: 'Budget', icon: 'budget', href: '/budget' },
+    ],
+    lineItems: [
+      { label: 'Platform Hub', icon: 'overview', href: '/getting-started#getting-started' },
+      { label: 'Weekly Number', icon: 'weekly', href: '/budget#weekly-number' },
+      { label: 'Contribution', icon: 'contribution', href: '/budget#contribution' },
+      { label: 'Gears', icon: 'gears', href: '/#gears' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
   },
   budget: {
@@ -61,7 +76,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
-      { label: 'Getting Started', icon: 'weekly', href: '/#getting-started' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Gears', icon: 'gears', href: '/#gears' },
       { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
       { label: 'Examples', icon: 'examples', href: '/#examples' },
@@ -88,6 +103,7 @@ const activeMatches = (href: string) => !href.includes('#') && normalizePath(hre
 
 const icons: Record<string, string[]> = {
   overview: ['M3.5 11.3 12 4.5l8.5 6.8', 'M5.5 10.5v9h5v-5h3v5h5v-9'],
+  start: ['M12 4.5v15', 'M6.5 10l5.5-5.5 5.5 5.5', 'M7 19.5h10'],
   budget: ['M4.5 7.5h13a2.5 2.5 0 0 1 2.5 2.5v8H6.5A3.5 3.5 0 0 1 3 14.5v-7A3.5 3.5 0 0 1 6.5 4h11v3.5', 'M16 13h4'],
   simulator: ['M4.5 19.5v-15', 'M4.5 19.5h15', 'M7.5 15.5l3.7-4 3.1 2.6 4.2-6.6'],
   pillars: ['M5.5 19.5v-10', 'M12 19.5v-15', 'M18.5 19.5v-11', 'M4 19.5h16'],
