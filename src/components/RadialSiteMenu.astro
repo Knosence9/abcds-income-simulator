@@ -26,11 +26,11 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
   home: {
     roundItems: [
       { label: 'Overview', icon: 'overview', href: '/#overview' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
-      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
       { label: 'Rules', icon: 'rules', href: '/#rules' },
       { label: 'Positions', icon: 'positions', href: '/#positions' },
@@ -45,6 +45,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Main Guide', icon: 'overview', href: '/' },
       { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
       { label: 'Platform Hub', icon: 'overview', href: '/getting-started#getting-started' },
@@ -57,6 +58,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
   budget: {
     roundItems: [
       { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
@@ -72,11 +74,11 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
   simulator: {
     roundItems: [
       { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
-      { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Gears', icon: 'gears', href: '/#gears' },
       { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
       { label: 'Examples', icon: 'examples', href: '/#examples' },
@@ -121,9 +123,10 @@ const icons: Record<string, string[]> = {
 
 const id = `radial-site-menu-${Math.random().toString(36).slice(2)}`;
 const roundPositions = [
-  '--x: 0.1rem; --y: -5.35rem; --delay: 120ms; --z: 4;',
-  '--x: -3.75rem; --y: -4.35rem; --delay: 70ms; --z: 3;',
-  '--x: -5.35rem; --y: -0.1rem; --delay: 0ms; --z: 2;',
+  '--x: 0.1rem; --y: -5.45rem; --delay: 150ms; --z: 5;',
+  '--x: -2.9rem; --y: -4.9rem; --delay: 100ms; --z: 4;',
+  '--x: -5rem; --y: -2.9rem; --delay: 50ms; --z: 3;',
+  '--x: -5.45rem; --y: -0.1rem; --delay: 0ms; --z: 2;',
 ];
 ---
 
