@@ -5,7 +5,7 @@ type MenuItem = {
   href: string;
 };
 
-type MenuPage = 'home' | 'getting-started' | 'budget' | 'simulator' | 'demo-10';
+type MenuPage = 'home' | 'getting-started' | 'budget' | 'simulator' | 'closed-end-funds' | 'demo-10';
 
 type MenuPosition = {
   x: number;
@@ -15,12 +15,13 @@ type MenuPosition = {
 interface Props {
   /** Page preset to use when custom items are not provided. */
   page?: MenuPage;
-  /** Replace the radial priority actions. */
+  /** Replace the global page-navigation actions (blue circles). */
   roundItems?: MenuItem[];
-  /** Replace the vertical section actions. */
+  /** Replace the local in-page section actions (red circles). */
   lineItems?: MenuItem[];
-  /** Append extra actions without rebuilding the preset. */
+  /** Append extra global actions without rebuilding the preset. */
   extraRoundItems?: MenuItem[];
+  /** Append extra local actions without rebuilding the preset. */
   extraLineItems?: MenuItem[];
   /** Override current path for active-state matching. Defaults to Astro.url.pathname. */
   activePath?: string;
@@ -36,6 +37,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+      { label: 'CEF Guide', icon: 'positions', href: '/closed-end-funds' },
     ],
     lineItems: [
       { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
@@ -53,6 +55,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+      { label: 'CEF Guide', icon: 'positions', href: '/closed-end-funds' },
     ],
     lineItems: [
       { label: 'Platform Hub', icon: 'overview', href: '/getting-started#getting-started' },
@@ -68,6 +71,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+      { label: 'CEF Guide', icon: 'positions', href: '/closed-end-funds' },
     ],
     lineItems: [
       { label: 'Weekly Number', icon: 'weekly', href: '/budget#weekly-number' },
@@ -84,11 +88,28 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Start Here', icon: 'start', href: '/getting-started' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
       { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+      { label: 'CEF Guide', icon: 'positions', href: '/closed-end-funds' },
     ],
     lineItems: [
       { label: 'Gears', icon: 'gears', href: '/#gears' },
       { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
       { label: 'Examples', icon: 'examples', href: '/#examples' },
+    ],
+  },
+  'closed-end-funds': {
+    roundItems: [
+      { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Start Here', icon: 'start', href: '/getting-started' },
+      { label: 'Budget', icon: 'budget', href: '/budget' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+      { label: 'CEF Guide', icon: 'positions', href: '/closed-end-funds' },
+    ],
+    lineItems: [
+      { label: 'First Principles', icon: 'overview', href: '/closed-end-funds#first-principles' },
+      { label: 'CLM / CRF / GOF', icon: 'positions', href: '/closed-end-funds#clm-crf-gof' },
+      { label: 'DRIP Edge', icon: 'contribution', href: '/closed-end-funds#drip-edge' },
+      { label: 'System Fit', icon: 'cashflow', href: '/closed-end-funds#system-fit' },
+      { label: 'Risks', icon: 'rules', href: '/closed-end-funds#risks' },
     ],
   },
   'demo-10': {
@@ -138,6 +159,7 @@ const layoutPresets: Partial<Record<MenuPage, { roundPositions: MenuPosition[]; 
   'getting-started': { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
   budget: { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
   simulator: { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
+  'closed-end-funds': { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
 };
 
 const {
@@ -147,7 +169,7 @@ const {
   extraRoundItems = [],
   extraLineItems = [],
   activePath = Astro.url.pathname,
-  label = 'Open site navigation',
+  label = 'Open global and local navigation',
   roundPositions = [],
   linePositions = [],
 } = Astro.props;
@@ -264,13 +286,13 @@ const resolvedRoundStyles = resolvedRoundItems.map((_, index) => toManualStyle(e
 const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(effectiveLinePositions[index], 180 + index * 34, 40 - index) ?? lineItemStyles[index]);
 ---
 
-<nav id={id} class="radial-site-menu" aria-label="Site navigation">
-  <div class="radial-site-menu__round">
+<nav id={id} class="radial-site-menu" aria-label="Global and local site navigation">
+  <div class="radial-site-menu__round" aria-label="Global navigation">
     {layerSpecs.map((layer) => (
       <span class="radial-site-menu__arc-guide" style={`--arc-radius: ${layer.radius}rem;`} aria-hidden="true"></span>
     ))}
     {resolvedRoundItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={resolvedRoundStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={resolvedRoundStyles[index]} href={item.href} aria-label={`Global: ${item.label}`} title={`Global · ${item.label}`} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -281,9 +303,9 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     ))}
   </div>
 
-  <div class="radial-site-menu__line">
+  <div class="radial-site-menu__line" aria-label="Local navigation">
     {resolvedLineItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={resolvedLineStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={resolvedLineStyles[index]} href={item.href} aria-label={`Local: ${item.label}`} title={`Local · ${item.label}`} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}

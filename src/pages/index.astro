@@ -1,5 +1,6 @@
 ---
 import { ViewTransitions } from 'astro:transitions';
+import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 ---
 <!doctype html>
@@ -240,7 +241,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         <div class="grid cols-4">
           <div class="card a-soft" data-letter="A"><div class="label">Anchor</div><h3>Keep the base stable</h3><p>Use broad, durable holdings for appreciation and moderate income. These reduce the urge to chase yield.</p><p><b>Typical behavior:</b> DRIP ON.</p></div>
           <div class="card b-soft" data-letter="B"><div class="label">Booster</div><h3>Increase cash flow</h3><p>Use diversified income instruments or documented tactical positions to produce spendable cash.</p><p><b>Typical behavior:</b> DRIP OFF.</p></div>
-          <div class="card c-soft" data-letter="C"><div class="label">Closed-end</div><h3>Compound shares quietly</h3><p>Use funds where reinvestment mechanics are the edge. The goal is automatic share accumulation.</p><p><b>Typical behavior:</b> DRIP ON.</p></div>
+          <div class="card c-soft" data-letter="C"><div class="label">Closed-end</div><h3>Compound shares quietly</h3><p>Use funds where reinvestment mechanics are the edge. The goal is automatic share accumulation.</p><p><b>Typical behavior:</b> DRIP ON.</p><p><a href="/closed-end-funds"><b>Read the first-principles CEF guide →</b></a></p></div>
           <div class="card d-soft" data-letter="D"><div class="label">Dynamo</div><h3>Generate power, then retire</h3><p>Use higher-risk, high-output positions as a temporary accelerator, not the permanent identity of the portfolio.</p><p><b>Typical behavior:</b> DRIP OFF.</p></div>
         </div>
       </section>
@@ -295,6 +296,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
               <li>Purpose: grow share count automatically until the pillar becomes self-sustaining.</li>
               <li>Monitor discounts, premiums, distribution sustainability, and total return.</li>
             </ul>
+            <p><a href="/closed-end-funds"><b>Need the deeper first-principles explanation for CLM, CRF, and GOF? Open the CEF guide →</b></a></p>
           </div>
           <div class="card d-soft compact">
             <div class="label">D — Dynamos</div><h3>Power generator rules</h3>
@@ -459,6 +461,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
     </div>
 
     <RadialSiteMenu page="home" />
+    <Analytics />
 
   </body>
 </html>

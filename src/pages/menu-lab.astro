@@ -1,5 +1,6 @@
 ---
 import { ViewTransitions } from 'astro:transitions';
+import Analytics from '@vercel/analytics/astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -304,5 +305,6 @@ import { ViewTransitions } from 'astro:transitions';
       window.addEventListener('resize', render);
       render();
     </script>
+    <Analytics />
   </body>
 </html>
