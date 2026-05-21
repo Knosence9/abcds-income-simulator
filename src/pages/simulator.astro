@@ -12,66 +12,7 @@ const defaultInputs = {
   projectionYears: 5,
 };
 
-const blueIcons = ['overview', 'start', 'budget', 'simulator', 'pillars', 'rules', 'positions', 'gears', 'lifecycle', 'cashflow'];
-const redIcons = ['examples', 'weekly', 'contribution', 'expenses', 'flow', 'gears', 'cashflow', 'lifecycle', 'rules', 'positions'];
 
-const demoRoundItems = Array.from({ length: 20 }, (_, index) => ({
-  label: `Route ${index + 1}`,
-  icon: blueIcons[index % blueIcons.length],
-  href: `/demo/route-${index + 1}`,
-}));
-
-const demoLineItems = Array.from({ length: 20 }, (_, index) => ({
-  label: `Action ${index + 1}`,
-  icon: redIcons[index % redIcons.length],
-  href: `/demo/action-${index + 1}`,
-}));
-
-const demoRoundPositions = [
-  { x: -54, y: -66 },
-  { x: -83, y: -20 },
-  { x: -78, y: 34 },
-  { x: -57, y: -124 },
-  { x: -100, y: -90 },
-  { x: -128, y: -43 },
-  { x: -134, y: 12 },
-  { x: -56, y: -176 },
-  { x: -106, y: -152 },
-  { x: -145, y: -113 },
-  { x: -173, y: -67 },
-  { x: -183, y: -16 },
-  { x: -180, y: 37 },
-  { x: -58, y: -227 },
-  { x: -107, y: -207 },
-  { x: -149, y: -178 },
-  { x: -189, y: -144 },
-  { x: -218, y: -97 },
-  { x: -230, y: -44 },
-  { x: -235, y: 10 },
-];
-
-const demoLinePositions = [
-  { x: 38, y: -75 },
-  { x: -5, y: -115 },
-  { x: 39, y: -147 },
-  { x: -6, y: -186 },
-  { x: 39, y: -218 },
-  { x: -5, y: -258 },
-  { x: 39, y: -290 },
-  { x: -4, y: -329 },
-  { x: 39, y: -363 },
-  { x: -5, y: -401 },
-  { x: 39, y: -434 },
-  { x: -7, y: -474 },
-  { x: 40, y: -507 },
-  { x: -6, y: -546 },
-  { x: 39, y: -579 },
-  { x: -6, y: -618 },
-  { x: 39, y: -651 },
-  { x: -6, y: -690 },
-  { x: 39, y: -723 },
-  { x: -6, y: -762 },
-];
 ---
 <!doctype html>
 <html lang="en">
@@ -138,7 +79,7 @@ const demoLinePositions = [
         <div class="eyebrow">Projection lab</div>
         <h1>Run the income path projection.</h1>
         <p class="lead">Test contribution pace, yield assumptions, dividend growth, inflation, and expense targets without scrolling through the full guide.</p>
-        <p class="footer-note"><b>Menu demo:</b> this page is temporarily showing a 20 blue / 20 red stress test so we can inspect how the layout behaves at high density. Need to place items manually? Open the <a href="/menu-lab">menu layout lab</a>.</p>
+        <p class="footer-note"><b>Menu lab:</b> need to place items manually? Open the <a href="/menu-lab">menu layout lab</a>.</p>
         <div class="hero-actions"><a class="button primary" href="#simulator">Open inputs</a><a class="button secondary" href="/getting-started">Start from zero</a><a class="button secondary" href="/budget">Budget first</a><a class="button secondary" href="/#gears">Choose a gear</a></div>
       </header>
 
@@ -172,7 +113,7 @@ const demoLinePositions = [
       </section>
     </div>
 
-    <RadialSiteMenu roundItems={demoRoundItems} lineItems={demoLineItems} roundPositions={demoRoundPositions} linePositions={demoLinePositions} label="Open 20 by 20 menu demo" />
+    <RadialSiteMenu page="simulator" />
 
     <script>
       const $ = (id) => document.getElementById(id);
