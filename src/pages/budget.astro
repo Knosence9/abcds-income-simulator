@@ -1,4 +1,5 @@
 ---
+import { ViewTransitions } from 'astro:transitions';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 ---
 <!doctype html>
@@ -7,6 +8,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>ABCD Budget Guide</title>
+    <ViewTransitions />
     <style>
       :root {
         --bg: #f6f0e4;
@@ -96,11 +98,11 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
     <div class="shell">
       <div class="donate-strip"><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
 
-      <header class="hero">
+      <header class="hero" transition:name="hero">
         <div class="eyebrow">Companion guide</div>
         <h1>Budget the strategy before you fund the strategy.</h1>
         <p class="lead">The ABCD system works best when money is translated into weekly decisions. This page is not about making a budget look pretty. It is about figuring out what you can actually sustain, what belongs to survival, what belongs to growth, and how to assign a realistic weekly contribution before the portfolio starts asking for bigger jobs.</p>
-        <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/#getting-started">See the getting-started flow</a><a class="button secondary" href="/#simulator">Open the simulator</a></div>
+        <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/#getting-started">See the getting-started flow</a><a class="button secondary" href="/simulator">Open the simulator</a></div>
       </header>
 
       <section id="weekly-number" class="panel">

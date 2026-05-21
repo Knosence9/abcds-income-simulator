@@ -1,0 +1,145 @@
+---
+import { ViewTransitions } from 'astro:transitions';
+import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+
+const defaultInputs = {
+  starting: 60450,
+  paycheck: 750,
+  dividendYield: 22,
+  dividendGrowth: 4,
+  inflation: 7,
+  monthlyExpenses: 2600,
+  projectionYears: 5,
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ABCD Income Simulator</title>
+    <ViewTransitions />
+    <style>
+      :root { --bg:#f6f0e4; --paper:#fffdf7; --paper-2:#fbf6ea; --ink:#17243a; --muted:#617086; --line:rgba(23,36,58,.15); --a:#203f69; --b:#bf7327; --c:#617f3e; --d:#aa463d; --gold:#c79a2c; --shadow:0 28px 90px rgba(42,31,13,.15); --serif:Georgia,'Times New Roman',serif; --sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+      * { box-sizing:border-box; }
+      html { scroll-behavior:smooth; }
+      body { margin:0; font-family:var(--sans); color:var(--ink); background:radial-gradient(circle at 10% 5%, rgba(199,154,44,.22), transparent 27rem), radial-gradient(circle at 88% 13%, rgba(32,63,105,.16), transparent 26rem), radial-gradient(circle at 75% 90%, rgba(97,127,62,.14), transparent 24rem), linear-gradient(90deg, rgba(23,36,58,.035) 1px, transparent 1px), linear-gradient(rgba(23,36,58,.035) 1px, transparent 1px), var(--bg); background-size:auto, auto, auto, 30px 30px, 30px 30px, auto; }
+      a { color:inherit; }
+      .shell { width:min(1440px, calc(100vw - 28px)); margin:0 auto; padding:22px 0 64px; }
+      .topbar { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:14px; }
+      .pill { border:1px solid var(--line); border-radius:999px; padding:9px 12px; background:rgba(255,255,255,.55); text-decoration:none; color:var(--a); font-weight:850; font-size:13px; }
+      .donate-link { display:inline-flex; align-items:center; gap:9px; min-height:42px; border:1px solid color-mix(in srgb, var(--b) 42%, transparent); border-radius:999px; padding:0 15px; background:color-mix(in srgb, var(--b) 12%, var(--paper)); color:var(--a); text-decoration:none; font-weight:950; box-shadow:0 12px 28px rgba(42,31,13,.1); }
+      .donate-link::before { content:'$'; display:grid; place-items:center; width:26px; height:26px; border-radius:999px; background:var(--b); color:var(--paper); font:950 14px var(--mono); }
+      .donate-link:hover { transform:translateY(-1px); box-shadow:0 16px 34px rgba(42,31,13,.14); }
+      .hero, .panel { border:1px solid var(--line); border-radius:34px; background:rgba(255,253,247,.91); box-shadow:var(--shadow); overflow:hidden; }
+      .hero { padding:clamp(28px, 5vw, 58px); margin-bottom:28px; position:relative; }
+      .hero::before { content:""; position:absolute; inset:22px; border:1px dashed rgba(32,63,105,.18); border-radius:26px; pointer-events:none; }
+      .eyebrow { font:850 12px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--d); }
+      h1 { margin:12px 0 18px; font:950 clamp(46px, 8vw, 96px)/.88 var(--serif); letter-spacing:-.06em; color:var(--a); max-width:12ch; }
+      h2 { margin:0; font:950 clamp(30px, 5vw, 62px)/.92 var(--serif); letter-spacing:-.045em; color:var(--a); }
+      p { color:#49576c; line-height:1.58; }
+      .lead { font-size:clamp(18px, 2vw, 24px); max-width:860px; }
+      .hero-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+      .button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:999px; padding:0 16px; text-decoration:none; font-weight:900; border:1px solid var(--line); cursor:pointer; }
+      .button.primary { background:var(--a); color:var(--paper); border-color:var(--a); }
+      .button.secondary { background:rgba(255,255,255,.6); color:var(--a); }
+      .panel { padding:clamp(24px, 4vw, 48px); }
+      .section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom:24px; }
+      .sim { position:relative; display:block; }
+      .controls-toggle { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:54px; margin-bottom:14px; border:2px solid rgba(255,253,247,.9); border-radius:999px; padding:0 22px; background:linear-gradient(135deg, var(--a), #315f99); color:var(--paper); font-weight:950; font-size:16px; cursor:pointer; box-shadow:0 16px 38px rgba(32,63,105,.28), 0 0 0 5px rgba(32,63,105,.10); animation:pulseHint 2.4s ease-in-out infinite; }
+      .controls-toggle::before { content:'☰'; font-size:18px; }
+      @keyframes pulseHint { 0%,100% { transform:translateY(0); box-shadow:0 16px 38px rgba(32,63,105,.28), 0 0 0 5px rgba(32,63,105,.10); } 50% { transform:translateY(-1px); box-shadow:0 20px 44px rgba(32,63,105,.34), 0 0 0 8px rgba(191,115,39,.14); } }
+      .controls { position:absolute; left:16px; top:58px; z-index:10; width:min(390px, calc(100% - 32px)); max-height:min(680px, calc(100vh - 120px)); overflow:auto; border:1px solid var(--line); border-radius:26px; padding:18px; background:rgba(251,246,234,.96); backdrop-filter:blur(18px); box-shadow:0 26px 80px rgba(42,31,13,.22); opacity:0; pointer-events:none; transform:translateY(-8px) scale(.98); transition:opacity .18s ease, transform .18s ease; }
+      .sim.controls-open .controls { opacity:1; pointer-events:auto; transform:translateY(0) scale(1); }
+      .field { display:grid; gap:7px; margin-bottom:14px; }
+      .field label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:850; color:var(--a); }
+      .field input[type='range'] { width:100%; accent-color:var(--a); }
+      .field input[type='number'] { width:130px; border:1px solid var(--line); border-radius:12px; padding:8px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
+      .chart-wrap { border:1px solid var(--line); border-radius:26px; background:linear-gradient(180deg, rgba(32,63,105,.05), rgba(255,253,247,.7)); padding:18px; min-height:560px; }
+      .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+      .stat { border:1px solid var(--line); border-radius:18px; padding:12px; background:rgba(255,255,255,.62); }
+      .stat strong { display:block; font:950 26px var(--serif); color:var(--a); }
+      svg { width:100%; height:auto; display:block; }
+      .legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; color:var(--muted); font-size:13px; }
+      .legend span { display:inline-flex; align-items:center; gap:7px; }
+      .swatch { width:18px; height:4px; border-radius:999px; display:inline-block; }
+      .callout { border-left:6px solid var(--gold); border-radius:18px; padding:16px 18px; background:rgba(199,154,44,.13); }
+      .compact { min-height:auto; }
+      .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
+      @media (max-width: 900px) { .stats { grid-template-columns:1fr; } .section-head, .topbar { align-items:flex-start; flex-direction:column; } }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="topbar"><a class="pill" href="/">← Back to main guide</a><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
+
+      <header class="hero" transition:name="hero">
+        <div class="eyebrow">Projection lab</div>
+        <h1>Run the income path on its own page.</h1>
+        <p class="lead">Use this dedicated simulator to test contribution pace, yield assumptions, dividend growth, inflation, and expense targets without scrolling through the full guide.</p>
+        <div class="hero-actions"><a class="button primary" href="#simulator">Open inputs</a><a class="button secondary" href="/budget">Budget first</a><a class="button secondary" href="/#gears">Choose a gear</a></div>
+      </header>
+
+      <section id="simulator" class="panel" transition:name="simulator-panel">
+        <div class="section-head"><h2>Income path simulator</h2><span class="pill">start here: open inputs</span></div>
+        <div class="sim" id="simulatorShell">
+          <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="simulatorControls">Open simulator inputs</button>
+          <aside class="controls" id="simulatorControls">
+            <div class="field"><label>Starting portfolio <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
+            <div class="field"><label>Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" step="25" /></label><input id="paycheck" type="range" value={defaultInputs.paycheck} min="0" max="5000" step="25" /></div>
+            <div class="callout compact"><b>Paid bi-weekly?</b> Divide your paycheck contribution by 2 and enter that weekly amount here. Example: if you contribute $1,500 every two weeks, enter $750.</div>
+            <div class="field"><label>Portfolio dividend % <input id="yieldNumber" type="number" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></label><input id="yield" type="range" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label>Dividend growth % <input id="growthNumber" type="number" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></label><input id="growth" type="range" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></div>
+            <div class="field"><label>Inflation % <input id="inflationNumber" type="number" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></label><input id="inflation" type="range" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></div>
+            <div class="field"><label>Monthly expenses <input id="expensesNumber" type="number" value={defaultInputs.monthlyExpenses} min="0" step="50" /></label><input id="expenses" type="range" value={defaultInputs.monthlyExpenses} min="0" max="15000" step="50" /></div>
+            <div class="field"><label>Projection years <input id="projectionYearsNumber" type="number" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></label><input id="projectionYears" type="range" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></div>
+            <p class="footer-note"><b>Beginner version:</b> enter what you have now, what you can add each week, your expected dividend yield, your monthly bills, and how many years you want to project. If you do not yet know what weekly contribution is realistic, use the companion <a href="/budget">budget guide</a> first.</p>
+          </aside>
+          <div class="chart-wrap">
+            <div class="stats">
+              <div class="stat"><span>Final portfolio</span><strong id="finalPortfolio">—</strong></div>
+              <div class="stat"><span>Monthly income</span><strong id="periodIncome">—</strong></div>
+              <div class="stat"><span>Annual income</span><strong id="annualIncome">—</strong></div>
+              <div class="stat"><span>Inflation-adjusted</span><strong id="realIncome">—</strong></div>
+            </div>
+            <p class="footer-note" style="margin-top:0"><b>How to read it:</b> orange = projected monthly dividends, green = today-dollar buying power, red = expenses after inflation.</p>
+            <svg id="chart" viewBox="0 0 900 440" role="img" aria-label="Line plot of projected dividend income"></svg>
+            <div class="legend"><span><i class="swatch" style="background:var(--b)"></i>Nominal dividend income</span><span><i class="swatch" style="background:var(--c)"></i>Inflation-adjusted income</span><span><i class="swatch" style="background:var(--d)"></i>Inflated expense target</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <RadialSiteMenu page="simulator" />
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const pairs = [['starting', 'startingNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
+      const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+      const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+      function sync(a, b) { $(a).addEventListener('input', () => { $(b).value = $(a).value; render(); }); $(b).addEventListener('input', () => { $(a).value = $(b).value; render(); }); }
+      pairs.forEach(([a,b]) => sync(a,b));
+      const simulatorShell = $('simulatorShell');
+      const controlsToggle = $('controlsToggle');
+      controlsToggle.addEventListener('click', () => { const isOpen = simulatorShell.classList.toggle('controls-open'); controlsToggle.setAttribute('aria-expanded', String(isOpen)); controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs'; });
+      document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { simulatorShell.classList.remove('controls-open'); controlsToggle.setAttribute('aria-expanded', 'false'); controlsToggle.textContent = 'Open simulator inputs'; } });
+      function getInputs() { return { starting: Number($('starting').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, g: Number($('growth').value) / 100, i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
+      function periodCount() { return 12; }
+      function periodLabel() { return 'month'; }
+      function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed }); portfolio += contribution + periodIncome; } return rows; }
+      function render() {
+        const rows = simulate(); const last = rows[rows.length - 1]; const input = getInputs(); const periods = periodCount();
+        $('finalPortfolio').textContent = fmt.format(last.portfolio); $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel(); $('annualIncome').textContent = fmt.format(last.annualIncome); $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears));
+        const svg = $('chart'); const W = 900, H = 440, p = { l: 72, r: 26, t: 30, b: 56 }; const years = Array.from({ length: input.projectionYears }, (_, index) => index + 1); const points = years.map((year) => rows[Math.min(rows.length - 1, Math.round(year * periods))]); const incomeValue = (r) => r.annualIncome / periods; const realIncomeValue = (r) => (r.annualIncome / Math.pow(1 + input.i, r.year)) / periods; const expenseValue = (r) => r.inflationNeed / periods; const maxY = Math.max(...points.map(incomeValue), ...points.map(realIncomeValue), ...points.map(expenseValue)) * 1.12 || 1; const x = (r) => p.l + (input.projectionYears === 1 ? 0.5 : ((r.year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r); const y = (value) => p.t + (1 - value / maxY) * (H - p.t - p.b); const pointPath = (valueFor) => points.map((r, idx) => `${idx ? 'L' : 'M'} ${x(r)} ${y(valueFor(r))}`).join(' ');
+        let grid = `<rect x="${p.l}" y="${p.t}" width="${W-p.l-p.r}" height="${H-p.t-p.b}" rx="10" fill="rgba(255,253,247,.72)" stroke="rgba(32,63,105,.18)" stroke-width="1" />`;
+        for (let i = 0; i <= 16; i++) { const gy = p.t + i * (H - p.t - p.b) / 16; grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.075)" stroke-width="1" />`; }
+        if (input.projectionYears > 1) { for (let i = 0; i <= (input.projectionYears - 1) * 2; i++) { const gx = p.l + (i / ((input.projectionYears - 1) * 2)) * (W - p.l - p.r); grid += `<line x1="${gx}" y1="${p.t}" x2="${gx}" y2="${H-p.b}" stroke="rgba(32,63,105,.065)" stroke-width="1" />`; } }
+        for (let i = 0; i <= 4; i++) { const value = (maxY * (4 - i)) / 4; const gy = p.t + i * (H - p.t - p.b) / 4; grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.15)" stroke-width="1" />`; grid += `<text x="${p.l - 10}" y="${gy + 4}" text-anchor="end" fill="#617086" font-size="12">${fmt.format(value)}</text>`; }
+        years.forEach((year) => { const gx = p.l + (input.projectionYears === 1 ? 0.5 : ((year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r); grid += `<line x1="${gx}" y1="${p.t}" x2="${gx}" y2="${H-p.b}" stroke="rgba(32,63,105,.15)" stroke-width="1" />`; grid += `<text x="${gx}" y="${H-20}" text-anchor="middle" fill="#617086" font-size="12">Y${year}</text>`; });
+        const dots = points.map((r) => `<circle cx="${x(r)}" cy="${y(incomeValue(r))}" r="5" fill="#bf7327" stroke="#fffdf7" stroke-width="2"/><circle cx="${x(r)}" cy="${y(realIncomeValue(r))}" r="5" fill="#617f3e" stroke="#fffdf7" stroke-width="2"/><circle cx="${x(r)}" cy="${y(expenseValue(r))}" r="5" fill="#aa463d" stroke="#fffdf7" stroke-width="2"/>`).join('');
+        svg.innerHTML = `${grid}<path d="${pointPath(incomeValue)}" fill="none" stroke="#bf7327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${pointPath(realIncomeValue)}" fill="none" stroke="#617f3e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${pointPath(expenseValue)}" fill="none" stroke="#aa463d" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" stroke-linejoin="round"/>${dots}<line x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><text x="${p.l}" y="18" fill="#617086" font-size="12">Line plot: monthly dollars · weekly contributions</text><text x="${W-p.r}" y="18" text-anchor="end" fill="#617086" font-size="12">${input.projectionYears}-year projection</text>`;
+      }
+      render();
+    </script>
+  </body>
+</html>

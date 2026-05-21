@@ -5,7 +5,7 @@ type MenuItem = {
   href: string;
 };
 
-type MenuPage = 'home' | 'budget';
+type MenuPage = 'home' | 'budget' | 'simulator';
 
 interface Props {
   /** Page preset to use when custom items are not provided. */
@@ -27,7 +27,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
     roundItems: [
       { label: 'Overview', icon: 'overview', href: '/#overview' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
-      { label: 'Simulator', icon: 'simulator', href: '/#simulator' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
       { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
@@ -43,7 +43,7 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
     roundItems: [
       { label: 'Main Guide', icon: 'overview', href: '/' },
       { label: 'Budget', icon: 'budget', href: '/budget' },
-      { label: 'Simulator', icon: 'simulator', href: '/#simulator' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
     ],
     lineItems: [
       { label: 'Weekly Number', icon: 'weekly', href: '/budget#weekly-number' },
@@ -52,6 +52,19 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
       { label: 'Budget Flow', icon: 'flow', href: '/budget#budget-flow' },
       { label: 'Using Guide', icon: 'examples', href: '/budget#using-guide' },
       { label: 'How It Fits', icon: 'lifecycle', href: '/budget#fits-main-guide' },
+    ],
+  },
+  simulator: {
+    roundItems: [
+      { label: 'Main Guide', icon: 'overview', href: '/' },
+      { label: 'Budget', icon: 'budget', href: '/budget' },
+      { label: 'Simulator', icon: 'simulator', href: '/simulator' },
+    ],
+    lineItems: [
+      { label: 'Getting Started', icon: 'weekly', href: '/#getting-started' },
+      { label: 'Gears', icon: 'gears', href: '/#gears' },
+      { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
+      { label: 'Examples', icon: 'examples', href: '/#examples' },
     ],
   },
 };
@@ -71,7 +84,7 @@ const resolvedRoundItems = [...(roundItems ?? preset.roundItems), ...extraRoundI
 const resolvedLineItems = [...(lineItems ?? preset.lineItems), ...extraLineItems];
 
 const normalizePath = (path: string) => path.split('#')[0].replace(/\/$/, '') || '/';
-const isActive = (href: string) => normalizePath(href) === normalizePath(activePath);
+const activeMatches = (href: string) => !href.includes('#') && normalizePath(href) === normalizePath(activePath);
 
 const icons: Record<string, string[]> = {
   overview: ['M3.5 11.3 12 4.5l8.5 6.8', 'M5.5 10.5v9h5v-5h3v5h5v-9'],
@@ -101,7 +114,7 @@ const roundPositions = [
 <nav id={id} class="radial-site-menu" aria-label="Site navigation">
   <div class="radial-site-menu__round">
     {resolvedRoundItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': isActive(item.href) }]} style={roundPositions[index] ?? roundPositions[roundPositions.length - 1]} href={item.href} aria-label={item.label} title={item.label} aria-current={isActive(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={roundPositions[index] ?? roundPositions[roundPositions.length - 1]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -114,7 +127,7 @@ const roundPositions = [
 
   <div class="radial-site-menu__line">
     {resolvedLineItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': isActive(item.href) }]} style={`--stack: ${index + 1}; --delay: ${260 + index * 34}ms; --z: ${index + 1};`} href={item.href} aria-label={item.label} title={item.label} aria-current={isActive(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={`--stack: ${index + 1}; --delay: ${260 + index * 34}ms; --z: ${index + 1};`} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -160,6 +173,40 @@ const roundPositions = [
     if (event.key !== 'Escape') return;
     close();
   });
+
+  const samePageHashLinks = [...(menu?.querySelectorAll('[data-menu-href*="#"]') ?? [])]
+    .filter((link) => {
+      const url = new URL(link.getAttribute('href'), window.location.href);
+      return url.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '');
+    });
+
+  if ('IntersectionObserver' in window && samePageHashLinks.length) {
+    const linksById = new Map();
+    for (const link of samePageHashLinks) {
+      const id = new URL(link.getAttribute('href'), window.location.href).hash.slice(1);
+      const section = document.getElementById(id);
+      if (section) linksById.set(id, link);
+    }
+
+    const setCurrent = (id) => {
+      for (const link of samePageHashLinks) {
+        link.classList.remove('is-current-section');
+        if (link.getAttribute('aria-current') === 'location') link.removeAttribute('aria-current');
+      }
+      const active = linksById.get(id);
+      active?.classList.add('is-current-section');
+      active?.setAttribute('aria-current', 'location');
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible?.target?.id) setCurrent(visible.target.id);
+    }, { rootMargin: '-20% 0px -55% 0px', threshold: [0.08, 0.18, 0.32] });
+
+    for (const id of linksById.keys()) observer.observe(document.getElementById(id));
+  }
 </script>
 
 <style>
@@ -304,8 +351,20 @@ const roundPositions = [
     transition-delay: 220ms;
   }
 
-  .radial-site-menu__item.is-active {
+  .radial-site-menu__item.is-active,
+  .radial-site-menu__item.is-current-section {
     box-shadow: var(--shadow), 0 0 0 4px color-mix(in srgb, var(--gold, #c79a2c) 44%, transparent);
+  }
+
+  .radial-site-menu__item.is-current-section::after {
+    content: '';
+    position: absolute;
+    right: 0.58rem;
+    top: 0.58rem;
+    width: 0.46rem;
+    height: 0.46rem;
+    border-radius: 999px;
+    background: var(--gold, #c79a2c);
   }
 
   .radial-site-menu.is-open .radial-site-menu__bar--top { transform: translateY(5px) rotate(45deg); }
