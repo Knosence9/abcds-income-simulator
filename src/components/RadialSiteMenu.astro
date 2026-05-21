@@ -7,6 +7,11 @@ type MenuItem = {
 
 type MenuPage = 'home' | 'getting-started' | 'budget' | 'simulator' | 'demo-10';
 
+type MenuPosition = {
+  x: number;
+  y: number;
+};
+
 interface Props {
   /** Page preset to use when custom items are not provided. */
   page?: MenuPage;
@@ -20,6 +25,8 @@ interface Props {
   /** Override current path for active-state matching. Defaults to Astro.url.pathname. */
   activePath?: string;
   label?: string;
+  roundPositions?: MenuPosition[];
+  linePositions?: MenuPosition[];
 }
 
 const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuItem[] }> = {
@@ -112,6 +119,8 @@ const {
   extraLineItems = [],
   activePath = Astro.url.pathname,
   label = 'Open site navigation',
+  roundPositions = [],
+  linePositions = [],
 } = Astro.props;
 
 const preset = menuPresets[page];
@@ -214,6 +223,13 @@ for (const layer of layerSpecs) {
     redIndex += 1;
   }
 }
+
+const toManualStyle = (position: MenuPosition | undefined, delay: number, z: number) => position
+  ? `--x: ${position.x}px; --y: ${position.y}px; --delay: ${delay}ms; --z: ${z};`
+  : undefined;
+
+const resolvedRoundStyles = resolvedRoundItems.map((_, index) => toManualStyle(roundPositions[index], (resolvedRoundItems.length - index - 1) * 42, 20 - index) ?? roundItemStyles[index]);
+const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(linePositions[index], 180 + index * 34, 40 - index) ?? lineItemStyles[index]);
 ---
 
 <nav id={id} class="radial-site-menu" aria-label="Site navigation">
@@ -222,7 +238,7 @@ for (const layer of layerSpecs) {
       <span class="radial-site-menu__arc-guide" style={`--arc-radius: ${layer.radius}rem;`} aria-hidden="true"></span>
     ))}
     {resolvedRoundItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={roundItemStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={resolvedRoundStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -235,7 +251,7 @@ for (const layer of layerSpecs) {
 
   <div class="radial-site-menu__line">
     {resolvedLineItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={lineItemStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-line', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={resolvedLineStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
