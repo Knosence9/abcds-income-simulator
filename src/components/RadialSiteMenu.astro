@@ -123,15 +123,29 @@ const icons: Record<string, string[]> = {
 
 const id = `radial-site-menu-${Math.random().toString(36).slice(2)}`;
 
+const routeArcLevels = [
+  { radius: 7.4, startAngle: 104, endAngle: 180, capacity: 4 },
+  { radius: 5.35, startAngle: 112, endAngle: 170, capacity: 3 },
+  { radius: 3.55, startAngle: 124, endAngle: 160, capacity: 2 },
+];
+
 const getRoundPosition = (index: number, total: number) => {
-  const radius = 6.35;
-  const startAngle = 112;
-  const endAngle = 188;
-  const angle = total <= 1 ? 150 : startAngle + ((endAngle - startAngle) * index) / (total - 1);
+  let consumed = 0;
+  const level = routeArcLevels.find((candidate) => {
+    if (index < consumed + candidate.capacity) return true;
+    consumed += candidate.capacity;
+    return false;
+  }) ?? routeArcLevels[routeArcLevels.length - 1];
+
+  const localIndex = index - consumed;
+  const localCount = Math.min(level.capacity, Math.max(1, total - consumed));
+  const angle = localCount <= 1
+    ? (level.startAngle + level.endAngle) / 2
+    : level.startAngle + ((level.endAngle - level.startAngle) * localIndex) / (localCount - 1);
   const radians = (angle * Math.PI) / 180;
-  const x = Math.cos(radians) * radius;
-  const y = -Math.sin(radians) * radius;
-  const delay = (total - index - 1) * 50;
+  const x = Math.cos(radians) * level.radius;
+  const y = -Math.sin(radians) * level.radius;
+  const delay = (total - index - 1) * 46;
   const z = total - index + 2;
 
   return `--x: ${x.toFixed(2)}rem; --y: ${y.toFixed(2)}rem; --delay: ${delay}ms; --z: ${z};`;
@@ -260,6 +274,33 @@ const getRoundPosition = (index: number, total: number) => {
 
   .radial-site-menu__round { z-index: 3; }
   .radial-site-menu__line { z-index: 2; }
+
+  .radial-site-menu__round::before,
+  .radial-site-menu__round::after {
+    content: '';
+    position: absolute;
+    right: calc(0.7rem + (var(--item-size) / 2) - var(--arc-radius));
+    bottom: calc(0.7rem + (var(--item-size) / 2) - var(--arc-radius));
+    width: calc(var(--arc-radius) * 2);
+    height: calc(var(--arc-radius) * 2);
+    border: 1px solid rgba(32, 63, 105, 0.22);
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.92);
+    transition:
+      opacity 220ms ease-out,
+      transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .radial-site-menu__round::before { --arc-radius: 7.4rem; }
+  .radial-site-menu__round::after { --arc-radius: 5.35rem; }
+
+  .radial-site-menu.is-open .radial-site-menu__round::before,
+  .radial-site-menu.is-open .radial-site-menu__round::after {
+    opacity: 0.34;
+    transform: scale(1);
+  }
 
   .radial-site-menu__trigger,
   .radial-site-menu__item {
@@ -410,13 +451,13 @@ const getRoundPosition = (index: number, total: number) => {
   }
 
   .radial-site-menu.is-open .radial-site-menu__item.is-line {
-    transform: translateY(calc(-1 * (7.25rem + (3.72rem * var(--stack))))) scale(1);
+    transform: translateY(calc(-1 * (7.95rem + (3.72rem * var(--stack))))) scale(1);
     transition-delay: var(--delay);
   }
 
   @media (max-height: 720px) {
     .radial-site-menu.is-open .radial-site-menu__item.is-line {
-      transform: translateY(calc(-1 * (5.75rem + (3.18rem * var(--stack))))) scale(1);
+      transform: translateY(calc(-1 * (6.35rem + (3.18rem * var(--stack))))) scale(1);
     }
   }
 
