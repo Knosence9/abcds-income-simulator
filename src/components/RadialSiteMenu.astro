@@ -123,39 +123,55 @@ const icons: Record<string, string[]> = {
 
 const id = `radial-site-menu-${Math.random().toString(36).slice(2)}`;
 
-const routeArcLevels = [
-  { radius: 5.5, startAngle: 90, endAngle: 175, capacity: 4 },
-  { radius: 3.9, startAngle: 105, endAngle: 168, capacity: 3 },
-  { radius: 2.3, startAngle: 122, endAngle: 162, capacity: 2 },
-];
+const getRouteArcLevels = (total: number) => {
+  const levels: Array<{ radius: number; startAngle: number; endAngle: number; count: number }> = [];
+  let remaining = total;
+  let levelIndex = 0;
 
-const getRoundPosition = (index: number, total: number) => {
-  let consumed = 0;
-  const level = routeArcLevels.find((candidate) => {
-    if (index < consumed + candidate.capacity) return true;
-    consumed += candidate.capacity;
-    return false;
-  }) ?? routeArcLevels[routeArcLevels.length - 1];
+  while (remaining > 0) {
+    const count = Math.min(levelIndex === 0 ? 4 : 3, remaining);
+    levels.push({
+      radius: Math.max(1.75, 5.5 - levelIndex * 1.45),
+      startAngle: Math.min(90 + levelIndex * 14, 142),
+      endAngle: Math.max(175 - levelIndex * 10, 146),
+      count,
+    });
+    remaining -= count;
+    levelIndex += 1;
+  }
 
-  const localIndex = index - consumed;
-  const localCount = Math.min(level.capacity, Math.max(1, total - consumed));
-  const angle = localCount <= 1
-    ? (level.startAngle + level.endAngle) / 2
-    : level.startAngle + ((level.endAngle - level.startAngle) * localIndex) / (localCount - 1);
-  const radians = (angle * Math.PI) / 180;
-  const x = Math.cos(radians) * level.radius;
-  const y = -Math.sin(radians) * level.radius;
-  const delay = (total - index - 1) * 46;
-  const z = total - index + 2;
-
-  return `--x: ${x.toFixed(2)}rem; --y: ${y.toFixed(2)}rem; --delay: ${delay}ms; --z: ${z};`;
+  return levels;
 };
+
+const routeArcLevels = getRouteArcLevels(resolvedRoundItems.length);
+const outerArcRadius = routeArcLevels[0]?.radius ?? 5.5;
+const lineBaseOffset = outerArcRadius + 0.2;
+const compactLineBaseOffset = Math.max(outerArcRadius - 1, 4.5);
+
+const roundItemStyles = routeArcLevels.flatMap((level, levelIndex) => (
+  Array.from({ length: level.count }, (_, localIndex) => {
+    const angle = level.count <= 1
+      ? (level.startAngle + level.endAngle) / 2
+      : level.startAngle + ((level.endAngle - level.startAngle) * localIndex) / (level.count - 1);
+    const radians = (angle * Math.PI) / 180;
+    const x = Math.cos(radians) * level.radius;
+    const y = -Math.sin(radians) * level.radius;
+    const globalIndex = routeArcLevels.slice(0, levelIndex).reduce((sum, candidate) => sum + candidate.count, 0) + localIndex;
+    const delay = (resolvedRoundItems.length - globalIndex - 1) * 46;
+    const z = resolvedRoundItems.length - globalIndex + 2;
+
+    return `--x: ${x.toFixed(2)}rem; --y: ${y.toFixed(2)}rem; --delay: ${delay}ms; --z: ${z};`;
+  })
+));
 ---
 
-<nav id={id} class="radial-site-menu" aria-label="Site navigation">
+<nav id={id} class="radial-site-menu" aria-label="Site navigation" style={`--line-base: ${lineBaseOffset}rem; --line-base-compact: ${compactLineBaseOffset}rem;`}>
   <div class="radial-site-menu__round">
+    {routeArcLevels.map((level) => (
+      <span class="radial-site-menu__arc-guide" style={`--arc-radius: ${level.radius}rem;`} aria-hidden="true"></span>
+    ))}
     {resolvedRoundItems.map((item, index) => (
-      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={getRoundPosition(index, resolvedRoundItems.length)} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
+      <a class:list={['radial-site-menu__item', 'is-round', { 'is-active': activeMatches(item.href) }]} data-menu-href={item.href} style={roundItemStyles[index]} href={item.href} aria-label={item.label} title={item.label} aria-current={activeMatches(item.href) ? 'page' : undefined}>
         <span class="radial-site-menu__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
@@ -275,15 +291,13 @@ const getRoundPosition = (index: number, total: number) => {
   .radial-site-menu__round { z-index: 3; }
   .radial-site-menu__line { z-index: 2; }
 
-  .radial-site-menu__round::before,
-  .radial-site-menu__round::after {
-    content: '';
+  .radial-site-menu__arc-guide {
     position: absolute;
     right: calc(0.7rem + (var(--item-size) / 2) - var(--arc-radius));
     bottom: calc(0.7rem + (var(--item-size) / 2) - var(--arc-radius));
     width: calc(var(--arc-radius) * 2);
     height: calc(var(--arc-radius) * 2);
-    border: 1px solid rgba(32, 63, 105, 0.22);
+    border: 1px solid rgba(32, 63, 105, 0.18);
     border-radius: 999px;
     opacity: 0;
     pointer-events: none;
@@ -293,12 +307,8 @@ const getRoundPosition = (index: number, total: number) => {
       transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .radial-site-menu__round::before { --arc-radius: 5.5rem; }
-  .radial-site-menu__round::after { --arc-radius: 3.9rem; }
-
-  .radial-site-menu.is-open .radial-site-menu__round::before,
-  .radial-site-menu.is-open .radial-site-menu__round::after {
-    opacity: 0.34;
+  .radial-site-menu.is-open .radial-site-menu__arc-guide {
+    opacity: 0.3;
     transform: scale(1);
   }
 
@@ -451,13 +461,13 @@ const getRoundPosition = (index: number, total: number) => {
   }
 
   .radial-site-menu.is-open .radial-site-menu__item.is-line {
-    transform: translateY(calc(-1 * (5.7rem + (3.55rem * var(--stack))))) scale(1);
+    transform: translateY(calc(-1 * (var(--line-base) + (3.55rem * var(--stack))))) scale(1);
     transition-delay: var(--delay);
   }
 
   @media (max-height: 720px) {
     .radial-site-menu.is-open .radial-site-menu__item.is-line {
-      transform: translateY(calc(-1 * (4.5rem + (3.05rem * var(--stack))))) scale(1);
+      transform: translateY(calc(-1 * (var(--line-base-compact) + (3.05rem * var(--stack))))) scale(1);
     }
   }
 
