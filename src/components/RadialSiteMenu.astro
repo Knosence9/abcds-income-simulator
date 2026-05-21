@@ -1,0 +1,293 @@
+---
+type MenuItem = {
+  label: string;
+  icon: string;
+  href: string;
+};
+
+interface Props {
+  roundItems?: MenuItem[];
+  lineItems?: MenuItem[];
+  label?: string;
+}
+
+const {
+  roundItems = [
+    { label: 'Overview', icon: 'overview', href: '/#overview' },
+    { label: 'Budget', icon: 'budget', href: '/budget' },
+    { label: 'Simulator', icon: 'simulator', href: '/#simulator' },
+  ],
+  lineItems = [
+    { label: 'Pillars', icon: 'pillars', href: '/#pillars' },
+    { label: 'Rules', icon: 'rules', href: '/#rules' },
+    { label: 'Positions', icon: 'positions', href: '/#positions' },
+    { label: 'Gears', icon: 'gears', href: '/#gears' },
+    { label: 'Lifecycle', icon: 'lifecycle', href: '/#lifecycle' },
+    { label: 'Cash Flow', icon: 'cashflow', href: '/#cashflow' },
+    { label: 'Examples', icon: 'examples', href: '/#examples' },
+  ],
+  label = 'Open site navigation',
+} = Astro.props;
+
+const icons: Record<string, string[]> = {
+  overview: ['M3.5 11.3 12 4.5l8.5 6.8', 'M5.5 10.5v9h5v-5h3v5h5v-9'],
+  budget: ['M4.5 7.5h13a2.5 2.5 0 0 1 2.5 2.5v8H6.5A3.5 3.5 0 0 1 3 14.5v-7A3.5 3.5 0 0 1 6.5 4h11v3.5', 'M16 13h4'],
+  simulator: ['M4.5 19.5v-15', 'M4.5 19.5h15', 'M7.5 15.5l3.7-4 3.1 2.6 4.2-6.6'],
+  pillars: ['M5.5 19.5v-10', 'M12 19.5v-15', 'M18.5 19.5v-11', 'M4 19.5h16'],
+  rules: ['M5 7h14', 'M5 12h14', 'M5 17h10'],
+  positions: ['M5.5 19.5v-14h13v14', 'M8.5 9.5h7', 'M8.5 13h7', 'M8.5 16.5h4'],
+  gears: ['M5 8h14', 'M5 16h14', 'M9 5.5v5', 'M15 13.5v5'],
+  lifecycle: ['M7 7a7 7 0 0 1 10 0l2 2', 'M17 3v4h4', 'M17 17a7 7 0 0 1-10 0l-2-2', 'M7 21v-4H3'],
+  cashflow: ['M4.5 8h15v10h-15z', 'M12 8v10', 'M7.5 13h1', 'M15.5 13h1'],
+  examples: ['M5 5.5h6a3 3 0 0 1 3 3v11a3 3 0 0 0-3-3H5z', 'M14 8.5a3 3 0 0 1 3-3h2v11h-2a3 3 0 0 0-3 3'],
+};
+
+const id = `radial-site-menu-${Math.random().toString(36).slice(2)}`;
+const roundPositions = [
+  '--x: 0.1rem; --y: -5.35rem; --delay: 120ms; --z: 4;',
+  '--x: -3.75rem; --y: -4.35rem; --delay: 70ms; --z: 3;',
+  '--x: -5.35rem; --y: -0.1rem; --delay: 0ms; --z: 2;',
+];
+---
+
+<nav id={id} class="radial-site-menu" aria-label="Site navigation">
+  <div class="radial-site-menu__round">
+    {roundItems.map((item, index) => (
+      <a class="radial-site-menu__item is-round" style={roundPositions[index] ?? roundPositions[roundPositions.length - 1]} href={item.href} aria-label={item.label} title={item.label}>
+        <span class="radial-site-menu__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
+          </svg>
+        </span>
+        <span class="radial-site-menu__label">{item.label}</span>
+      </a>
+    ))}
+  </div>
+
+  <div class="radial-site-menu__line">
+    {lineItems.map((item, index) => (
+      <a class="radial-site-menu__item is-line" style={`--stack: ${index + 1}; --delay: ${260 + index * 34}ms; --z: ${index + 1};`} href={item.href} aria-label={item.label} title={item.label}>
+        <span class="radial-site-menu__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            {(icons[item.icon] ?? icons.overview).map((path) => <path d={path} />)}
+          </svg>
+        </span>
+        <span class="radial-site-menu__label">{item.label}</span>
+      </a>
+    ))}
+  </div>
+
+  <button class="radial-site-menu__trigger" type="button" aria-label={label} aria-expanded="false">
+    <svg class="radial-site-menu__mark" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+      <path class="radial-site-menu__bar radial-site-menu__bar--top" d="M5 7h14" />
+      <path class="radial-site-menu__bar radial-site-menu__bar--middle" d="M5 12h14" />
+      <path class="radial-site-menu__bar radial-site-menu__bar--bottom" d="M5 17h14" />
+    </svg>
+  </button>
+</nav>
+
+<script define:vars={{ id }}>
+  const menu = document.getElementById(id);
+  const trigger = menu?.querySelector('.radial-site-menu__trigger');
+  const close = () => {
+    menu?.classList.remove('is-open');
+    trigger?.setAttribute('aria-expanded', 'false');
+  };
+
+  trigger?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const isOpen = menu.classList.toggle('is-open');
+    trigger.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  menu?.addEventListener('click', (event) => {
+    if (event.target instanceof Element && event.target.closest('a')) close();
+  });
+
+  document.addEventListener('click', (event) => {
+    if (menu && !menu.contains(event.target)) close();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    close();
+  });
+</script>
+
+<style>
+  .radial-site-menu {
+    --shadow: 0.32rem 0.34rem 0.1rem rgba(42, 31, 13, 0.2);
+    --trigger-size: 72px;
+    --item-size: 3.1rem;
+    position: fixed;
+    right: clamp(1.1rem, 4vw, 2.5rem);
+    bottom: clamp(1.1rem, 4vw, 2.5rem);
+    z-index: 80;
+    width: var(--trigger-size);
+    height: var(--trigger-size);
+  }
+
+  .radial-site-menu__round,
+  .radial-site-menu__line {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: var(--trigger-size);
+    height: var(--trigger-size);
+  }
+
+  .radial-site-menu__round { z-index: 3; }
+  .radial-site-menu__line { z-index: 2; }
+
+  .radial-site-menu__trigger,
+  .radial-site-menu__item {
+    border: 0;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--paper, #fffdf7);
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .radial-site-menu__trigger {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    width: var(--trigger-size);
+    height: var(--trigger-size);
+    background: radial-gradient(circle at 32% 24%, color-mix(in srgb, var(--b, #bf7327) 92%, white), var(--b, #bf7327) 62%, #8d4717);
+    box-shadow: var(--shadow), 0 0 0 8px rgba(255, 253, 247, 0.55);
+    transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1), filter 180ms ease-out;
+  }
+
+  .radial-site-menu__trigger:hover,
+  .radial-site-menu__trigger:focus-visible {
+    filter: saturate(1.08) brightness(1.02);
+    transform: translateY(-2px);
+  }
+
+  .radial-site-menu__mark {
+    width: 2.45rem;
+    height: 2.45rem;
+    overflow: visible;
+  }
+
+  .radial-site-menu__bar {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 390ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease-out;
+  }
+
+  .radial-site-menu__item {
+    position: absolute;
+    right: 0.7rem;
+    bottom: 0.7rem;
+    width: var(--item-size);
+    height: var(--item-size);
+    grid-template-columns: var(--item-size) 0fr;
+    justify-content: start;
+    overflow: hidden;
+    font: 950 0.98rem/1 var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+    text-decoration: none;
+    background: linear-gradient(145deg, var(--a, #203f69), #315f99);
+    box-shadow: none;
+    transform: translate(0, 0) scale(0.65);
+    opacity: 0;
+    pointer-events: none;
+    z-index: var(--z, 1);
+    transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 390ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms ease-out, box-shadow 160ms ease-out, filter 160ms ease-out;
+  }
+
+  .radial-site-menu__icon {
+    display: grid;
+    place-items: center;
+    width: var(--item-size);
+    height: var(--item-size);
+    flex: 0 0 var(--item-size);
+  }
+
+  .radial-site-menu__icon svg {
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+
+  .radial-site-menu__label {
+    display: block;
+    max-width: 0;
+    padding-right: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-0.35rem);
+    transition:
+      max-width 320ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 180ms ease-out,
+      transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+      padding-right 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .radial-site-menu__item:hover,
+  .radial-site-menu__item:focus-visible {
+    width: max-content;
+    min-width: 9.75rem;
+    grid-template-columns: var(--item-size) 1fr;
+    filter: brightness(1.06) saturate(1.08);
+    z-index: 20;
+  }
+
+  .radial-site-menu__item:hover .radial-site-menu__label,
+  .radial-site-menu__item:focus-visible .radial-site-menu__label {
+    max-width: 8rem;
+    padding-right: 1.05rem;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .radial-site-menu__item.is-line {
+    background: linear-gradient(145deg, var(--d, #aa463d), #87332c);
+    transition-duration: 300ms;
+    transition-delay: 220ms;
+  }
+
+  .radial-site-menu.is-open .radial-site-menu__bar--top { transform: translateY(5px) rotate(45deg); }
+  .radial-site-menu.is-open .radial-site-menu__bar--middle { opacity: 0; transform: scaleX(0.35); }
+  .radial-site-menu.is-open .radial-site-menu__bar--bottom { transform: translateY(-5px) rotate(-45deg); }
+
+  .radial-site-menu.is-open .radial-site-menu__item {
+    opacity: 1;
+    pointer-events: auto;
+    box-shadow: var(--shadow);
+  }
+
+  .radial-site-menu.is-open .radial-site-menu__item.is-round {
+    transform: translate(var(--x), var(--y)) scale(1);
+    transition-delay: var(--delay);
+  }
+
+  .radial-site-menu.is-open .radial-site-menu__item.is-line {
+    transform: translateY(calc(-1 * (5.35rem + (3.55rem * var(--stack))))) scale(1);
+    transition-delay: var(--delay);
+  }
+
+  @media (max-height: 720px) {
+    .radial-site-menu.is-open .radial-site-menu__item.is-line {
+      transform: translateY(calc(-1 * (4.15rem + (3rem * var(--stack))))) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .radial-site-menu__trigger,
+    .radial-site-menu__bar,
+    .radial-site-menu__item {
+      transition-duration: 1ms;
+      transition-delay: 0ms;
+    }
+  }
+</style>

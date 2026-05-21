@@ -1,4 +1,6 @@
 ---
+import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+
 const defaultInputs = {
   starting: 60450,
   paycheck: 750,
@@ -50,38 +52,6 @@ const defaultInputs = {
       }
       a { color: inherit; }
       .shell { width: min(1440px, calc(100vw - 28px)); margin: 0 auto; padding: 22px 0 64px; }
-      .nav-shell { position: fixed; right: 18px; bottom: 18px; z-index: 40; width: 54px; height: 54px; }
-      .nav-toggle {
-        position:absolute; left:0; bottom:0; z-index:2; display:inline-grid; place-items:center;
-        width:54px; height:54px; border:1px solid rgba(255,253,247,.72); border-radius:999px;
-        background:linear-gradient(135deg, var(--a), #315f99); box-shadow:0 18px 45px rgba(32,63,105,.32), 0 0 0 6px rgba(255,253,247,.55);
-        color:var(--paper); font-size:0; font-weight:950; cursor:pointer;
-      }
-      .nav-toggle::before { content:'☰'; font-size:27px; line-height:1; transform:translateY(7px); transition:transform .18s ease; }
-      .nav-shell.menu-open .nav-toggle::before { content:'×'; font-size:38px; transform:translateY(5px); }
-      .nav {
-        position:absolute; right:0; bottom:0; width:1px; height:1px; overflow:visible;
-        opacity:0; pointer-events:none; transition:opacity .16s ease;
-      }
-      .nav-shell.menu-open .nav { opacity:1; pointer-events:auto; }
-      .nav a {
-        position:absolute; right:0; bottom:0; display:inline-flex; align-items:center; justify-content:center;
-        min-width:104px; min-height:40px; border:1px solid var(--line); border-radius:999px; padding:0 14px;
-        background:rgba(255,253,247,.95); backdrop-filter:blur(14px); box-shadow:0 14px 34px rgba(42,31,13,.18);
-        text-decoration:none; color:var(--a); font-weight:900; font-size:12px; white-space:nowrap;
-        transform:translate(0, 0) scale(.6); opacity:0; transition:transform .2s ease, opacity .16s ease, box-shadow .16s ease;
-      }
-      .nav a:hover { box-shadow:0 18px 40px rgba(42,31,13,.24); }
-      .nav-shell.menu-open .nav a { opacity:1; }
-      .nav-shell.menu-open .nav a:nth-child(1) { transform:translate(0, -88px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(2) { transform:translate(-122px, -110px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(3) { transform:translate(-244px, -138px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(4) { transform:translate(-40px, -150px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(5) { transform:translate(-162px, -176px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(6) { transform:translate(-284px, -206px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(7) { transform:translate(-80px, -214px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(8) { transform:translate(-202px, -244px) scale(1); }
-      .nav-shell.menu-open .nav a:nth-child(9) { transform:translate(-324px, -280px) scale(1); }
       .pill {
         border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px;
         background: rgba(255,255,255,.55); text-decoration: none; color: var(--a); font-weight: 850; font-size: 13px;
@@ -243,35 +213,17 @@ const defaultInputs = {
         .desktop-label { display:none; }
         .mobile-label { display:inline; }
         .pillar-split::before { display:none; }
-        .nav-shell { right:14px; bottom:14px; }
-        .nav a { min-width:88px; min-height:36px; font-size:11px; padding:0 10px; }
-        .nav-shell.menu-open .nav a:nth-child(1) { transform:translate(0, -78px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(2) { transform:translate(-104px, -98px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(3) { transform:translate(-208px, -124px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(4) { transform:translate(-36px, -136px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(5) { transform:translate(-140px, -162px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(6) { transform:translate(-244px, -190px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(7) { transform:translate(-72px, -200px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(8) { transform:translate(-176px, -228px) scale(1); }
-        .nav-shell.menu-open .nav a:nth-child(9) { transform:translate(-280px, -260px) scale(1); }
         .life-row { grid-template-columns:1fr; }
       }
     </style>
   </head>
   <body>
     <div class="shell">
-      <div class="nav-shell" id="pageMenu">
-        <button class="nav-toggle" id="pageMenuToggle" type="button" aria-expanded="false" aria-controls="pageMenuNav">Menu</button>
-        <nav class="nav" id="pageMenuNav" aria-label="Page navigation">
-          <a href="#overview">Overview</a><a href="#pillars">Pillars</a><a href="#rules">Rules</a><a href="#positions">Positions</a><a href="#gears">Gears</a><a href="#lifecycle">Lifecycle</a><a href="#cashflow">Cash Flow</a><a href="#simulator">Simulator</a><a href="#examples">Examples</a>
-        </nav>
-      </div>
-
       <header id="overview" class="hero">
         <div>
           <div class="eyebrow">A one-page income engine map</div>
           <h1>Build a portfolio where every dollar has a job.</h1>
-          <p class="lead">The ABCD model separates holdings by function: foundation, income boost, compounding engine, and power generation. Use the rules, then test the path with the simulator.</p>
+          <p class="lead">The ABCD model separates holdings by function: foundation, income boost, compounding engine, and power generation. Use the rules, learn the week-to-week flow, then test the path with the simulator.</p>
           <div class="hero-actions"><a class="button primary" href="#simulator">Run the simulator</a><a class="button secondary" href="#rules">See classification rules</a><a class="button secondary" href="/budget">Open the budget guide</a></div>
         </div>
         <div class="engine-card" aria-label="ABCD system map">
@@ -438,7 +390,7 @@ const defaultInputs = {
 
       <section id="cashflow" class="panel">
         <div class="section-head"><h2>The ABCD Strategy Flow</h2><span class="pill">simple version</span></div>
-        <p class="lead">Think of the flow as four plain moves: money comes in, safety gets checked, the ABCD jobs do their work, then the cycle repeats.</p>
+        <p class="lead">Think of the flow as four plain moves: money comes in, safety gets checked, the ABCD jobs do their work, then the cycle repeats. If the full system still feels abstract, read the getting-started section below as the beginner version of this same operating loop.</p>
         <div class="strategy-flow">
           <div class="flow-node"><h3>Paycheck 100%</h3><p>W-2 income enters the system</p></div>
           <div class="flow-arrow-down" aria-hidden="true"></div>
@@ -480,6 +432,7 @@ const defaultInputs = {
       <section id="getting-started" class="panel">
         <div class="section-head"><h2>Getting started from zero</h2><span class="pill">week-to-week onboarding</span></div>
         <p class="lead">This strategy does not have to begin with a giant lump sum or a complicated trade list. The first move is to build a weekly operating rhythm, then let the portfolio earn the right to do more. Start with cash flow discipline, platform familiarity, and one realistic contribution target before you start reaching for yield.</p>
+        <p class="footer-note" style="margin-top:-6px; margin-bottom:14px">This section is the bridge between understanding the framework and knowing what to do with the next paycheck. It keeps the guide usable for someone who is starting small and still trying to make the whole system feel real.</p>
         <div class="grid cols-2">
           <div class="card compact">
             <div class="label">Phase 1</div>
@@ -554,7 +507,7 @@ const defaultInputs = {
             <div class="field"><label>Inflation % <input id="inflationNumber" type="number" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></label><input id="inflation" type="range" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></div>
             <div class="field"><label>Monthly expenses <input id="expensesNumber" type="number" value={defaultInputs.monthlyExpenses} min="0" step="50" /></label><input id="expenses" type="range" value={defaultInputs.monthlyExpenses} min="0" max="15000" step="50" /></div>
             <div class="field"><label>Projection years <input id="projectionYearsNumber" type="number" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></label><input id="projectionYears" type="range" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></div>
-            <p class="footer-note"><b>Beginner version:</b> enter what you have now, what you can add each week, your expected dividend yield, your monthly bills, and how many years you want to project. The graph shows whether projected monthly dividend income is catching up to expenses.</p>
+            <p class="footer-note"><b>Beginner version:</b> enter what you have now, what you can add each week, your expected dividend yield, your monthly bills, and how many years you want to project. The graph shows whether projected monthly dividend income is catching up to expenses. If you do not yet know what weekly contribution is realistic, use the companion <a href="/budget">budget guide</a> first.</p>
           </aside>
           <div class="chart-wrap">
             <div class="stats">
@@ -572,6 +525,7 @@ const defaultInputs = {
 
       <section id="examples" class="panel">
         <div class="section-head"><h2>How anyone can use it</h2><span class="pill">with examples</span></div>
+        <div class="callout" style="margin-bottom:16px"><b>Reader path:</b> if you are brand new, move in this order: <b>Getting started from zero</b> → <b>Budget guide</b> → <b>Contribution gears</b> → <b>Lifecycle</b> → <b>Strategy Flow</b> → <b>Simulator</b>. That order keeps the guide practical instead of overwhelming.</div>
         <div class="grid cols-4">
           <div class="card compact"><div class="label">Beginner</div><h3>Small starting point</h3><p>Start by making the account operational, not by chasing the highest-yield thing on the screen. Use the new getting-started section to set up the week-to-week rhythm first, then classify positions.</p></div>
           <div class="card compact"><div class="label">Builder</div><h3>Income target phase</h3><p>Use the simulator to ask: “What contribution, yield, and dividend-growth path gets me to my monthly expense number after inflation?” Then pick a gear that matches the need.</p></div>
@@ -591,27 +545,10 @@ const defaultInputs = {
       </section>
     </div>
 
+    <RadialSiteMenu />
+
     <script>
       const $ = (id) => document.getElementById(id);
-      const pageMenu = $('pageMenu');
-      const pageMenuToggle = $('pageMenuToggle');
-      const pageMenuNav = $('pageMenuNav');
-      pageMenuToggle.addEventListener('click', () => {
-        const isOpen = pageMenu.classList.toggle('menu-open');
-        pageMenuToggle.setAttribute('aria-expanded', String(isOpen));
-      });
-      pageMenuNav.addEventListener('click', (event) => {
-        if (event.target.matches('a')) {
-          pageMenu.classList.remove('menu-open');
-          pageMenuToggle.setAttribute('aria-expanded', 'false');
-        }
-      });
-      document.addEventListener('click', (event) => {
-        if (!pageMenu.contains(event.target)) {
-          pageMenu.classList.remove('menu-open');
-          pageMenuToggle.setAttribute('aria-expanded', 'false');
-        }
-      });
       const pairs = [
         ['starting', 'startingNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']
       ];
@@ -634,8 +571,6 @@ const defaultInputs = {
           simulatorShell.classList.remove('controls-open');
           controlsToggle.setAttribute('aria-expanded', 'false');
           controlsToggle.textContent = 'Open simulator inputs';
-          pageMenu.classList.remove('menu-open');
-          pageMenuToggle.setAttribute('aria-expanded', 'false');
         }
       });
       function getInputs() {

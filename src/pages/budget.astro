@@ -1,4 +1,5 @@
 ---
+import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -93,7 +94,7 @@
         <div class="eyebrow">Companion guide</div>
         <h1>Budget the strategy before you fund the strategy.</h1>
         <p class="lead">The ABCD system works best when money is translated into weekly decisions. This page is not about making a budget look pretty. It is about figuring out what you can actually sustain, what belongs to survival, what belongs to growth, and how to assign a realistic weekly contribution before the portfolio starts asking for bigger jobs.</p>
-        <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/#getting-started">See the getting-started flow</a></div>
+        <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/#getting-started">See the getting-started flow</a><a class="button secondary" href="/#simulator">Open the simulator</a></div>
       </header>
 
       <section class="panel">
@@ -180,6 +181,16 @@
       </section>
 
       <section class="panel">
+        <div class="section-head"><h2>How to use this page with the main guide</h2><span class="pill">recommended order</span></div>
+        <div class="grid cols-4">
+          <div class="card compact"><div class="label">1</div><h3>Read getting started</h3><p>Use the zero-to-operational section first so the account setup and weekly rhythm make sense.</p></div>
+          <div class="card compact"><div class="label">2</div><h3>Set the budget</h3><p>Use this page to decide what weekly contribution is real, sustainable, and safe.</p></div>
+          <div class="card compact"><div class="label">3</div><h3>Choose the gear</h3><p>Go back to the main guide and choose the contribution gear that matches your current need.</p></div>
+          <div class="card compact"><div class="label">4</div><h3>Test the path</h3><p>Use the simulator after the contribution number is honest so the projection means something.</p></div>
+        </div>
+      </section>
+
+      <section class="panel">
         <div class="section-head"><h2>How this page fits the main ABCD guide</h2><span class="pill">companion logic</span></div>
         <div class="grid cols-2">
           <div class="callout"><b>Relationship to the main guide:</b> the main ABCD page explains the machine — pillars, rules, contribution gears, lifecycle, simulator, and risk logic. This budget page explains the money discipline that feeds the machine before the machine can be expected to do meaningful work.</div>
@@ -188,5 +199,7 @@
         <p class="footer-note">Suggested navigation role: keep this as a dedicated companion page linked from the hero, the getting-started section, and the examples area of the main guide.</p>
       </section>
     </div>
+
+    <RadialSiteMenu />
   </body>
 </html>
