@@ -12,6 +12,19 @@ const defaultInputs = {
   projectionYears: 5,
 };
 
+const simulatorRoundPositions = [
+  { x: -54, y: -66 },
+  { x: -83, y: -20 },
+  { x: -78, y: 34 },
+  { x: -57, y: -124 },
+];
+
+const simulatorLinePositions = [
+  { x: 38, y: -75 },
+  { x: -5, y: -115 },
+  { x: 39, y: -147 },
+];
+
 
 ---
 <!doctype html>
@@ -113,7 +126,7 @@ const defaultInputs = {
       </section>
     </div>
 
-    <RadialSiteMenu page="simulator" />
+    <RadialSiteMenu page="simulator" roundPositions={simulatorRoundPositions} linePositions={simulatorLinePositions} />
 
     <script>
       const $ = (id) => document.getElementById(id);
