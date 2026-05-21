@@ -306,15 +306,56 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
 <script define:vars={{ id }}>
   const menu = document.getElementById(id);
   const trigger = menu?.querySelector('.radial-site-menu__trigger');
+  const shiftDurationMs = 180;
+  const collapseDurationMs = 220;
+  let shiftTimer;
+  let closeTimer;
+
+  const usesStagedMobileOpen = () => window.matchMedia('(max-width: 720px)').matches;
+  const clearMenuTimers = () => {
+    window.clearTimeout(shiftTimer);
+    window.clearTimeout(closeTimer);
+  };
+
+  const openMenu = () => {
+    if (!menu || !trigger) return;
+    clearMenuTimers();
+    menu.classList.add('is-open', 'is-shifted');
+    trigger.setAttribute('aria-expanded', 'true');
+
+    if (usesStagedMobileOpen()) {
+      shiftTimer = window.setTimeout(() => {
+        menu.classList.add('is-expanded');
+      }, shiftDurationMs);
+      return;
+    }
+
+    menu.classList.add('is-expanded');
+  };
+
   const close = () => {
-    menu?.classList.remove('is-open');
-    trigger?.setAttribute('aria-expanded', 'false');
+    if (!menu || !trigger) return;
+    clearMenuTimers();
+    menu.classList.remove('is-expanded');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    if (usesStagedMobileOpen()) {
+      closeTimer = window.setTimeout(() => {
+        menu.classList.remove('is-shifted', 'is-open');
+      }, collapseDurationMs);
+      return;
+    }
+
+    menu.classList.remove('is-shifted', 'is-open');
   };
 
   trigger?.addEventListener('click', (event) => {
     event.stopPropagation();
-    const isOpen = menu.classList.toggle('is-open');
-    trigger.setAttribute('aria-expanded', String(isOpen));
+    if (menu?.classList.contains('is-open')) {
+      close();
+      return;
+    }
+    openMenu();
   });
 
   menu?.addEventListener('click', (event) => {
@@ -375,7 +416,6 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     --safe-top-gap: 0.9rem;
     --menu-shift-x: 0rem;
     --menu-shift-y: 0rem;
-    --expand-delay: 0ms;
     position: fixed;
     right: var(--menu-offset-x);
     bottom: var(--menu-offset-y);
@@ -383,7 +423,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     width: var(--trigger-size);
     height: var(--trigger-size);
     transform: translate(calc(-1 * var(--menu-shift-x)), calc(-1 * var(--menu-shift-y)));
-    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .radial-site-menu__round,
@@ -414,7 +454,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
       transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .radial-site-menu.is-open .radial-site-menu__arc-guide {
+  .radial-site-menu.is-expanded .radial-site-menu__arc-guide {
     opacity: 0.3;
     transform: scale(1);
   }
@@ -556,26 +596,26 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
   .radial-site-menu.is-open .radial-site-menu__bar--middle { opacity: 0; transform: scaleX(0.35); }
   .radial-site-menu.is-open .radial-site-menu__bar--bottom { transform: translateY(-5px) rotate(-45deg); }
 
-  .radial-site-menu.is-open .radial-site-menu__item {
+  .radial-site-menu.is-expanded .radial-site-menu__item {
     opacity: 1;
     pointer-events: auto;
     box-shadow: var(--shadow);
   }
 
-  .radial-site-menu.is-open .radial-site-menu__item.is-round {
+  .radial-site-menu.is-expanded .radial-site-menu__item.is-round {
     transform: translate(
       var(--x),
       max(var(--y), calc(-100vh + var(--menu-offset-y) + 0.7rem + var(--item-size) + var(--safe-top-gap)))
     ) scale(1);
-    transition-delay: calc(var(--expand-delay) + var(--delay));
+    transition-delay: var(--delay);
   }
 
-  .radial-site-menu.is-open .radial-site-menu__item.is-line {
+  .radial-site-menu.is-expanded .radial-site-menu__item.is-line {
     transform: translate(
       var(--x),
       max(var(--y), calc(-100vh + var(--menu-offset-y) + 0.7rem + var(--item-size) + var(--safe-top-gap)))
     ) scale(1);
-    transition-delay: calc(var(--expand-delay) + var(--delay));
+    transition-delay: var(--delay);
   }
 
   @media (max-width: 720px) {
@@ -584,10 +624,9 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
       --menu-offset-y: 2rem;
     }
 
-    .radial-site-menu.is-open {
+    .radial-site-menu.is-shifted {
       --menu-shift-x: 2.4rem;
       --menu-shift-y: 4.6rem;
-      --expand-delay: 150ms;
     }
   }
 
