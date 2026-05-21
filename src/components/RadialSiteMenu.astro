@@ -124,9 +124,9 @@ const icons: Record<string, string[]> = {
 const id = `radial-site-menu-${Math.random().toString(36).slice(2)}`;
 
 const routeArcLevels = [
-  { radius: 7.4, startAngle: 104, endAngle: 180, capacity: 4 },
-  { radius: 5.35, startAngle: 112, endAngle: 170, capacity: 3 },
-  { radius: 3.55, startAngle: 124, endAngle: 160, capacity: 2 },
+  { radius: 5.5, startAngle: 90, endAngle: 175, capacity: 4 },
+  { radius: 3.9, startAngle: 105, endAngle: 168, capacity: 3 },
+  { radius: 2.3, startAngle: 122, endAngle: 162, capacity: 2 },
 ];
 
 const getRoundPosition = (index: number, total: number) => {
@@ -293,8 +293,8 @@ const getRoundPosition = (index: number, total: number) => {
       transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .radial-site-menu__round::before { --arc-radius: 7.4rem; }
-  .radial-site-menu__round::after { --arc-radius: 5.35rem; }
+  .radial-site-menu__round::before { --arc-radius: 5.5rem; }
+  .radial-site-menu__round::after { --arc-radius: 3.9rem; }
 
   .radial-site-menu.is-open .radial-site-menu__round::before,
   .radial-site-menu.is-open .radial-site-menu__round::after {
@@ -451,13 +451,13 @@ const getRoundPosition = (index: number, total: number) => {
   }
 
   .radial-site-menu.is-open .radial-site-menu__item.is-line {
-    transform: translateY(calc(-1 * (7.95rem + (3.72rem * var(--stack))))) scale(1);
+    transform: translateY(calc(-1 * (5.7rem + (3.55rem * var(--stack))))) scale(1);
     transition-delay: var(--delay);
   }
 
   @media (max-height: 720px) {
     .radial-site-menu.is-open .radial-site-menu__item.is-line {
-      transform: translateY(calc(-1 * (6.35rem + (3.18rem * var(--stack))))) scale(1);
+      transform: translateY(calc(-1 * (4.5rem + (3.05rem * var(--stack))))) scale(1);
     }
   }
 
