@@ -188,11 +188,24 @@ import { ViewTransitions } from 'astro:transitions';
         [...lab.querySelectorAll('.item.draggable')].forEach((node) => node.remove());
         ['blue', 'red'].forEach((kind) => {
           state[kind].forEach((item, index) => {
-            const el = document.createElement('button');
-            el.type = 'button';
+            const el = document.createElement('div');
             el.className = `item draggable ${kind}`;
             el.dataset.kind = kind;
             el.dataset.index = String(index);
+            el.style.position = 'absolute';
+            el.style.width = '50px';
+            el.style.height = '50px';
+            el.style.borderRadius = '999px';
+            el.style.display = 'grid';
+            el.style.placeItems = 'center';
+            el.style.color = 'var(--paper)';
+            el.style.boxShadow = '0.32rem 0.34rem 0.1rem rgba(42,31,13,.2)';
+            el.style.userSelect = 'none';
+            el.style.touchAction = 'none';
+            el.style.cursor = 'grab';
+            el.style.background = kind === 'blue'
+              ? 'linear-gradient(145deg, var(--a), #315f99)'
+              : 'linear-gradient(145deg, var(--d), #87332c)';
             el.appendChild(makeIcon(kind));
             const tag = document.createElement('span');
             tag.className = 'tag';
@@ -223,7 +236,10 @@ import { ViewTransitions } from 'astro:transitions';
             updateOutput();
           };
 
+          el.style.cursor = 'grabbing';
+
           const onUp = () => {
+            el.style.cursor = 'grab';
             el.removeEventListener('pointermove', onMove);
             el.removeEventListener('pointerup', onUp);
             el.removeEventListener('pointercancel', onUp);
