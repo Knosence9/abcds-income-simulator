@@ -111,6 +111,35 @@ const menuPresets: Record<MenuPage, { roundItems: MenuItem[]; lineItems: MenuIte
   },
 };
 
+const tunedRoundSlots: MenuPosition[] = [
+  { x: -54, y: -66 },
+  { x: -83, y: -20 },
+  { x: -78, y: 34 },
+  { x: -57, y: -124 },
+  { x: -100, y: -90 },
+  { x: -128, y: -43 },
+  { x: -134, y: 12 },
+  { x: -56, y: -176 },
+];
+
+const tunedLineSlots: MenuPosition[] = [
+  { x: 38, y: -75 },
+  { x: -5, y: -115 },
+  { x: 39, y: -147 },
+  { x: -6, y: -186 },
+  { x: 39, y: -218 },
+  { x: -5, y: -258 },
+  { x: 39, y: -290 },
+  { x: -4, y: -329 },
+];
+
+const layoutPresets: Partial<Record<MenuPage, { roundPositions: MenuPosition[]; linePositions: MenuPosition[] }>> = {
+  home: { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
+  'getting-started': { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
+  budget: { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
+  simulator: { roundPositions: tunedRoundSlots, linePositions: tunedLineSlots },
+};
+
 const {
   page = 'home',
   roundItems,
@@ -126,6 +155,9 @@ const {
 const preset = menuPresets[page];
 const resolvedRoundItems = [...(roundItems ?? preset.roundItems), ...extraRoundItems];
 const resolvedLineItems = [...(lineItems ?? preset.lineItems), ...extraLineItems];
+const defaultLayout = layoutPresets[page];
+const effectiveRoundPositions = roundPositions.length ? roundPositions : (defaultLayout?.roundPositions ?? []);
+const effectiveLinePositions = linePositions.length ? linePositions : (defaultLayout?.linePositions ?? []);
 
 const normalizePath = (path: string) => path.split('#')[0].replace(/\/$/, '') || '/';
 const activeMatches = (href: string) => !href.includes('#') && normalizePath(href) === normalizePath(activePath);
@@ -228,8 +260,8 @@ const toManualStyle = (position: MenuPosition | undefined, delay: number, z: num
   ? `--x: ${position.x}px; --y: ${position.y}px; --delay: ${delay}ms; --z: ${z};`
   : undefined;
 
-const resolvedRoundStyles = resolvedRoundItems.map((_, index) => toManualStyle(roundPositions[index], (resolvedRoundItems.length - index - 1) * 42, 20 - index) ?? roundItemStyles[index]);
-const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(linePositions[index], 180 + index * 34, 40 - index) ?? lineItemStyles[index]);
+const resolvedRoundStyles = resolvedRoundItems.map((_, index) => toManualStyle(effectiveRoundPositions[index], (resolvedRoundItems.length - index - 1) * 42, 20 - index) ?? roundItemStyles[index]);
+const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(effectiveLinePositions[index], 180 + index * 34, 40 - index) ?? lineItemStyles[index]);
 ---
 
 <nav id={id} class="radial-site-menu" aria-label="Site navigation">
