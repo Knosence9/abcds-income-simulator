@@ -373,12 +373,16 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     --menu-offset-x: clamp(1.1rem, 4vw, 2.5rem);
     --menu-offset-y: clamp(1.1rem, 4vw, 2.5rem);
     --safe-top-gap: 0.9rem;
+    --menu-shift-x: 0rem;
+    --menu-shift-y: 0rem;
     position: fixed;
     right: var(--menu-offset-x);
     bottom: var(--menu-offset-y);
     z-index: 80;
     width: var(--trigger-size);
     height: var(--trigger-size);
+    transform: translate(calc(-1 * var(--menu-shift-x)), calc(-1 * var(--menu-shift-y)));
+    transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .radial-site-menu__round,
@@ -575,12 +579,18 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
 
   @media (max-width: 720px) {
     .radial-site-menu {
-      --menu-offset-x: 4.4rem;
-      --menu-offset-y: 4.9rem;
+      --menu-offset-x: 2rem;
+      --menu-offset-y: 2rem;
+    }
+
+    .radial-site-menu.is-open {
+      --menu-shift-x: 2.4rem;
+      --menu-shift-y: 4.6rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .radial-site-menu,
     .radial-site-menu__trigger,
     .radial-site-menu__bar,
     .radial-site-menu__item {
