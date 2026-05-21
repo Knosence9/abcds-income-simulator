@@ -375,6 +375,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     --safe-top-gap: 0.9rem;
     --menu-shift-x: 0rem;
     --menu-shift-y: 0rem;
+    --expand-delay: 0ms;
     position: fixed;
     right: var(--menu-offset-x);
     bottom: var(--menu-offset-y);
@@ -382,7 +383,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     width: var(--trigger-size);
     height: var(--trigger-size);
     transform: translate(calc(-1 * var(--menu-shift-x)), calc(-1 * var(--menu-shift-y)));
-    transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .radial-site-menu__round,
@@ -566,7 +567,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
       var(--x),
       max(var(--y), calc(-100vh + var(--menu-offset-y) + 0.7rem + var(--item-size) + var(--safe-top-gap)))
     ) scale(1);
-    transition-delay: var(--delay);
+    transition-delay: calc(var(--expand-delay) + var(--delay));
   }
 
   .radial-site-menu.is-open .radial-site-menu__item.is-line {
@@ -574,7 +575,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
       var(--x),
       max(var(--y), calc(-100vh + var(--menu-offset-y) + 0.7rem + var(--item-size) + var(--safe-top-gap)))
     ) scale(1);
-    transition-delay: var(--delay);
+    transition-delay: calc(var(--expand-delay) + var(--delay));
   }
 
   @media (max-width: 720px) {
@@ -586,6 +587,7 @@ const resolvedLineStyles = resolvedLineItems.map((_, index) => toManualStyle(eff
     .radial-site-menu.is-open {
       --menu-shift-x: 2.4rem;
       --menu-shift-y: 4.6rem;
+      --expand-delay: 150ms;
     }
   }
 
