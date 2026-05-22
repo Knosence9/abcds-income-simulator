@@ -110,7 +110,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         <div>
           <div class="eyebrow">Closed-end funds · first principles</div>
           <h1>Why CLM, CRF, and GOF belong in the C lane.</h1>
-          <p class="lead">This page explains closed-end funds from first principles: what they are, why they behave differently from ordinary ETFs, why DRIP mechanics matter so much, and how funds like CLM, CRF, and GOF work inside the ABCD system. The goal is not to memorize ticker lore. The goal is to understand the machine well enough to know what job these funds are actually doing.</p>
+          <p class="lead">This page explains closed-end funds from first principles: what they are, how DRIP at NAV works in simple terms, why they behave differently from ordinary ETFs, and how funds like CLM, CRF, and GOF work inside the ABCD system. The goal is not to memorize ticker lore. The goal is to understand the machine well enough to know what job these funds are actually doing.</p>
           <div class="hero-actions">
             <a class="button primary" href="/#positions">Back to the main guide</a>
             <a class="button secondary" href="/#gears">Review contribution gears</a>
@@ -125,6 +125,30 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           </div>
         </div>
       </header>
+
+      <section id="drip-at-nav" class="panel">
+        <div class="section-head"><h2>What DRIP at NAV means</h2><span class="pill">simple version first</span></div>
+        <div class="grid cols-2">
+          <div class="card compact">
+            <div class="label">DRIP</div>
+            <h3>DRIP means your cash payout buys more shares automatically</h3>
+            <p>When a fund pays a distribution, you usually have two choices. You can take the cash, or you can reinvest it. DRIP means <b>dividend reinvestment plan</b>. Instead of the money leaving the fund and sitting as cash, it is used to buy more shares for you automatically.</p>
+            <p>That part is simple. The part that matters here is the price those new shares are bought at.</p>
+          </div>
+          <div class="card compact">
+            <div class="label">NAV</div>
+            <h3>NAV is the value of the assets inside the fund</h3>
+            <p><b>NAV</b> means <b>net asset value</b>. It is the value of what the fund actually owns, divided by its shares. A closed-end fund can trade in the market above NAV or below NAV. That means the market price and the internal asset value are not always the same number.</p>
+            <p>If reinvestment happens at or near NAV while the market price is higher, the reinvestment is more favorable than simply buying at the higher market price.</p>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px"><b>Plain-English version:</b> DRIP at NAV means the fund pays you, then uses that payout to give you more shares at the value of the fund itself rather than forcing you to buy at whatever the market price happens to be. When that NAV price is better than the market price, you are effectively getting more share-building power out of the same payout.</div>
+        <div class="grid cols-3" style="margin-top:16px">
+          <div class="card compact"><div class="label">Step 1</div><h3>The fund pays a distribution</h3><p>You become entitled to a cash payout.</p></div>
+          <div class="card compact"><div class="label">Step 2</div><h3>DRIP turns that cash into more shares</h3><p>Instead of taking the money out, the system uses it to buy more of the fund for you.</p></div>
+          <div class="card compact"><div class="label">Step 3</div><h3>More shares can create more future distributions</h3><p>That is why the C lane cares so much about share count. The machine gets bigger from the inside.</p></div>
+        </div>
+      </section>
 
       <section id="first-principles" class="panel">
         <div class="section-head"><h2>First principles: what a closed-end fund is</h2><span class="pill">structure before tickers</span></div>
@@ -149,17 +173,17 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="card compact">
             <div class="label">CLM</div>
             <h3>Cornerstone Strategic Value Fund</h3>
-            <p>CLM is usually discussed in this system because its reinvestment mechanics matter. The appeal is not simply that it throws off a high-looking distribution. The appeal is that when its DRIP terms are favorable, reinvestment can add shares on better terms than ordinary market buying. That makes the fund interesting as a compounding engine instead of merely a cash spout.</p>
+            <p>CLM matters here because its reinvestment mechanics can be favorable. The point is not just that it pays a distribution. The point is that reinvestment can sometimes build shares more efficiently than ordinary market buying. That makes CLM useful as a compounding engine, not just a cash producer.</p>
           </div>
           <div class="card compact">
             <div class="label">CRF</div>
             <h3>Cornerstone Total Return Fund</h3>
-            <p>CRF lives in a similar conversation to CLM. Again, the point is not to treat the distribution as magical free money. The point is to understand how the reinvestment terms, NAV relationship, and share accumulation can create a self-building pillar when handled properly. It belongs in C because the system is using it as a compounding mechanism.</p>
+            <p>CRF belongs in the same conversation. The distribution is not magical free money. What matters is how reinvestment terms, NAV, and share accumulation work together. In this system, CRF belongs in C because it is being used as a compounding mechanism.</p>
           </div>
           <div class="card compact">
             <div class="label">GOF</div>
             <h3>Guggenheim Strategic Opportunities Fund</h3>
-            <p>GOF is often framed differently from the Cornerstone pair. In this guide, it still belongs in the C lane because the logic is similar: the system is less concerned with short-term spend and more concerned with the way reinvestment terms and structural pricing can add to long-run share growth. It is not identical to CLM or CRF, but it serves the same pillar job.</p>
+            <p>GOF is not identical to CLM or CRF, but it fits the same lane in this guide. The system is less concerned with taking today’s cash out and more concerned with how reinvestment and structural pricing can help grow the share base over time. That is why it still belongs in C.</p>
           </div>
         </div>
         <div class="table-wrap" style="margin-top:16px">
@@ -171,6 +195,35 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
               <tr><td>GOF</td><td>Discount/premium context, distribution sustainability, reinvestment value</td><td>The system cares about how the holding compounds, not just what it pays now.</td><td>Supports C-lane self-building behavior.</td></tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="fund-mechanics" class="panel">
+        <div class="section-head"><h2>Mechanism walkthrough: how each one works</h2><span class="pill">ticker by ticker</span></div>
+        <div class="grid cols-3">
+          <div class="card compact">
+            <div class="label">CLM mechanism</div>
+            <h3>Distribution → reinvestment → discounted share-building effect</h3>
+            <p>With CLM, the beginner mistake is to focus only on the distribution amount. The mechanism is more specific than that. First, CLM makes a distribution. Second, if DRIP is on, that payout can be turned into more CLM shares. Third, if those reinvested shares are credited at a more favorable value than the open market price, the same payout buys more of the machine than normal market buying would.</p>
+            <p>That means the real question is not only “what did CLM pay me?” The better question is “how many new productive shares did that payout help create?” In this system, that is why CLM belongs in C. Its value is strongly tied to the way reinvestment can expand share count over time.</p>
+          </div>
+          <div class="card compact">
+            <div class="label">CRF mechanism</div>
+            <h3>Same compounding idea, same need for structural awareness</h3>
+            <p>CRF works through a very similar logic. It distributes cash, DRIP can turn that cash into more shares, and the relationship between market price and NAV affects how favorable that reinvestment is. So the mechanism is not mysterious: payout happens, payout becomes new shares, those shares can generate more future payouts, and the cycle repeats.</p>
+            <p>The reason CRF is not treated like a plain income holding is that the system is not mainly trying to harvest the cash today. It is trying to use the payout stream to enlarge the future-producing base. That is a compounding mechanism, not just an income event.</p>
+          </div>
+          <div class="card compact">
+            <div class="label">GOF mechanism</div>
+            <h3>Distribution plus structural pricing, but usually read with more caution</h3>
+            <p>GOF is a little different in feel from CLM and CRF, but the mechanism still belongs in the same family. It distributes cash, the market price can move away from NAV, and reinvestment value matters. The difference is that people often discuss GOF more through its premium/discount behavior, distribution sustainability, and total-return context than through the exact same Cornerstone-style language.</p>
+            <p>So the beginner way to read GOF is this: do not treat the payout as the whole story. Watch what the fund is worth internally, what the market is charging for it, and whether reinvestment is helping the share base grow in a way that still makes sense. That keeps GOF in the C lane as a structural compounding tool rather than a simple cash-out position.</p>
+          </div>
+        </div>
+        <div class="grid cols-3" style="margin-top:16px">
+          <div class="card compact"><div class="label">CLM in one line</div><h3>Best read as a reinvestment machine</h3><p>Its mechanism matters most when DRIP terms help convert payouts into more shares efficiently.</p></div>
+          <div class="card compact"><div class="label">CRF in one line</div><h3>Best read as a compounding cycle</h3><p>Distribution plus reinvestment plus share growth is the real engine.</p></div>
+          <div class="card compact"><div class="label">GOF in one line</div><h3>Best read through structure and sustainability</h3><p>Its place in C depends on how reinvestment and pricing behavior support long-run productive growth.</p></div>
         </div>
       </section>
 
@@ -188,7 +241,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
             <p>The C lane is not supposed to feel flashy. It is supposed to quietly make the portfolio harder to kill. A successful C pillar grows its own internal productive capacity. That means the investor is not forced to manually inject all future growth from outside wages forever. Part of the growth begins happening inside the structure itself.</p>
           </div>
         </div>
-        <div class="callout" style="margin-top:16px"><b>Simple version:</b> B and D help pay things now. C helps build a larger future machine. That is why CLM, CRF, and GOF do not belong in the same mental bucket as the immediate cash-flow holdings even though they also distribute money.</div>
+        <div class="callout" style="margin-top:16px"><b>Simple version:</b> B and D are mainly about cash you can use now. C is mainly about using payouts to build more future-producing shares. That is why CLM, CRF, and GOF are treated differently even though they also make distributions.</div>
       </section>
 
       <section id="system-fit" class="panel">
