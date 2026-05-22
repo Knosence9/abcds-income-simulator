@@ -148,6 +148,16 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="card compact"><div class="label">Step 2</div><h3>DRIP turns that cash into more shares</h3><p>Instead of taking the money out, the system uses it to buy more of the fund for you.</p></div>
           <div class="card compact"><div class="label">Step 3</div><h3>More shares can create more future distributions</h3><p>That is why the C lane cares so much about share count. The machine gets bigger from the inside.</p></div>
         </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Example</th><th>Market price</th><th>NAV</th><th>What happens</th><th>Why it matters</th></tr></thead>
+            <tbody>
+              <tr><td>Buying normally</td><td>$8.33</td><td>$7.00</td><td>You pay full market price for each share.</td><td>You get 1 share for every $8.33 you spend.</td></tr>
+              <tr><td>DRIP at NAV</td><td>$8.33</td><td>$7.00</td><td>Your distribution is reinvested at NAV instead of the higher market price.</td><td>The same dollars buy about 19% more share-building power than buying at $8.33 market price.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="footer-note"><b>Important:</b> those numbers are only an easy teaching example. The real market price and NAV change day by day. The point is the mechanism: if market price is above NAV and reinvestment happens at NAV, the DRIP is effectively giving you a better entry price than open-market buying.</p>
       </section>
 
       <section id="first-principles" class="panel">
@@ -200,24 +210,28 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 
       <section id="fund-mechanics" class="panel">
         <div class="section-head"><h2>Mechanism walkthrough: how each one works</h2><span class="pill">ticker by ticker</span></div>
+        <div class="callout" style="margin-bottom:16px"><b>How to read these examples:</b> the numbers below are teaching examples, not live quotes. They are there to show the mechanism clearly. Real market prices, NAVs, premiums, and discounts move over time.</div>
         <div class="grid cols-3">
           <div class="card compact">
             <div class="label">CLM mechanism</div>
             <h3>Distribution → reinvestment → discounted share-building effect</h3>
             <p>With CLM, the beginner mistake is to focus only on the distribution amount. The mechanism is more specific than that. First, CLM makes a distribution. Second, if DRIP is on, that payout can be turned into more CLM shares. Third, if those reinvested shares are credited at a more favorable value than the open market price, the same payout buys more of the machine than normal market buying would.</p>
             <p>That means the real question is not only “what did CLM pay me?” The better question is “how many new productive shares did that payout help create?” In this system, that is why CLM belongs in C. Its value is strongly tied to the way reinvestment can expand share count over time.</p>
+            <p><b>Simple example:</b> suppose CLM is trading at <b>$8.33</b> while NAV is <b>$7.00</b>. If you buy manually, you pay <b>$8.33</b> per share. If a distribution DRIPs at NAV, that reinvested cash buys shares at <b>$7.00</b> instead. That is why people sometimes describe it as getting an effective discount on the reinvested shares. Relative to the $8.33 market price, that is roughly a <b>19% better share-building price</b>.</p>
           </div>
           <div class="card compact">
             <div class="label">CRF mechanism</div>
             <h3>Same compounding idea, same need for structural awareness</h3>
             <p>CRF works through a very similar logic. It distributes cash, DRIP can turn that cash into more shares, and the relationship between market price and NAV affects how favorable that reinvestment is. So the mechanism is not mysterious: payout happens, payout becomes new shares, those shares can generate more future payouts, and the cycle repeats.</p>
             <p>The reason CRF is not treated like a plain income holding is that the system is not mainly trying to harvest the cash today. It is trying to use the payout stream to enlarge the future-producing base. That is a compounding mechanism, not just an income event.</p>
+            <p><b>Simple example:</b> suppose CRF is trading at <b>$9.00</b> while NAV is <b>$7.60</b>. Buying in the market means paying <b>$9.00</b>. If the distribution reinvests at <b>$7.60</b>, the same payout buys more shares than an ordinary market purchase would. So again, the mechanism is not just “it pays cash.” The mechanism is “it pays cash that can become more productive shares at a better value.”</p>
           </div>
           <div class="card compact">
             <div class="label">GOF mechanism</div>
             <h3>Distribution plus structural pricing, but usually read with more caution</h3>
             <p>GOF is a little different in feel from CLM and CRF, but the mechanism still belongs in the same family. It distributes cash, the market price can move away from NAV, and reinvestment value matters. The difference is that people often discuss GOF more through its premium/discount behavior, distribution sustainability, and total-return context than through the exact same Cornerstone-style language.</p>
             <p>So the beginner way to read GOF is this: do not treat the payout as the whole story. Watch what the fund is worth internally, what the market is charging for it, and whether reinvestment is helping the share base grow in a way that still makes sense. That keeps GOF in the C lane as a structural compounding tool rather than a simple cash-out position.</p>
+            <p><b>Simple example:</b> suppose GOF is trading at <b>$15.20</b> while NAV is <b>$14.10</b>. If reinvestment happens at the better internal value instead of the higher market price, the payout still gains extra share-building efficiency. GOF is usually read with more caution because sustainability and valuation context matter a lot, but the same basic compounding logic still applies.</p>
           </div>
         </div>
         <div class="grid cols-3" style="margin-top:16px">
@@ -225,6 +239,25 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="card compact"><div class="label">CRF in one line</div><h3>Best read as a compounding cycle</h3><p>Distribution plus reinvestment plus share growth is the real engine.</p></div>
           <div class="card compact"><div class="label">GOF in one line</div><h3>Best read through structure and sustainability</h3><p>Its place in C depends on how reinvestment and pricing behavior support long-run productive growth.</p></div>
         </div>
+      </section>
+
+      <section id="rights-offering" class="panel">
+        <div class="section-head"><h2>How rights offerings fit into the process</h2><span class="pill">especially for CLM and CRF</span></div>
+        <div class="grid cols-2">
+          <div class="card compact">
+            <div class="label">What it is</div>
+            <h3>A rights offering gives existing holders the option to buy new shares</h3>
+            <p>A rights offering is when the fund gives existing shareholders the right to buy additional shares under a set formula. The exact formula can vary, but the basic idea is simple: if you already own shares, you may get a chance to buy more directly through the offering instead of only buying on the open market.</p>
+            <p>That means a rights offering is another structural event that can matter a lot in CLM and CRF. It is not the same thing as the monthly DRIP process, but it belongs in the same family of “share-building mechanics.”</p>
+          </div>
+          <div class="card compact">
+            <div class="label">Why it matters</div>
+            <h3>It can help or hurt depending on price, dilution, and timing</h3>
+            <p>If the offering terms are favorable, a rights offering can let an existing holder add shares at a better value than the current market price. But it can also pressure the market price, create dilution concerns, or change the short-term trading behavior of the fund. So it is not automatically good or bad. It is a structural event that needs to be evaluated.</p>
+            <p>In beginner terms: a rights offering is another moment where the real question is not just “what is the yield?” The question is “does this event help me build productive shares on good terms, or does it change the risk/reward in a way I do not want?”</p>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px"><b>Simple sequence:</b> buy shares at market → receive distributions → DRIP may add shares at NAV → rights offering may later offer another way to add shares under a formula. That is why CLM and CRF are not simple set-and-forget income tickers. Their structure itself is part of the strategy.</div>
       </section>
 
       <section id="drip-edge" class="panel">
