@@ -2,6 +2,10 @@
 import { ViewTransitions } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
+
+const weekly100 = monthlyToWeekly(100).toFixed(2);
+const weekly200 = monthlyToWeekly(200).toFixed(2);
 ---
 <!doctype html>
 <html lang="en">
@@ -121,11 +125,11 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
             <ul class="plain-list">
               <li>If you are paid weekly, use that number directly.</li>
               <li>If you are paid bi-weekly, divide by <b>2</b>.</li>
-              <li>If you are paid monthly, divide by <b>4</b>.</li>
-              <li>If a contribution goal is monthly, divide it by <b>4</b>.</li>
-              <li>If a bill target is monthly, divide it by <b>4</b>.</li>
+              <li>If you are paid monthly, multiply by <b>12</b> and divide by <b>52</b> (approximately 4.33 weeks per month).</li>
+              <li>If a contribution goal is monthly, use the same <b>monthly × 12 ÷ 52</b> formula.</li>
+              <li>If a bill target is monthly, use the same exact annualized conversion.</li>
             </ul>
-            <div class="callout"><b>Example:</b> $1,400 every two weeks becomes <b>$700 per week</b>. A $100 monthly contribution target becomes <b>$25 per week</b>. A $200 monthly bill target becomes <b>$50 per week</b>.</div>
+            <div class="callout"><b>Example:</b> $1,400 every two weeks becomes <b>$700 per week</b>. A $100 monthly contribution target becomes <b>${weekly100} per week</b>. A $200 monthly bill target becomes <b>${weekly200} per week</b>.</div>
           </div>
         </div>
       </section>
@@ -139,12 +143,12 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         </div>
         <div class="table-wrap" style="margin-top:16px">
           <table>
-            <thead><tr><th>Weekly pay</th><th>Contribution style</th><th>Weekly contribution</th><th>Monthly equivalent</th><th>When it fits</th></tr></thead>
+            <thead><tr><th>Weekly pay</th><th>Contribution style</th><th>Weekly contribution</th><th>Approximate monthly equivalent</th><th>When it fits</th></tr></thead>
             <tbody>
-              <tr><td>$700</td><td>Very tight</td><td>$25</td><td>$100/month</td><td>Useful when the budget is thin and the priority is proving consistency first.</td></tr>
-              <tr><td>$700</td><td>Conservative</td><td>$40</td><td>$160/month</td><td>Good when essentials are covered but flexibility still matters a lot.</td></tr>
-              <tr><td>$700</td><td>Steady build</td><td>$75</td><td>$300/month</td><td>Works when the paycheck has enough room for a visible sprint toward the first threshold.</td></tr>
-              <tr><td>$700</td><td>Aggressive</td><td>$100</td><td>$400/month</td><td>Only appropriate when the base budget is stable and the higher contribution does not create strain elsewhere.</td></tr>
+              <tr><td>$700</td><td>Very tight</td><td>$25</td><td>≈$108.33/month</td><td>Useful when the budget is thin and the priority is proving consistency first.</td></tr>
+              <tr><td>$700</td><td>Conservative</td><td>$40</td><td>≈$173.33/month</td><td>Good when essentials are covered but flexibility still matters a lot.</td></tr>
+              <tr><td>$700</td><td>Steady build</td><td>$75</td><td>≈$325/month</td><td>Works when the paycheck has enough room for a visible sprint toward the first threshold.</td></tr>
+              <tr><td>$700</td><td>Aggressive</td><td>$100</td><td>≈$433.33/month</td><td>Only appropriate when the base budget is stable and the higher contribution does not create strain elsewhere.</td></tr>
             </tbody>
           </table>
         </div>
@@ -179,7 +183,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="card compact">
             <div class="label">Monthly to weekly</div>
             <h3>Use bill goals to set contribution goals</h3>
-            <p>If the bill you want the portfolio to help cover is $100 per month, that translates into a weekly planning number of $25. If a future target is $200 per month, its weekly planning number is $50. Weekly targets are easier to build toward than vague monthly hopes.</p>
+            <p>If the bill you want the portfolio to help cover is $100 per month, that translates into a weekly planning number of ${weekly100}. If a future target is $200 per month, its weekly planning number is ${weekly200}. Weekly targets are easier to build toward than vague monthly hopes.</p>
           </div>
           <div class="card compact">
             <div class="label">Scaling rule</div>
