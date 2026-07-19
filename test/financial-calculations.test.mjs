@@ -35,13 +35,21 @@ test('monthly and weekly guidance uses the annualized conversion consistently', 
   assert.match(guidance, /<td>\$25(?:\/week)?<\/td><td>≈\$108\.33\/month<\/td>/);
 });
 
-test('interpolated weekly budget values render one currency symbol', async () => {
-  const budgetPage = await readFile(
-    new URL('../src/pages/budget.astro', import.meta.url),
-    'utf8',
+test('weekly examples on both guides are derived from the shared conversion', async () => {
+  const [budgetPage, gettingStartedPage] = await Promise.all(
+    ['budget.astro', 'getting-started.astro'].map((page) =>
+      readFile(new URL(`../src/pages/${page}`, import.meta.url), 'utf8'),
+    ),
   );
 
   assert.equal((budgetPage.match(/\$\{weekly100\}/g) ?? []).length, 2);
   assert.equal((budgetPage.match(/\$\{weekly200\}/g) ?? []).length, 2);
-  assert.doesNotMatch(budgetPage, /\$\$\{weekly(?:100|200)\}/);
+  assert.match(gettingStartedPage, /monthlyToWeekly\(100\)/);
+  assert.match(gettingStartedPage, /monthlyToWeekly\(200\)/);
+  assert.equal((gettingStartedPage.match(/\$\{weekly100\}/g) ?? []).length, 2);
+  assert.equal((gettingStartedPage.match(/\$\{weekly200\}/g) ?? []).length, 1);
+  assert.doesNotMatch(
+    `${budgetPage}\n${gettingStartedPage}`,
+    /\$\$\{weekly(?:100|200)\}/,
+  );
 });

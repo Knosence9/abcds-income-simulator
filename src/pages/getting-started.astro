@@ -2,6 +2,10 @@
 import { ViewTransitions } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
+
+const weekly100 = monthlyToWeekly(100).toFixed(2);
+const weekly200 = monthlyToWeekly(200).toFixed(2);
 ---
 <!doctype html>
 <html lang="en">
@@ -250,7 +254,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
             <div class="label">Weekly frame</div>
             <h3>Convert everything to a weekly number</h3>
             <p>This guide works best when the math is brought down to one week at a time. For this example, assume take-home pay or usable pay is <b>$700 per week</b>. If you are paid every two weeks, divide by <b>2</b> to get your weekly number. If you are paid monthly, multiply by <b>12</b> and divide by <b>52</b>. The same rule applies to contributions and bill targets. A monthly goal only becomes actionable when you know what it means this week.</p>
-            <div class="callout compact"><b>Example:</b> if your planned contribution is <b>$100 per month</b>, multiply by <b>12</b> and divide by <b>52</b>. That becomes <b>$23.08 per week</b>. If a bill is <b>$200 per month</b>, its weekly equivalent is <b>$46.15 per week</b>. The weekly number is what you can actually prepare for, repeat, and measure.</div>
+            <div class="callout compact"><b>Example:</b> if your planned contribution is <b>$100 per month</b>, multiply by <b>12</b> and divide by <b>52</b>. That becomes <b>${weekly100} per week</b>. If a bill is <b>$200 per month</b>, its weekly equivalent is <b>${weekly200} per week</b>. The weekly number is what you can actually prepare for, repeat, and measure.</div>
           </div>
         </div>
         <div class="table-wrap" style="margin-top:16px">
@@ -280,7 +284,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="card compact">
             <div class="label">Repeat and scale</div>
             <h3>Grow the system one responsibility at a time</h3>
-            <p>Once income grows enough that the current contribution level feels stable, add another bill target and repeat the process. If the original target was <b>$100/month</b>, that means the working number was <b>$23.08/week</b>. When that contribution becomes comfortable and the first bill target is functioning well, add the next weekly target on top of it instead of jumping randomly.</p>
+            <p>Once income grows enough that the current contribution level feels stable, add another bill target and repeat the process. If the original target was <b>$100/month</b>, that means the working number was <b>${weekly100}/week</b>. When that contribution becomes comfortable and the first bill target is functioning well, add the next weekly target on top of it instead of jumping randomly.</p>
             <p>The long-term rhythm is simple: stabilize cash flow, learn the platform, contribute weekly, reach the first threshold, use margin carefully, assign one bill, then repeat responsibly. Over time the portfolio is meant to take over more of the expense load, but only as the operating base and income capacity both improve.</p>
           </div>
         </div>
