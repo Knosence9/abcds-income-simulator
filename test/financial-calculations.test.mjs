@@ -76,10 +76,57 @@ test('simulator exposes and uses separate distribution ledgers', async () => {
   assert.match(simulatorPage, /id="spendableDistributions"/);
   assert.match(
     simulatorPage,
-    /id="acShare"[^>]*aria-label="A\/C distribution share \(DRIP on\)"/,
+    /id="acShare"[^>]*aria-labelledby="acShareLabel"/,
   );
   assert.match(simulatorPage, />Reinvested A\/C distributions</);
   assert.match(simulatorPage, />Spendable B\/D distributions</);
+});
+
+test('simulator range and number pairs share unique accessible labels', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+  const controls = [
+    ['starting', 'startingNumber', 'Starting portfolio'],
+    ['paycheck', 'paycheckNumber', 'Weekly paycheck contribution'],
+    ['yield', 'yieldNumber', 'Portfolio dividend %'],
+    ['acShare', 'acShareNumber', 'A/C distribution share (DRIP on)'],
+    ['growth', 'growthNumber', 'Dividend growth %'],
+    ['inflation', 'inflationNumber', 'Inflation %'],
+    ['expenses', 'expensesNumber', 'Monthly expenses'],
+    ['projectionYears', 'projectionYearsNumber', 'Projection years'],
+  ];
+
+  for (const [rangeId, numberId, label] of controls) {
+    const labelId = `${rangeId}Label`;
+    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(
+      simulatorPage,
+      new RegExp(`<label id="${labelId}" for="${numberId}">${escapedLabel}`),
+    );
+    assert.match(
+      simulatorPage,
+      new RegExp(
+        `<input id="${rangeId}" type="range" aria-labelledby="${labelId}"`,
+      ),
+    );
+  }
+});
+
+test('simulator announces a concise result summary after committed input changes', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /id="resultsStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"/,
+  );
+  assert.doesNotMatch(simulatorPage, /class="stats"[^>]*role="status"/);
+  assert.match(simulatorPage, /addEventListener\('change', announceResults\)/);
+  assert.match(simulatorPage, /Projection updated\. Final portfolio/);
 });
 
 test('converts a $100 monthly amount to approximately $23.08 per week', () => {
