@@ -2,7 +2,45 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { monthlyToWeekly } from '../src/lib/financial-calculations.mjs';
+import {
+  monthlyToWeekly,
+  routePillarDistributions,
+} from '../src/lib/financial-calculations.mjs';
+
+test('routes A/C distributions to reinvestment and B/D distributions to spendable cash', () => {
+  const result = routePillarDistributions({
+    marketValue: 10_000,
+    anchor: 40,
+    booster: 30,
+    closedEnd: 20,
+    dynamo: 10,
+  });
+
+  assert.deepEqual(result, {
+    grossDistributions: 100,
+    reinvestedDistributions: 60,
+    spendableDistributions: 40,
+    endingMarketValue: 10_060,
+  });
+});
+
+test('simulator exposes and uses separate distribution ledgers', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /routePillarDistributions/);
+  assert.match(simulatorPage, /id="grossDistributions"/);
+  assert.match(simulatorPage, /id="reinvestedDistributions"/);
+  assert.match(simulatorPage, /id="spendableDistributions"/);
+  assert.match(
+    simulatorPage,
+    /id="acShare"[^>]*aria-label="A\/C distribution share \(DRIP on\)"/,
+  );
+  assert.match(simulatorPage, />Reinvested A\/C distributions</);
+  assert.match(simulatorPage, />Spendable B\/D distributions</);
+});
 
 test('converts a $100 monthly amount to approximately $23.08 per week', () => {
   const weeklyAmount = monthlyToWeekly(100);
