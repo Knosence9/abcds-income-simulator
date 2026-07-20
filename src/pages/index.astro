@@ -2,6 +2,31 @@
 import { ViewTransitions } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import { classifyMarginRepairState } from '../lib/financial-calculations.mjs';
+
+const marginRepairStates = [
+  {
+    equityPercent: 59.99,
+    threshold: 'Below 60%',
+    term: 'Floor breached',
+    action: 'Stop buying and repair immediately.',
+  },
+  {
+    equityPercent: 60,
+    threshold: '60%–70% inclusive',
+    term: 'Repair band',
+    action: 'Remain paused and continue repair.',
+  },
+  {
+    equityPercent: 70.01,
+    threshold: 'Above 70%',
+    term: 'Resume threshold cleared',
+    action: 'Buying may resume only if the household budget is stable.',
+  },
+].map((state) => ({
+  ...state,
+  classification: classifyMarginRepairState(state.equityPercent),
+}));
 ---
 <!doctype html>
 <html lang="en">
@@ -167,16 +192,14 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
       .flow-node p { margin:0; }
       .flow-arrow-down { width:2px; height:42px; background:rgba(42,31,13,.28); position:relative; }
       .flow-arrow-down::after { content:''; position:absolute; left:50%; bottom:-1px; transform:translateX(-50%); border-top:12px solid rgba(42,31,13,.38); border-left:8px solid transparent; border-right:8px solid transparent; }
-      .flow-decision-row { width:100%; min-height:260px; position:relative; display:block; }
-      .decision-diamond { position:absolute; left:50%; top:36px; width:150px; height:150px; transform:translateX(-50%) rotate(45deg); border:2px solid rgba(32,63,105,.35); background:rgba(255,253,247,.95); display:grid; place-items:center; box-shadow:0 12px 30px rgba(42,31,13,.08); z-index:2; }
-      .decision-diamond > div { transform:rotate(-45deg); text-align:center; color:var(--a); font-weight:900; line-height:1.25; }
-      .decision-label { font:900 12px var(--mono); letter-spacing:.08em; color:var(--muted); text-transform:uppercase; }
-      .mobile-label { display:none; }
-      .decision-label.down { position:absolute; left:50%; top:202px; transform:translateX(-50%); background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:6px 10px; z-index:3; }
-      .decision-label.side { position:absolute; left:calc(50% + 150px); top:105px; transform:translate(-50%, -50%); background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:7px 10px; z-index:3; }
-      .side-arrow { position:absolute; left:calc(50% + 78px); top:105px; height:2px; width:144px; background:rgba(42,31,13,.28); }
-      .side-arrow::after { content:''; position:absolute; right:-1px; top:50%; transform:translateY(-50%); border-left:10px solid rgba(42,31,13,.38); border-top:7px solid transparent; border-bottom:7px solid transparent; }
-      .pause-node { position:absolute; left:calc(50% + 230px); top:52px; border-color:rgba(170,70,61,.38); background:color-mix(in srgb, var(--d) 13%, white); color:#6e2923; width:min(430px,calc(50% - 250px)); min-width:320px; }
+      .margin-state-flow { width:100%; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+      .margin-state { border:2px solid rgba(32,63,105,.18); border-radius:20px; padding:18px; background:var(--paper); text-align:left; }
+      .margin-state h3 { margin:5px 0 8px; }
+      .margin-state p { margin:0; }
+      .margin-state[data-margin-state='repair-immediately'] { border-color:rgba(170,70,61,.38); background:color-mix(in srgb, var(--d) 13%, white); }
+      .margin-state[data-margin-state='repair-band'] { border-color:rgba(199,154,44,.45); background:color-mix(in srgb, var(--gold) 14%, white); }
+      .margin-state[data-margin-state='eligible-to-resume'] { border-color:rgba(97,127,62,.38); background:color-mix(in srgb, var(--c) 13%, white); }
+      .margin-formula { width:100%; margin-top:14px; border:1px solid var(--line); border-radius:18px; padding:14px 16px; background:rgba(32,63,105,.06); color:var(--a); text-align:center; }
       .invest-node { border-color:rgba(70,55,150,.38); background:rgba(70,55,150,.12); }
       .pillar-split { width:100%; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:stretch; position:relative; padding-top:42px; }
       .pillar-split::before { content:''; position:absolute; left:8%; right:8%; top:20px; height:2px; background:rgba(42,31,13,.26); }
@@ -195,20 +218,12 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
       @media (max-width: 1100px) {
         .hero, .rules { grid-template-columns: 1fr; }
         .hero { min-height: auto; }
-        .cols-4, .cols-3, .cols-2, .flow, .stats, .rulebook, .money-rules { grid-template-columns: 1fr; }
+        .cols-4, .cols-3, .cols-2, .flow, .stats, .rulebook, .money-rules, .margin-state-flow { grid-template-columns: 1fr; }
         .step:not(:last-child)::after { content:'↓'; top:auto; right:50%; bottom:-22px; }
         .strategy-flow { max-width:100%; overflow:hidden; }
         .flow-node { width:100%; padding:16px; }
         .flow-node h3 { font-size:22px; }
-        .flow-decision-row { width:100%; min-height:auto; display:grid; justify-items:center; gap:14px; }
         .pillar-split { grid-template-columns:1fr; grid-template-rows:auto; }
-        .decision-diamond,.pause-node,.decision-label.down,.decision-label.side,.side-arrow { position:static; transform:none; left:auto; top:auto; width:auto; min-width:0; }
-        .decision-diamond { width:132px; height:132px; transform:rotate(45deg); margin:10px 0; }
-        .decision-diamond > div { transform:rotate(-45deg); font-size:14px; }
-        .side-arrow { display:none; }
-        .decision-label.down,.decision-label.side { margin:0; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:6px 10px; }
-        .desktop-label { display:none; }
-        .mobile-label { display:inline; }
         .pillar-split::before { display:none; }
         .life-row { grid-template-columns:1fr; }
       }
@@ -326,7 +341,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="money-rule"><div><h3>Single-stock equals Dynamo</h3><p>Any single-stock covered-call ETF is treated as highest-risk Dynamo exposure unless an exception is explicitly documented.</p></div></div>
           <div class="money-rule"><div><h3>The 60% rule matters</h3><p>Composite covered-call ETFs above 60% yield require Dynamo evaluation unless they serve a documented tactical purpose.</p></div></div>
           <div class="money-rule"><div><h3>Respect concentration limits</h3><p>Flag any position above 5%, act around 7%, limit duplicate underlying exposure, and cap active Dynamos.</p></div></div>
-          <div class="money-rule"><div><h3>The 60/70 contribution rule</h3><p>If margin equity drops below 60%, stop contributing new buys and let cash/dividends repair the account. Once it gets back above 70%, contributions can resume.</p></div></div>
+          <div class="money-rule"><div><h3>The 60/70 contribution rule</h3><p>Below 60%, stop new buys and repair immediately. From 60% through 70%, remain paused and continue repair. Above 70%, buying may resume only when the household budget is stable.</p></div></div>
           <div class="money-rule"><div><h3>Judge yield by total return</h3><p>High distributions do not automatically mean success. Compare dividends received against NAV loss, unrealized gain/loss, and yield on cost.</p></div></div>
           <div class="money-rule"><div><h3>Write down exceptions</h3><p>Exceptions are allowed only when the reason is named. If the rule bends silently, the system stops being a system.</p></div></div>
         </div>
@@ -344,7 +359,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
             <thead><tr><th>Rule</th><th>Threshold</th><th>Action</th><th>Reason</th></tr></thead>
             <tbody>
               <tr><td>Position size</td><td>5% flag / 7% act</td><td>Review, trim, or route new money elsewhere</td><td>Prevents high-yield temptation from becoming concentration risk.</td></tr>
-              <tr><td>Margin equity</td><td>Below 60% stop / above 70% resume</td><td>Stop new contributions below 60%; resume only after equity is back above 70%</td><td>Creates a safety band instead of constantly switching on one line.</td></tr>
+              <tr><td>Margin equity</td><td>Below 60%: immediate repair / 60%–70%: repair band / above 70%: eligible</td><td>Stop buying below 60%; remain paused through 70%; resume only above 70% when the household budget is stable.</td><td>Creates a safety band instead of constantly switching on one line.</td></tr>
               <tr><td>Composite yield</td><td>Over 60%</td><td>Evaluate as Dynamo</td><td>Very high yield usually means a different risk tier.</td></tr>
               <tr><td>Single-stock exposure</td><td>Any yield</td><td>Classify as Dynamo unless explicitly documented otherwise</td><td>Single-stock volatility is the risk, not only the yield.</td></tr>
               <tr><td>CEF DRIP</td><td>NAV or discount</td><td>Keep ON</td><td>The compounding mechanism is the reason for the pillar.</td></tr>
@@ -396,15 +411,18 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="flow-arrow-down" aria-hidden="true"></div>
           <div class="flow-node"><h3>E*Trade brokerage</h3><p>Cash auto-reduces margin balance</p></div>
           <div class="flow-arrow-down" aria-hidden="true"></div>
-          <div class="flow-decision-row">
-            <div class="decision-diamond"><div>Equity<br/>below 60%?</div></div>
-            <div class="side-arrow" aria-hidden="true"></div>
-            <div class="decision-label side">YES</div>
-            <div class="flow-node pause-node"><h3>Pause buying</h3><p>Dividends pay down margin until equity is back above 70%</p></div>
-            <div class="decision-label down"><span class="desktop-label">NO ↓</span><span class="mobile-label">RESUME ABOVE 70% ↓</span></div>
+          <div class="margin-state-flow" aria-label="Three-state margin repair rule">
+            {marginRepairStates.map((state) => (
+              <article class="margin-state" data-margin-state={state.classification}>
+                <div class="label">{state.term}</div>
+                <h3>{state.threshold}</h3>
+                <p>{state.action}</p>
+              </article>
+            ))}
           </div>
+          <div class="margin-formula"><b>Margin equity % = net account equity ÷ gross securities market value × 100</b><br/>60% is the floor, 60%–70% is the repair band, and above 70% clears the resume threshold.</div>
           <div class="flow-arrow-down" aria-hidden="true"></div>
-          <div class="flow-node invest-node"><h3>Invest across ABCDs</h3><p>Deploy capital to all four pillars</p></div>
+          <div class="flow-node invest-node"><h3>Eligible path: invest across ABCDs</h3><p>Deploy capital only above 70% and when the household budget is stable.</p></div>
           <div class="pillar-split">
             <div class="pillar-card pillar-a"><h3>[A] Anchors</h3><p>DRIP ON<br/>Grows with market</p></div>
             <div class="pillar-card pillar-b"><h3>[B] Boosters</h3><p>DRIP OFF<br/>Pays margin + bills</p></div>
