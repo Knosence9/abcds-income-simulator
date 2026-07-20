@@ -3,9 +3,49 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  classifyMarginRepairState,
   monthlyToWeekly,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('classifies margin equity below the 60% floor for immediate repair', () => {
+  assert.equal(classifyMarginRepairState(59.99), 'repair-immediately');
+});
+
+test('classifies the 60% to 70% inclusive interval as the repair band', () => {
+  assert.equal(classifyMarginRepairState(60), 'repair-band');
+  assert.equal(classifyMarginRepairState(70), 'repair-band');
+});
+
+test('classifies margin equity above 70% as eligible to resume buying', () => {
+  assert.equal(classifyMarginRepairState(70.01), 'eligible-to-resume');
+});
+
+test('strategy flow renders the canonical three-state margin repair rule', async () => {
+  const homePage = await readFile(
+    new URL('../src/pages/index.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(homePage, /classifyMarginRepairState/);
+  assert.match(homePage, /data-margin-state=/);
+  assert.match(homePage, /Below 60%/);
+  assert.match(homePage, /60%–70% inclusive/);
+  assert.match(homePage, /Above 70%/);
+  assert.match(homePage, /household budget is stable/);
+  assert.match(
+    homePage,
+    /Margin equity % = net account equity ÷ gross securities market value × 100/,
+  );
+  assert.match(homePage, /floor/);
+  assert.match(homePage, /repair band/);
+  assert.match(homePage, /resume threshold/);
+  assert.match(
+    homePage,
+    /Below 60%: immediate repair \/ 60%–70%: repair band \/ above 70%: eligible/,
+  );
+  assert.doesNotMatch(homePage, /Equity<br\/>below 60%\?/);
+});
 
 test('routes A/C distributions to reinvestment and B/D distributions to spendable cash', () => {
   const result = routePillarDistributions({
