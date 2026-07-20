@@ -34,6 +34,10 @@ test('simulator exposes and uses separate distribution ledgers', async () => {
   assert.match(simulatorPage, /id="grossDistributions"/);
   assert.match(simulatorPage, /id="reinvestedDistributions"/);
   assert.match(simulatorPage, /id="spendableDistributions"/);
+  assert.match(
+    simulatorPage,
+    /id="acShare"[^>]*aria-label="A\/C distribution share \(DRIP on\)"/,
+  );
   assert.match(simulatorPage, />Reinvested A\/C distributions</);
   assert.match(simulatorPage, />Spendable B\/D distributions</);
 });
