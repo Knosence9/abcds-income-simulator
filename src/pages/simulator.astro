@@ -1,5 +1,5 @@
 ---
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 
@@ -22,7 +22,7 @@ const defaultInputs = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ABCD Income Projection Lab</title>
-    <ViewTransitions />
+    <ClientRouter />
     <style>
       :root { --bg:#f6f0e4; --paper:#fffdf7; --paper-2:#fbf6ea; --ink:#17243a; --muted:#617086; --line:rgba(23,36,58,.15); --a:#203f69; --b:#bf7327; --c:#617f3e; --d:#aa463d; --gold:#c79a2c; --shadow:0 28px 90px rgba(42,31,13,.15); --serif:Georgia,'Times New Roman',serif; --sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
       * { box-sizing:border-box; }

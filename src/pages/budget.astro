@@ -1,5 +1,5 @@
 ---
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
@@ -13,7 +13,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>ABCD Weekly Budget Planner</title>
-    <ViewTransitions />
+    <ClientRouter />
     <style>
       :root {
         --bg: #f6f0e4;

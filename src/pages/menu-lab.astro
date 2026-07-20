@@ -1,5 +1,5 @@
 ---
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 ---
 <!doctype html>
@@ -8,7 +8,7 @@ import Analytics from '@vercel/analytics/astro';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Radial Menu Layout Lab</title>
-    <ViewTransitions />
+    <ClientRouter />
     <style is:global>
       :root {
         --bg:#f6f0e4; --paper:#fffdf7; --ink:#17243a; --muted:#617086; --line:rgba(23,36,58,.15);
