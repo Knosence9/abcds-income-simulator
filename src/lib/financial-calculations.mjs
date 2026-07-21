@@ -5,9 +5,10 @@ export function monthlyToWeekly(monthlyAmount) {
 export function parseWeeklyContribution(value, { fallback, max }) {
   if (value === null || String(value).trim() === '') return fallback;
   const contribution = Number(value);
-  return Number.isFinite(contribution)
-    ? Math.min(max, Math.max(0, contribution))
-    : fallback;
+  if (!Number.isFinite(contribution)) return fallback;
+
+  const boundedContribution = Math.min(max, Math.max(0, contribution));
+  return Math.round((boundedContribution + Number.EPSILON) * 100) / 100;
 }
 
 export function calculateWeeklyBudget({

@@ -25,6 +25,10 @@ test('clamps a finite budget contribution to simulator limits', () => {
   assert.equal(parseWeeklyContribution('5000.01', { fallback: 750, max: 5_000 }), 5_000);
 });
 
+test('normalizes an imported weekly contribution to whole cents', () => {
+  assert.equal(parseWeeklyContribution('123.456', { fallback: 750, max: 5_000 }), 123.46);
+});
+
 test('calculates a safe contribution from the remaining weekly surplus', () => {
   assert.deepEqual(
     calculateWeeklyBudget({
@@ -193,7 +197,7 @@ test('simulator announces a concise result summary after committed input changes
     /id="resultsStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"/,
   );
   assert.doesNotMatch(simulatorPage, /class="stats"[^>]*role="status"/);
-  assert.match(simulatorPage, /addEventListener\('change', announceResults\)/);
+  assert.match(simulatorPage, /addEventListener\('change', announceResultsIfValid\)/);
   assert.match(simulatorPage, /Projection updated\. Final portfolio/);
 });
 
@@ -224,6 +228,56 @@ test('simulator applies a validated weekly contribution from the budget URL', as
   assert.match(simulatorPage, /Weekly contribution imported from budget:/);
   assert.match(simulatorPage, /id="paycheckNumber"[^>]*step="0\.01"/);
   assert.match(simulatorPage, /id="paycheck"[^>]*step="0\.01"/);
+});
+
+test('simulator keeps synchronized controls on the range-valid value', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /number\.value\.trim\(\) === ''[\s\S]*!number\.validity\.valid[\s\S]*!Number\.isFinite\(number\.valueAsNumber\)/,
+  );
+  assert.match(simulatorPage, /number\.setAttribute\('aria-invalid', 'true'\)/);
+  assert.match(
+    simulatorPage,
+    /const enteredValue = number\.valueAsNumber;[\s\S]*range\.value = String\(enteredValue\);[\s\S]*number\.value = range\.value;[\s\S]*resultsStatus\.textContent = '';[\s\S]*render\(\)/,
+  );
+  assert.match(
+    simulatorPage,
+    /function hasInvalidInputs\(\)[\s\S]*pairs\.some[\s\S]*aria-invalid[\s\S]*true/,
+  );
+  assert.match(
+    simulatorPage,
+    /function announceResultsIfValid\(\)[\s\S]*hasInvalidInputs\(\)[\s\S]*Enter a value within the allowed range\.[\s\S]*return;[\s\S]*announceResults\(\)/,
+  );
+  assert.match(
+    simulatorPage,
+    /number\.removeAttribute\('aria-invalid'\);[\s\S]*if \(hasInvalidInputs\(\)\)[\s\S]*Enter a value within the allowed range\.[\s\S]*return;[\s\S]*resultsStatus\.textContent = '';[\s\S]*render\(\)/,
+  );
+  assert.match(simulatorPage, /range\.addEventListener\('change', announceResultsIfValid\)/);
+});
+
+test('simulator makes derived output unavailable while any input is invalid', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /function invalidateResults\(\)[\s\S]*resultIds[\s\S]*textContent = '—'[\s\S]*chart\.replaceChildren\(\)[\s\S]*Projection unavailable while an input is invalid/,
+  );
+  assert.match(
+    simulatorPage,
+    /number\.setAttribute\('aria-invalid', 'true'\);[\s\S]*invalidateResults\(\);[\s\S]*Enter a value within the allowed range\./,
+  );
+  assert.match(
+    simulatorPage,
+    /function render\(\)[\s\S]*chart\.setAttribute\('aria-label', 'Line plot of projected dividend income'\)/,
+  );
 });
 
 test('simulator initializer ignores ClientRouter visits to other routes', async () => {
