@@ -149,16 +149,20 @@ const defaultInputs = {
       function applyTransferredContribution() {
         const searchParams = new URLSearchParams(window.location.hash.slice(1));
         const requestedContribution = searchParams.get('weeklyContribution');
+        const requestedNumber = Number(requestedContribution);
         const transferredContribution = parseWeeklyContribution(
           requestedContribution,
           { fallback: 750, max: 5000 },
         );
-        $('paycheck').value = transferredContribution;
-        $('paycheckNumber').value = transferredContribution;
+        const paycheck = $('paycheck');
+        const paycheckNumber = $('paycheckNumber');
+        paycheck.value = transferredContribution;
+        const appliedContribution = Number(paycheck.value);
+        paycheckNumber.value = appliedContribution;
         return requestedContribution !== null
           && requestedContribution.trim() !== ''
-          && transferredContribution === Number(requestedContribution)
-          ? transferredContribution
+          && Number.isFinite(requestedNumber)
+          ? appliedContribution
           : null;
       }
       function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const acDistribution = periodIncome * input.acShare; const bdDistribution = periodIncome - acDistribution; const routed = routePillarDistributions({ marketValue: portfolio, anchor: acDistribution / 2, booster: bdDistribution / 2, closedEnd: acDistribution / 2, dynamo: bdDistribution / 2 }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = routed.endingMarketValue + contribution; } return rows; }

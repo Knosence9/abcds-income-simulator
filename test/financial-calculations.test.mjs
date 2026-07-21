@@ -216,8 +216,11 @@ test('simulator applies a validated weekly contribution from the budget URL', as
   assert.match(simulatorPage, /parseWeeklyContribution/);
   assert.match(simulatorPage, /window\.location\.hash\.slice\(1\)/);
   assert.match(simulatorPage, /searchParams\.get\('weeklyContribution'\)/);
-  assert.match(simulatorPage, /\$\('paycheck'\)\.value = transferredContribution/);
-  assert.match(simulatorPage, /\$\('paycheckNumber'\)\.value = transferredContribution/);
+  assert.match(simulatorPage, /paycheck\.value = transferredContribution/);
+  assert.match(simulatorPage, /const appliedContribution = Number\(paycheck\.value\)/);
+  assert.match(simulatorPage, /paycheckNumber\.value = appliedContribution/);
+  assert.match(simulatorPage, /Number\.isFinite\(requestedNumber\)/);
+  assert.match(simulatorPage, /\? appliedContribution/);
   assert.match(simulatorPage, /Weekly contribution imported from budget:/);
   assert.match(simulatorPage, /id="paycheckNumber"[^>]*step="0\.01"/);
   assert.match(simulatorPage, /id="paycheck"[^>]*step="0\.01"/);
@@ -310,7 +313,13 @@ test('budget planner links only its calculated safe contribution to the simulato
     'utf8',
   );
 
-  assert.match(budgetPage, /id="sendBudgetToSimulator"/);
+  assert.match(
+    budgetPage,
+    /id="sendBudgetToSimulator"[^>]*role="link"[^>]*aria-disabled="true"[^>]*tabindex="-1"/,
+  );
+  assert.match(budgetPage, /\.button\[aria-disabled="true"\][^{]*\{[^}]*pointer-events:\s*none/);
+  assert.match(budgetPage, /simulatorLink\.setAttribute\('tabindex', '-1'\)/);
+  assert.match(budgetPage, /simulatorLink\.removeAttribute\('tabindex'\)/);
   assert.match(budgetPage, /\/simulator#weeklyContribution=/);
   assert.doesNotMatch(budgetPage, /\/simulator\?weeklyContribution=/);
   assert.match(budgetPage, /result\.safeContribution\.toFixed\(2\)/);
