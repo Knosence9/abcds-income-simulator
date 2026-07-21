@@ -71,6 +71,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       .button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:999px; padding:0 16px; text-decoration:none; font-weight:900; border:1px solid var(--line); cursor:pointer; }
       .button.primary { background: var(--a); color: var(--paper); border-color: var(--a); }
       .button.secondary { background: rgba(255,255,255,.6); color: var(--a); }
+      .button[aria-disabled="true"] { opacity:.55; cursor:not-allowed; pointer-events:none; }
       .panel { margin-top: 28px; padding: clamp(24px, 4vw, 48px); }
       .section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom: 24px; }
       .pill {
@@ -136,6 +137,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
             <div class="planner-result"><span>Total weekly outflow</span><strong id="weeklyOutflow">—</strong></div>
             <div class="planner-result"><span>Weekly surplus or deficit</span><strong id="weeklyBalance">—</strong></div>
             <div class="planner-result"><span>Safe weekly contribution</span><strong id="weeklySafeContribution">—</strong></div>
+            <a id="sendBudgetToSimulator" class="button primary" role="link" aria-disabled="true" tabindex="-1">Send this budget to simulator</a>
             <p id="weeklyBudgetStatus" role="status" aria-live="polite" aria-atomic="true"></p>
             <p id="weeklyBudgetPrivacy" class="footer-note"><b>Local calculation:</b> Calculations run locally in this page; this planner does not save or submit the amounts you enter.</p>
           </div>
@@ -257,8 +259,9 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         const outflow = document.getElementById('weeklyOutflow');
         const balance = document.getElementById('weeklyBalance');
         const contribution = document.getElementById('weeklySafeContribution');
+        const simulatorLink = document.getElementById('sendBudgetToSimulator');
         const status = document.getElementById('weeklyBudgetStatus');
-        if (!form || !outflow || !balance || !contribution || !status) return;
+        if (!form || !outflow || !balance || !contribution || !simulatorLink || !status) return;
         weeklyBudgetIds.forEach((id) => {
           const input = document.getElementById(id);
           input?.setAttribute('aria-invalid', String(!input.validity.valid));
@@ -267,6 +270,9 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           outflow.textContent = '—';
           balance.textContent = '—';
           contribution.textContent = '—';
+          simulatorLink.removeAttribute('href');
+          simulatorLink.setAttribute('aria-disabled', 'true');
+          simulatorLink.setAttribute('tabindex', '-1');
           status.textContent = 'Enter a non-negative amount in every field to calculate this weekly plan.';
           return;
         }
@@ -281,6 +287,9 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         outflow.textContent = weeklyCurrency.format(result.totalOutflow);
         balance.textContent = weeklyCurrency.format(result.surplusOrDeficit);
         contribution.textContent = weeklyCurrency.format(result.safeContribution);
+        simulatorLink.href = `/simulator#weeklyContribution=${result.safeContribution.toFixed(2)}`;
+        simulatorLink.setAttribute('aria-disabled', 'false');
+        simulatorLink.removeAttribute('tabindex');
         status.textContent = result.surplusOrDeficit < 0
           ? `Weekly deficit ${weeklyCurrency.format(Math.abs(result.surplusOrDeficit))}. Safe contribution is ${weeklyCurrency.format(0)}.`
           : `Weekly surplus ${weeklyCurrency.format(result.surplusOrDeficit)}. Safe contribution is ${weeklyCurrency.format(result.safeContribution)}.`;
