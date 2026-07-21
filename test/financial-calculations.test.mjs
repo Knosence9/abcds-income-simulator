@@ -129,6 +129,62 @@ test('simulator announces a concise result summary after committed input changes
   assert.match(simulatorPage, /Projection updated\. Final portfolio/);
 });
 
+test('simulator reinitializes its controls after ClientRouter navigation', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /document\.addEventListener\('astro:page-load', initializeSimulator\)/);
+  assert.match(simulatorPage, /function initializeSimulator\(\)/);
+});
+
+test('simulator initializer ignores ClientRouter visits to other routes', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /function initializeSimulator\(\) \{[\s\S]*if \(!simulatorShell \|\| !controlsToggle\) \{[\s\S]*return;/,
+  );
+});
+
+test('simulator keyboard cleanup ignores routes without simulator controls', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /if \(!simulatorShell \|\| !controlsToggle\) \{[\s\S]*document\.removeEventListener\('keydown', closeSimulatorControls\);[\s\S]*return;/,
+  );
+});
+
+test('menu lab reinitializes drag controls after ClientRouter navigation', async () => {
+  const menuLabPage = await readFile(
+    new URL('../src/pages/menu-lab.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(menuLabPage, /document\.addEventListener\('astro:page-load', initializeMenuLab\)/);
+  assert.match(menuLabPage, /function initializeMenuLab\(\)/);
+});
+
+test('menu lab initializer ignores ClientRouter visits to other routes', async () => {
+  const menuLabPage = await readFile(
+    new URL('../src/pages/menu-lab.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    menuLabPage,
+    /function initializeMenuLab\(\) \{[\s\S]*if \(!lab\) \{[\s\S]*return;/,
+  );
+});
+
 test('converts a $100 monthly amount to approximately $23.08 per week', () => {
   const weeklyAmount = monthlyToWeekly(100);
 
