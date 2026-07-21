@@ -1,3 +1,14 @@
+export function calculateMarginAccount({ marketValue, marginDebt }) {
+  const netEquity = marketValue - marginDebt;
+
+  return {
+    grossMarketValue: marketValue,
+    marginDebt,
+    netEquity,
+    marginEquityPercent: marketValue === 0 ? 0 : (netEquity / marketValue) * 100,
+  };
+}
+
 export function monthlyToWeekly(monthlyAmount) {
   return monthlyAmount * 12 / 52;
 }

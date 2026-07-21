@@ -5,6 +5,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 
 const defaultInputs = {
   starting: 60450,
+  marginDebt: 0,
   paycheck: 750,
   dividendYield: 22,
   acDistributionShare: 50,
@@ -91,7 +92,8 @@ const defaultInputs = {
         <div class="sim" id="simulatorShell">
           <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="simulatorControls">Open simulator inputs</button>
           <aside class="controls" id="simulatorControls">
-            <div class="field"><label id="startingLabel" for="startingNumber">Starting portfolio <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
+            <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
+            <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></div>
             <div class="field"><label id="paycheckLabel" for="paycheckNumber">Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></label><input id="paycheck" type="range" aria-labelledby="paycheckLabel" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></div>
             <div class="callout compact"><b>Paid bi-weekly?</b> Divide your paycheck contribution by 2 and enter that weekly amount here. Example: if you contribute $1,500 every two weeks, enter $750.</div>
             <div class="field"><label id="yieldLabel" for="yieldNumber">Portfolio dividend % <input id="yieldNumber" type="number" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></label><input id="yield" type="range" aria-labelledby="yieldLabel" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></div>
@@ -105,7 +107,10 @@ const defaultInputs = {
           </aside>
           <div class="chart-wrap">
             <div class="stats">
-              <div class="stat"><span>Final portfolio</span><strong id="finalPortfolio">—</strong></div>
+              <div class="stat"><span>Ending gross market value</span><strong id="grossMarketValue">—</strong></div>
+              <div class="stat"><span>Margin debt</span><strong id="marginDebtResult">—</strong></div>
+              <div class="stat"><span>Ending net equity</span><strong id="netEquity">—</strong></div>
+              <div class="stat"><span>Margin equity</span><strong id="marginEquityPercent">—</strong></div>
               <div class="stat"><span>Monthly income</span><strong id="periodIncome">—</strong></div>
               <div class="stat"><span>Annual income</span><strong id="annualIncome">—</strong></div>
               <div class="stat"><span>Inflation-adjusted</span><strong id="realIncome">—</strong></div>
@@ -114,7 +119,7 @@ const defaultInputs = {
               <div class="stat"><span>Spendable B/D distributions</span><strong id="spendableDistributions">—</strong></div>
             </div>
             <p id="resultsStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
-            <p class="footer-note" style="margin-top:0">Distribution ledgers are cumulative for the projection. Final portfolio includes external contributions and reinvested A/C distributions, but excludes spendable B/D cash.</p>
+            <p class="footer-note" style="margin-top:0">Distribution ledgers are cumulative for the projection. Gross market value includes external contributions and reinvested A/C distributions, but excludes spendable B/D cash. Margin principal is held constant in this bounded model; interest and principal repayment are not modeled yet.</p>
             <p class="footer-note" style="margin-top:0"><b>How to read it:</b> orange = projected monthly dividends, green = today-dollar buying power, red = expenses after inflation.</p>
             <svg id="chart" viewBox="0 0 900 440" role="img" aria-label="Line plot of projected dividend income"></svg>
             <div class="legend"><span><i class="swatch" style="background:var(--b)"></i>Nominal dividend income</span><span><i class="swatch" style="background:var(--c)"></i>Inflation-adjusted income</span><span><i class="swatch" style="background:var(--d)"></i>Inflated expense target</span></div>
@@ -126,17 +131,18 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
+      import { calculateMarginAccount, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
 
       const $ = (id) => document.getElementById(id);
-      const pairs = [['starting', 'startingNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
+      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
       const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
       const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+      let marginDebtAdjustmentAnnouncement = '';
       function hasInvalidInputs() {
         return pairs.some(([, numberId]) => $(numberId).getAttribute('aria-invalid') === 'true');
       }
       function invalidateResults() {
-        const resultIds = ['finalPortfolio', 'periodIncome', 'annualIncome', 'realIncome', 'grossDistributions', 'reinvestedDistributions', 'spendableDistributions'];
+        const resultIds = ['grossMarketValue', 'marginDebtResult', 'netEquity', 'marginEquityPercent', 'periodIncome', 'annualIncome', 'realIncome', 'grossDistributions', 'reinvestedDistributions', 'spendableDistributions'];
         resultIds.forEach((id) => { $(id).textContent = '—'; });
         const chart = $('chart');
         chart.replaceChildren();
@@ -198,10 +204,28 @@ const defaultInputs = {
         controlsToggle.setAttribute('aria-expanded', 'false');
         controlsToggle.textContent = 'Open simulator inputs';
       }
-      function getInputs() { return { starting: Number($('starting').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, acShare: Number($('acShare').value) / 100, g: Number($('growth').value) / 100, i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
+      function constrainMarginDebt() {
+        const starting = $('starting');
+        const marginDebt = $('marginDebt');
+        const marginDebtNumber = $('marginDebtNumber');
+        const currentDebt = Number(marginDebt.value);
+        marginDebt.max = starting.value;
+        marginDebtNumber.max = starting.value;
+        const boundedDebt = Math.min(currentDebt, Number(starting.value));
+        marginDebt.value = String(boundedDebt);
+        marginDebtNumber.value = marginDebt.value;
+        marginDebtNumber.removeAttribute('aria-invalid');
+        marginDebtAdjustmentAnnouncement = currentDebt !== boundedDebt
+          ? 'Margin debt was adjusted because it cannot exceed starting gross market value.'
+          : '';
+      }
+      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, acShare: Number($('acShare').value) / 100, g: Number($('growth').value) / 100, i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
-      function announceResults() { $('resultsStatus').textContent = `Projection updated. Final portfolio ${$('finalPortfolio').textContent}. Monthly income ${$('periodIncome').textContent}. Spendable B/D distributions ${$('spendableDistributions').textContent}.`; }
+      function announceResults() {
+        const adjustmentMessage = marginDebtAdjustmentAnnouncement ? `${marginDebtAdjustmentAnnouncement} ` : '';
+        $('resultsStatus').textContent = `${adjustmentMessage}Projection updated. Gross market value ${$('grossMarketValue').textContent}. Margin debt ${$('marginDebtResult').textContent}. Net equity ${$('netEquity').textContent}. Margin equity ${$('marginEquityPercent').textContent}. Monthly income ${$('periodIncome').textContent}. Spendable B/D distributions ${$('spendableDistributions').textContent}.`;
+      }
       function applyTransferredContribution() {
         const searchParams = new URLSearchParams(window.location.hash.slice(1));
         const requestedContribution = searchParams.get('weeklyContribution');
@@ -223,8 +247,10 @@ const defaultInputs = {
       }
       function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const acDistribution = periodIncome * input.acShare; const bdDistribution = periodIncome - acDistribution; const routed = routePillarDistributions({ marketValue: portfolio, anchor: acDistribution / 2, booster: bdDistribution / 2, closedEnd: acDistribution / 2, dynamo: bdDistribution / 2 }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = routed.endingMarketValue + contribution; } return rows; }
       function render() {
+        constrainMarginDebt();
         const rows = simulate(); const last = rows[rows.length - 1]; const input = getInputs(); const periods = periodCount();
-        $('finalPortfolio').textContent = fmt.format(last.portfolio); $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel(); $('annualIncome').textContent = fmt.format(last.annualIncome); $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears)); $('grossDistributions').textContent = fmt.format(last.grossDistributions); $('reinvestedDistributions').textContent = fmt.format(last.reinvestedDistributions); $('spendableDistributions').textContent = fmt.format(last.spendableDistributions);
+        const marginAccount = calculateMarginAccount({ marketValue: last.portfolio, marginDebt: input.marginDebt });
+        $('grossMarketValue').textContent = fmt.format(marginAccount.grossMarketValue); $('marginDebtResult').textContent = fmt.format(marginAccount.marginDebt); $('netEquity').textContent = fmt.format(marginAccount.netEquity); $('marginEquityPercent').textContent = `${marginAccount.marginEquityPercent.toFixed(1)}%`; $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel(); $('annualIncome').textContent = fmt.format(last.annualIncome); $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears)); $('grossDistributions').textContent = fmt.format(last.grossDistributions); $('reinvestedDistributions').textContent = fmt.format(last.reinvestedDistributions); $('spendableDistributions').textContent = fmt.format(last.spendableDistributions);
         const chart = $('chart'); chart.setAttribute('aria-label', 'Line plot of projected dividend income'); const svg = chart; const W = 900, H = 440, p = { l: 72, r: 26, t: 30, b: 56 }; const years = Array.from({ length: input.projectionYears }, (_, index) => index + 1); const points = years.map((year) => rows[Math.min(rows.length - 1, Math.round(year * periods))]); const incomeValue = (r) => r.annualIncome / periods; const realIncomeValue = (r) => (r.annualIncome / Math.pow(1 + input.i, r.year)) / periods; const expenseValue = (r) => r.inflationNeed / periods; const maxY = Math.max(...points.map(incomeValue), ...points.map(realIncomeValue), ...points.map(expenseValue)) * 1.12 || 1; const x = (r) => p.l + (input.projectionYears === 1 ? 0.5 : ((r.year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r); const y = (value) => p.t + (1 - value / maxY) * (H - p.t - p.b); const pointPath = (valueFor) => points.map((r, idx) => `${idx ? 'L' : 'M'} ${x(r)} ${y(valueFor(r))}`).join(' ');
         let grid = `<rect x="${p.l}" y="${p.t}" width="${W-p.l-p.r}" height="${H-p.t-p.b}" rx="10" fill="rgba(255,253,247,.72)" stroke="rgba(32,63,105,.18)" stroke-width="1" />`;
         for (let i = 0; i <= 16; i++) { const gy = p.t + i * (H - p.t - p.b) / 16; grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.075)" stroke-width="1" />`; }

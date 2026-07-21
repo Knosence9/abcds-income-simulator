@@ -3,12 +3,50 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateMarginAccount,
   calculateWeeklyBudget,
   classifyMarginRepairState,
   monthlyToWeekly,
   parseWeeklyContribution,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('separates gross market value, margin debt, and net equity', () => {
+  assert.deepEqual(
+    calculateMarginAccount({ marketValue: 10_000, marginDebt: 2_500 }),
+    {
+      grossMarketValue: 10_000,
+      marginDebt: 2_500,
+      netEquity: 7_500,
+      marginEquityPercent: 75,
+    },
+  );
+});
+
+test('simulator exposes a bounded margin debt input and separate equity ledgers', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /calculateMarginAccount/);
+  assert.match(
+    simulatorPage,
+    /<label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt/,
+  );
+  assert.match(
+    simulatorPage,
+    /<input id="marginDebt" type="range" aria-labelledby="marginDebtLabel"/,
+  );
+  assert.match(simulatorPage, /id="grossMarketValue"/);
+  assert.match(simulatorPage, /id="marginDebtResult"/);
+  assert.match(simulatorPage, /id="netEquity"/);
+  assert.match(simulatorPage, /id="marginEquityPercent"/);
+  assert.match(simulatorPage, /marginDebt\.max = starting\.value/);
+  assert.match(simulatorPage, /marginDebtNumber\.max = starting\.value/);
+  assert.match(simulatorPage, /principal is held constant/i);
+  assert.match(simulatorPage, /interest and principal repayment are not modeled/i);
+});
 
 test('parses a valid budget contribution for the simulator', () => {
   assert.equal(parseWeeklyContribution('200.25', { fallback: 750, max: 5_000 }), 200.25);
@@ -160,7 +198,8 @@ test('simulator range and number pairs share unique accessible labels', async ()
     'utf8',
   );
   const controls = [
-    ['starting', 'startingNumber', 'Starting portfolio'],
+    ['starting', 'startingNumber', 'Starting gross market value'],
+    ['marginDebt', 'marginDebtNumber', 'Starting margin debt'],
     ['paycheck', 'paycheckNumber', 'Weekly paycheck contribution'],
     ['yield', 'yieldNumber', 'Portfolio dividend %'],
     ['acShare', 'acShareNumber', 'A/C distribution share (DRIP on)'],
@@ -198,7 +237,29 @@ test('simulator announces a concise result summary after committed input changes
   );
   assert.doesNotMatch(simulatorPage, /class="stats"[^>]*role="status"/);
   assert.match(simulatorPage, /addEventListener\('change', announceResultsIfValid\)/);
-  assert.match(simulatorPage, /Projection updated\. Final portfolio/);
+  assert.match(simulatorPage, /Projection updated\. Gross market value/);
+  assert.match(simulatorPage, /Projection updated\.[\s\S]*Margin debt/);
+  assert.match(simulatorPage, /Projection updated\.[\s\S]*Margin equity/);
+});
+
+test('simulator announces when starting gross market value bounds margin debt downward', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /const currentDebt = Number\(marginDebt\.value\);[\s\S]*marginDebt\.max = starting\.value;[\s\S]*const boundedDebt = Math\.min\(currentDebt, Number\(starting\.value\)\)/,
+  );
+  assert.match(
+    simulatorPage,
+    /cannot exceed starting gross market value/i,
+  );
+  assert.match(
+    simulatorPage,
+    /margin debt was adjusted because it cannot exceed starting gross market value/i,
+  );
 });
 
 test('simulator reinitializes its controls after ClientRouter navigation', async () => {
