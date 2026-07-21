@@ -92,7 +92,7 @@ const defaultInputs = {
           <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="simulatorControls">Open simulator inputs</button>
           <aside class="controls" id="simulatorControls">
             <div class="field"><label id="startingLabel" for="startingNumber">Starting portfolio <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
-            <div class="field"><label id="paycheckLabel" for="paycheckNumber">Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" step="25" /></label><input id="paycheck" type="range" aria-labelledby="paycheckLabel" value={defaultInputs.paycheck} min="0" max="5000" step="25" /></div>
+            <div class="field"><label id="paycheckLabel" for="paycheckNumber">Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></label><input id="paycheck" type="range" aria-labelledby="paycheckLabel" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></div>
             <div class="callout compact"><b>Paid bi-weekly?</b> Divide your paycheck contribution by 2 and enter that weekly amount here. Example: if you contribute $1,500 every two weeks, enter $750.</div>
             <div class="field"><label id="yieldLabel" for="yieldNumber">Portfolio dividend % <input id="yieldNumber" type="number" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></label><input id="yield" type="range" aria-labelledby="yieldLabel" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></div>
             <div class="field"><label id="acShareLabel" for="acShareNumber">A/C distribution share (DRIP on) <input id="acShareNumber" type="number" value={defaultInputs.acDistributionShare} min="0" max="100" step="1" /></label><input id="acShare" type="range" aria-labelledby="acShareLabel" value={defaultInputs.acDistributionShare} min="0" max="100" step="1" /></div>
@@ -126,7 +126,7 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { routePillarDistributions } from '../lib/financial-calculations.mjs';
+      import { parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
 
       const $ = (id) => document.getElementById(id);
       const pairs = [['starting', 'startingNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
@@ -146,6 +146,21 @@ const defaultInputs = {
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
       function announceResults() { $('resultsStatus').textContent = `Projection updated. Final portfolio ${$('finalPortfolio').textContent}. Monthly income ${$('periodIncome').textContent}. Spendable B/D distributions ${$('spendableDistributions').textContent}.`; }
+      function applyTransferredContribution() {
+        const searchParams = new URLSearchParams(window.location.hash.slice(1));
+        const requestedContribution = searchParams.get('weeklyContribution');
+        const transferredContribution = parseWeeklyContribution(
+          requestedContribution,
+          { fallback: 750, max: 5000 },
+        );
+        $('paycheck').value = transferredContribution;
+        $('paycheckNumber').value = transferredContribution;
+        return requestedContribution !== null
+          && requestedContribution.trim() !== ''
+          && transferredContribution === Number(requestedContribution)
+          ? transferredContribution
+          : null;
+      }
       function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const acDistribution = periodIncome * input.acShare; const bdDistribution = periodIncome - acDistribution; const routed = routePillarDistributions({ marketValue: portfolio, anchor: acDistribution / 2, booster: bdDistribution / 2, closedEnd: acDistribution / 2, dynamo: bdDistribution / 2 }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = routed.endingMarketValue + contribution; } return rows; }
       function render() {
         const rows = simulate(); const last = rows[rows.length - 1]; const input = getInputs(); const periods = periodCount();
@@ -166,11 +181,15 @@ const defaultInputs = {
           document.removeEventListener('keydown', closeSimulatorControls);
           return;
         }
+        const transferredContribution = applyTransferredContribution();
         pairs.forEach(([a,b]) => sync(a,b));
         controlsToggle.addEventListener('click', () => { const isOpen = simulatorShell.classList.toggle('controls-open'); controlsToggle.setAttribute('aria-expanded', String(isOpen)); controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs'; });
         document.removeEventListener('keydown', closeSimulatorControls);
         document.addEventListener('keydown', closeSimulatorControls);
         render();
+        if (transferredContribution !== null) {
+          $('resultsStatus').textContent = `Weekly contribution imported from budget: ${fmtSmall.format(transferredContribution)}. Projection updated.`;
+        }
       }
       document.addEventListener('astro:page-load', initializeSimulator);
     </script>

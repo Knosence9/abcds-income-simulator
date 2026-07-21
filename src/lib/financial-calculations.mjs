@@ -2,6 +2,14 @@ export function monthlyToWeekly(monthlyAmount) {
   return monthlyAmount * 12 / 52;
 }
 
+export function parseWeeklyContribution(value, { fallback, max }) {
+  if (value === null || String(value).trim() === '') return fallback;
+  const contribution = Number(value);
+  return Number.isFinite(contribution)
+    ? Math.min(max, Math.max(0, contribution))
+    : fallback;
+}
+
 export function calculateWeeklyBudget({
   income,
   essentials,

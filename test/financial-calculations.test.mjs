@@ -6,8 +6,24 @@ import {
   calculateWeeklyBudget,
   classifyMarginRepairState,
   monthlyToWeekly,
+  parseWeeklyContribution,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('parses a valid budget contribution for the simulator', () => {
+  assert.equal(parseWeeklyContribution('200.25', { fallback: 750, max: 5_000 }), 200.25);
+});
+
+test('falls back when a budget contribution is absent or not numeric', () => {
+  for (const value of [null, '', 'not-a-number']) {
+    assert.equal(parseWeeklyContribution(value, { fallback: 750, max: 5_000 }), 750);
+  }
+});
+
+test('clamps a finite budget contribution to simulator limits', () => {
+  assert.equal(parseWeeklyContribution('-1', { fallback: 750, max: 5_000 }), 0);
+  assert.equal(parseWeeklyContribution('5000.01', { fallback: 750, max: 5_000 }), 5_000);
+});
 
 test('calculates a safe contribution from the remaining weekly surplus', () => {
   assert.deepEqual(
@@ -191,6 +207,22 @@ test('simulator reinitializes its controls after ClientRouter navigation', async
   assert.match(simulatorPage, /function initializeSimulator\(\)/);
 });
 
+test('simulator applies a validated weekly contribution from the budget URL', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /parseWeeklyContribution/);
+  assert.match(simulatorPage, /window\.location\.hash\.slice\(1\)/);
+  assert.match(simulatorPage, /searchParams\.get\('weeklyContribution'\)/);
+  assert.match(simulatorPage, /\$\('paycheck'\)\.value = transferredContribution/);
+  assert.match(simulatorPage, /\$\('paycheckNumber'\)\.value = transferredContribution/);
+  assert.match(simulatorPage, /Weekly contribution imported from budget:/);
+  assert.match(simulatorPage, /id="paycheckNumber"[^>]*step="0\.01"/);
+  assert.match(simulatorPage, /id="paycheck"[^>]*step="0\.01"/);
+});
+
 test('simulator initializer ignores ClientRouter visits to other routes', async () => {
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),
@@ -270,6 +302,19 @@ test('budget page provides a local-only accessible weekly planner', async () => 
     budgetPage,
     /initializeWeeklyBudget\(\);\s*document\.addEventListener\('astro:page-load', initializeWeeklyBudget\)/,
   );
+});
+
+test('budget planner links only its calculated safe contribution to the simulator', async () => {
+  const budgetPage = await readFile(
+    new URL('../src/pages/budget.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(budgetPage, /id="sendBudgetToSimulator"/);
+  assert.match(budgetPage, /\/simulator#weeklyContribution=/);
+  assert.doesNotMatch(budgetPage, /\/simulator\?weeklyContribution=/);
+  assert.match(budgetPage, /result\.safeContribution\.toFixed\(2\)/);
+  assert.doesNotMatch(budgetPage, /\/simulator\?weeklyIncome=/);
 });
 
 test('budget examples are rendered from the tested monthly conversion', async () => {
