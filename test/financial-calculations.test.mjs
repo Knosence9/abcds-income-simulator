@@ -248,7 +248,10 @@ test('simulator announces when starting gross market value bounds margin debt do
     'utf8',
   );
 
-  assert.match(simulatorPage, /const boundedDebt = Math\.min\(Number\(marginDebt\.value\), Number\(starting\.value\)\)/);
+  assert.match(
+    simulatorPage,
+    /const currentDebt = Number\(marginDebt\.value\);[\s\S]*marginDebt\.max = starting\.value;[\s\S]*const boundedDebt = Math\.min\(currentDebt, Number\(starting\.value\)\)/,
+  );
   assert.match(
     simulatorPage,
     /cannot exceed starting gross market value/i,

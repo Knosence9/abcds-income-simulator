@@ -208,10 +208,10 @@ const defaultInputs = {
         const starting = $('starting');
         const marginDebt = $('marginDebt');
         const marginDebtNumber = $('marginDebtNumber');
+        const currentDebt = Number(marginDebt.value);
         marginDebt.max = starting.value;
         marginDebtNumber.max = starting.value;
-        const currentDebt = Number(marginDebt.value);
-        const boundedDebt = Math.min(Number(marginDebt.value), Number(starting.value));
+        const boundedDebt = Math.min(currentDebt, Number(starting.value));
         marginDebt.value = String(boundedDebt);
         marginDebtNumber.value = marginDebt.value;
         marginDebtNumber.removeAttribute('aria-invalid');
