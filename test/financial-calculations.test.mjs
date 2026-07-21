@@ -374,10 +374,14 @@ test('budget planner links only its calculated safe contribution to the simulato
   assert.match(budgetPage, /\.button\[aria-disabled="true"\][^{]*\{[^}]*pointer-events:\s*none/);
   assert.match(budgetPage, /simulatorLink\.setAttribute\('tabindex', '-1'\)/);
   assert.match(budgetPage, /simulatorLink\.removeAttribute\('tabindex'\)/);
-  assert.match(budgetPage, /\/simulator#weeklyContribution=/);
+  assert.match(
+    budgetPage,
+    /simulatorLink\.href = `\/simulator#weeklyContribution=\$\{result\.safeContribution\.toFixed\(2\)\}`/,
+  );
   assert.doesNotMatch(budgetPage, /\/simulator\?weeklyContribution=/);
-  assert.match(budgetPage, /result\.safeContribution\.toFixed\(2\)/);
-  assert.doesNotMatch(budgetPage, /\/simulator\?weeklyIncome=/);
+  assert.doesNotMatch(budgetPage, /#weeklyContribution=[^`]*&/);
+  assert.doesNotMatch(budgetPage, /#weeklyContribution=[^`]*weeklyIncome/);
+  assert.doesNotMatch(budgetPage, /\/simulator[?#][^`]*weeklyIncome/);
 });
 
 test('budget examples are rendered from the tested monthly conversion', async () => {
