@@ -157,7 +157,10 @@ test('simulator keyboard cleanup ignores routes without simulator controls', asy
     'utf8',
   );
 
-  assert.match(simulatorPage, /if \(!simulatorShell \|\| !controlsToggle\) return;/);
+  assert.match(
+    simulatorPage,
+    /if \(!simulatorShell \|\| !controlsToggle\) \{[\s\S]*document\.removeEventListener\('keydown', closeSimulatorControls\);[\s\S]*return;/,
+  );
 });
 
 test('menu lab reinitializes drag controls after ClientRouter navigation', async () => {
