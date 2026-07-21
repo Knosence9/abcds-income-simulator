@@ -94,8 +94,20 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       th { color:var(--a); font:900 12px var(--mono); text-transform:uppercase; letter-spacing:.08em; background:rgba(32,63,105,.06); }
       tr:last-child td { border-bottom:0; }
       .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
+      .planner { display:grid; grid-template-columns:minmax(0, 1.2fr) minmax(280px, .8fr); gap:18px; }
+      .planner-fields { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+      .planner-field { display:grid; gap:7px; }
+      .planner-field label { color:var(--a); font-weight:850; }
+      .planner-field input { width:100%; border:1px solid var(--line); border-radius:14px; padding:12px; background:var(--paper); color:var(--ink); font:800 16px var(--mono); }
+      .planner-field input[aria-invalid="true"] { border-color:var(--d); outline:2px solid color-mix(in srgb, var(--d) 28%, transparent); }
+      .planner-results { display:grid; gap:10px; align-content:start; }
+      .planner-result { border:1px solid var(--line); border-radius:18px; padding:14px; background:rgba(255,255,255,.62); }
+      .planner-result strong { display:block; margin-top:4px; color:var(--a); font:950 30px var(--serif); }
       @media (max-width: 1100px) {
-        .cols-4, .cols-3, .cols-2 { grid-template-columns: 1fr; }
+        .cols-4, .cols-3, .cols-2, .planner { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 620px) {
+        .planner-fields { grid-template-columns:1fr; }
       }
     </style>
   </head>
@@ -109,6 +121,26 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         <p class="lead">The ABCD system works best when money is translated into weekly decisions. This page is not about making a budget look pretty. It is about figuring out what you can actually sustain, what belongs to survival, what belongs to growth, and how to assign a realistic weekly contribution before the portfolio starts asking for bigger jobs.</p>
         <div class="hero-actions"><a class="button primary" href="/">Back to the ABCD guide</a><a class="button secondary" href="/getting-started">Start from zero</a><a class="button secondary" href="/simulator">Open the simulator</a></div>
       </header>
+
+      <section id="weekly-planner" class="panel">
+        <div class="section-head"><h2>Plan one sustainable week</h2><span class="pill">local-only calculator</span></div>
+        <div class="planner">
+          <form id="weeklyBudgetForm" class="planner-fields">
+            <div class="planner-field"><label for="weeklyIncome">Weekly take-home income</label><input id="weeklyIncome" type="number" min="0" step="0.01" value="1000" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyEssentials">Weekly essentials</label><input id="weeklyEssentials" type="number" min="0" step="0.01" value="500" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyFlexible">Weekly flexible spending</label><input id="weeklyFlexible" type="number" min="0" step="0.01" value="150" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklySinkingFunds">Weekly sinking funds</label><input id="weeklySinkingFunds" type="number" min="0" step="0.01" value="100" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyBreathingRoom">Weekly breathing-room buffer</label><input id="weeklyBreathingRoom" type="number" min="0" step="0.01" value="50" inputmode="decimal" required /></div>
+          </form>
+          <div class="planner-results" aria-describedby="weeklyBudgetPrivacy">
+            <div class="planner-result"><span>Total weekly outflow</span><strong id="weeklyOutflow">—</strong></div>
+            <div class="planner-result"><span>Weekly surplus or deficit</span><strong id="weeklyBalance">—</strong></div>
+            <div class="planner-result"><span>Safe weekly contribution</span><strong id="weeklySafeContribution">—</strong></div>
+            <p id="weeklyBudgetStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Local calculation:</b> Calculations run locally in this page; this planner does not save or submit the amounts you enter.</p>
+          </div>
+        </div>
+      </section>
 
       <section id="weekly-number" class="panel">
         <div class="section-head"><h2>Start with the weekly number</h2><span class="pill">make it actionable</span></div>
@@ -214,6 +246,56 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
     </div>
 
     <RadialSiteMenu page="budget" />
+    <script>
+      import { calculateWeeklyBudget } from '../lib/financial-calculations.mjs';
+
+      const weeklyBudgetIds = ['weeklyIncome', 'weeklyEssentials', 'weeklyFlexible', 'weeklySinkingFunds', 'weeklyBreathingRoom'];
+      const weeklyCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+      const weeklyValue = (id) => Number(document.getElementById(id)?.value);
+      function renderWeeklyBudget() {
+        const form = document.getElementById('weeklyBudgetForm');
+        const outflow = document.getElementById('weeklyOutflow');
+        const balance = document.getElementById('weeklyBalance');
+        const contribution = document.getElementById('weeklySafeContribution');
+        const status = document.getElementById('weeklyBudgetStatus');
+        if (!form || !outflow || !balance || !contribution || !status) return;
+        weeklyBudgetIds.forEach((id) => {
+          const input = document.getElementById(id);
+          input?.setAttribute('aria-invalid', String(!input.validity.valid));
+        });
+        if (!form.checkValidity()) {
+          outflow.textContent = '—';
+          balance.textContent = '—';
+          contribution.textContent = '—';
+          status.textContent = 'Enter a non-negative amount in every field to calculate this weekly plan.';
+          return;
+        }
+        const result = calculateWeeklyBudget({
+          income: weeklyValue('weeklyIncome'),
+          essentials: weeklyValue('weeklyEssentials'),
+          flexible: weeklyValue('weeklyFlexible'),
+          sinkingFunds: weeklyValue('weeklySinkingFunds'),
+          breathingRoom: weeklyValue('weeklyBreathingRoom'),
+        });
+
+        outflow.textContent = weeklyCurrency.format(result.totalOutflow);
+        balance.textContent = weeklyCurrency.format(result.surplusOrDeficit);
+        contribution.textContent = weeklyCurrency.format(result.safeContribution);
+        status.textContent = result.surplusOrDeficit < 0
+          ? `Weekly deficit ${weeklyCurrency.format(Math.abs(result.surplusOrDeficit))}. Safe contribution is ${weeklyCurrency.format(0)}.`
+          : `Weekly surplus ${weeklyCurrency.format(result.surplusOrDeficit)}. Safe contribution is ${weeklyCurrency.format(result.safeContribution)}.`;
+      }
+      function initializeWeeklyBudget() {
+        const form = document.getElementById('weeklyBudgetForm');
+        if (!form || form.dataset.initialized === 'true') return;
+        form.dataset.initialized = 'true';
+        weeklyBudgetIds.forEach((id) => document.getElementById(id)?.addEventListener('input', renderWeeklyBudget));
+        form.addEventListener('submit', (event) => event.preventDefault());
+        renderWeeklyBudget();
+      }
+      initializeWeeklyBudget();
+      document.addEventListener('astro:page-load', initializeWeeklyBudget);
+    </script>
     <Analytics />
   </body>
 </html>

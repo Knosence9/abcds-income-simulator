@@ -3,10 +3,62 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateWeeklyBudget,
   classifyMarginRepairState,
   monthlyToWeekly,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('calculates a safe contribution from the remaining weekly surplus', () => {
+  assert.deepEqual(
+    calculateWeeklyBudget({
+      income: 1_000,
+      essentials: 500,
+      flexible: 150,
+      sinkingFunds: 100,
+      breathingRoom: 50,
+    }),
+    {
+      totalOutflow: 800,
+      surplusOrDeficit: 200,
+      safeContribution: 200,
+    },
+  );
+});
+
+test('reports a weekly deficit without recommending a negative contribution', () => {
+  assert.deepEqual(
+    calculateWeeklyBudget({
+      income: 700,
+      essentials: 500,
+      flexible: 150,
+      sinkingFunds: 100,
+      breathingRoom: 50,
+    }),
+    {
+      totalOutflow: 800,
+      surplusOrDeficit: -100,
+      safeContribution: 0,
+    },
+  );
+});
+
+test('balances decimal currency values without a floating-point deficit', () => {
+  assert.deepEqual(
+    calculateWeeklyBudget({
+      income: 0.30,
+      essentials: 0.10,
+      flexible: 0.20,
+      sinkingFunds: 0,
+      breathingRoom: 0,
+    }),
+    {
+      totalOutflow: 0.30,
+      surplusOrDeficit: 0,
+      safeContribution: 0,
+    },
+  );
+});
 
 test('classifies margin equity below the 60% floor for immediate repair', () => {
   assert.equal(classifyMarginRepairState(59.99), 'repair-immediately');
@@ -190,6 +242,34 @@ test('converts a $100 monthly amount to approximately $23.08 per week', () => {
 
   assert.equal(weeklyAmount, 100 * 12 / 52);
   assert.equal(weeklyAmount.toFixed(2), '23.08');
+});
+
+test('budget page provides a local-only accessible weekly planner', async () => {
+  const budgetPage = await readFile(
+    new URL('../src/pages/budget.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(budgetPage, /calculateWeeklyBudget/);
+  for (const [id, label] of [
+    ['weeklyIncome', 'Weekly take-home income'],
+    ['weeklyEssentials', 'Weekly essentials'],
+    ['weeklyFlexible', 'Weekly flexible spending'],
+    ['weeklySinkingFunds', 'Weekly sinking funds'],
+    ['weeklyBreathingRoom', 'Weekly breathing-room buffer'],
+  ]) {
+    assert.match(budgetPage, new RegExp(`<label for="${id}">${label}<\\/label>`));
+    assert.match(budgetPage, new RegExp(`<input id="${id}"[^>]*type="number"`));
+  }
+  assert.match(budgetPage, /id="weeklyBudgetStatus"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(budgetPage, /Calculations run locally in this page/);
+  assert.doesNotMatch(budgetPage, /not included in analytics events/);
+  assert.match(budgetPage, /if \(!form\.checkValidity\(\)\)/);
+  assert.match(budgetPage, /aria-invalid/);
+  assert.match(
+    budgetPage,
+    /initializeWeeklyBudget\(\);\s*document\.addEventListener\('astro:page-load', initializeWeeklyBudget\)/,
+  );
 });
 
 test('budget examples are rendered from the tested monthly conversion', async () => {
