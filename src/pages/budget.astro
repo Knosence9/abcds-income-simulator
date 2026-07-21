@@ -90,6 +90,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       .plain-list { margin: 10px 0 0; padding-left: 1.1rem; color:#49576c; line-height:1.55; }
       .plain-list li { margin: 6px 0; }
       .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.5); }
+      .table-wrap:focus-visible { outline:3px solid var(--a); outline-offset:3px; }
       table { width:100%; border-collapse:collapse; min-width:760px; }
       th, td { padding:13px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; color:#49576c; }
       th { color:var(--a); font:900 12px var(--mono); text-transform:uppercase; letter-spacing:.08em; background:rgba(32,63,105,.06); }
@@ -175,7 +176,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           <div class="card compact"><div class="label">Step 2</div><h3>Find the repeatable amount</h3><p>The right starting contribution is not the biggest number you can force once. It is the number you can repeat without breaking your normal life the next week.</p></div>
           <div class="card compact"><div class="label">Step 3</div><h3>Leave breathing room</h3><p>If the plan has zero room for small surprises, it is not disciplined. It is brittle. Keep some cash-flow flexibility so the contribution habit survives ordinary life.</p></div>
         </div>
-        <div class="table-wrap" style="margin-top:16px">
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Weekly contribution examples table" style="margin-top:16px">
           <table>
             <thead><tr><th>Weekly pay</th><th>Contribution style</th><th>Weekly contribution</th><th>Approximate monthly equivalent</th><th>When it fits</th></tr></thead>
             <tbody>

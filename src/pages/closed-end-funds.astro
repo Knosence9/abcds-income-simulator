@@ -90,6 +90,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
       .plain-list { margin: 10px 0 0; padding-left: 1.1rem; color:#49576c; line-height:1.55; }
       .plain-list li { margin: 6px 0; }
       .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:22px; background:rgba(255,255,255,.5); }
+      .table-wrap:focus-visible { outline:3px solid var(--a); outline-offset:3px; }
       table { width:100%; border-collapse:collapse; min-width:760px; }
       th, td { padding:13px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; color:#49576c; }
       th { color:var(--a); font:900 12px var(--mono); text-transform:uppercase; letter-spacing:.08em; background:rgba(32,63,105,.06); }
@@ -148,7 +149,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
           <div class="card compact"><div class="label">Step 2</div><h3>DRIP turns that cash into more shares</h3><p>Instead of taking the money out, the system uses it to buy more of the fund for you.</p></div>
           <div class="card compact"><div class="label">Step 3</div><h3>More shares can create more future distributions</h3><p>That is why the C lane cares so much about share count. The machine gets bigger from the inside.</p></div>
         </div>
-        <div class="table-wrap" style="margin-top:16px">
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Closed-end fund pricing examples table" style="margin-top:16px">
           <table>
             <thead><tr><th>Example</th><th>Market price</th><th>NAV</th><th>What happens</th><th>Why it matters</th></tr></thead>
             <tbody>
@@ -196,7 +197,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
             <p>GOF is not identical to CLM or CRF, but it fits the same lane in this guide. The system is less concerned with taking today’s cash out and more concerned with how reinvestment and structural pricing can help grow the share base over time. That is why it still belongs in C.</p>
           </div>
         </div>
-        <div class="table-wrap" style="margin-top:16px">
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Closed-end fund comparison table" style="margin-top:16px">
           <table>
             <thead><tr><th>Fund</th><th>Main thing to watch</th><th>Why it is not just “income”</th><th>Why it belongs in C</th></tr></thead>
             <tbody>
