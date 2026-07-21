@@ -3,29 +3,44 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const tablePages = [
-  ['index.astro', 3],
-  ['budget.astro', 1],
-  ['getting-started.astro', 1],
-  ['closed-end-funds.astro', 2],
+  [
+    'index.astro',
+    [
+      'Portfolio operating rules table',
+      'Contribution gears table',
+      'Example family portfolios table',
+    ],
+  ],
+  ['budget.astro', ['Weekly contribution examples table']],
+  ['getting-started.astro', ['Starter contribution timelines table']],
+  [
+    'closed-end-funds.astro',
+    [
+      'Closed-end fund pricing examples table',
+      'Closed-end fund comparison table',
+    ],
+  ],
 ];
 
 test('every horizontally scrollable table is keyboard focusable and labeled', async () => {
   let wrapperCount = 0;
 
-  for (const [page, expectedCount] of tablePages) {
+  for (const [page, expectedLabels] of tablePages) {
     const source = await readFile(
       new URL(`../src/pages/${page}`, import.meta.url),
       'utf8',
     );
-    const wrappers = source.match(/<div class="table-wrap"[^>]*>/g) ?? [];
+    const wrappers = source.match(
+      /<div\b[^>]*\bclass="(?:[^"]*\s)?table-wrap(?:\s[^"]*)?"[^>]*>/g,
+    ) ?? [];
 
-    assert.equal(wrappers.length, expectedCount, `${page} table wrapper inventory changed`);
+    assert.equal(wrappers.length, expectedLabels.length, `${page} table wrapper inventory changed`);
     wrapperCount += wrappers.length;
 
-    for (const wrapper of wrappers) {
+    for (const [index, wrapper] of wrappers.entries()) {
       assert.match(wrapper, /\brole="region"/);
       assert.match(wrapper, /\btabindex="0"/);
-      assert.match(wrapper, /\baria-label="[^"]+"/);
+      assert.ok(wrapper.includes(`aria-label="${expectedLabels[index]}"`));
     }
 
     assert.match(
