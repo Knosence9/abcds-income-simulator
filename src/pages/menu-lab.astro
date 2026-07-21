@@ -184,12 +184,9 @@ import Analytics from '@vercel/analytics/astro';
         red: ['M7 7h10', 'M7 12h10', 'M7 17h10'],
       };
 
-      const lab = document.getElementById('lab');
-      const output = document.getElementById('configOutput');
-      const copyButton = document.getElementById('copyConfig');
-      const resetButton = document.getElementById('resetLayout');
-      const toggleGuidesButton = document.getElementById('toggleGuides');
-      const guides = [...lab.querySelectorAll('.guide, .axis, .ghost')];
+      let lab;
+      let output;
+      let guides = [];
       let guidesVisible = true;
       let state = JSON.parse(JSON.stringify(seed));
 
@@ -284,26 +281,45 @@ import Analytics from '@vercel/analytics/astro';
         });
       };
 
-      copyButton.addEventListener('click', async () => {
-        updateOutput();
-        await navigator.clipboard.writeText(output.value);
-        copyButton.textContent = 'Copied';
-        setTimeout(() => { copyButton.textContent = 'Copy layout JSON'; }, 1200);
-      });
+      function initializeMenuLab() {
+        lab = document.getElementById('lab');
+        if (!lab) {
+          output = undefined;
+          guides = [];
+          window.removeEventListener('resize', render);
+          return;
+        }
+        output = document.getElementById('configOutput');
+        const copyButton = document.getElementById('copyConfig');
+        const resetButton = document.getElementById('resetLayout');
+        const toggleGuidesButton = document.getElementById('toggleGuides');
+        guides = [...lab.querySelectorAll('.guide, .axis, .ghost')];
 
-      resetButton.addEventListener('click', () => {
-        state = JSON.parse(JSON.stringify(seed));
-        render();
-      });
+        copyButton.addEventListener('click', async () => {
+          updateOutput();
+          await navigator.clipboard.writeText(output.value);
+          copyButton.textContent = 'Copied';
+          setTimeout(() => { copyButton.textContent = 'Copy layout JSON'; }, 1200);
+        });
 
-      toggleGuidesButton.addEventListener('click', () => {
-        guidesVisible = !guidesVisible;
+        resetButton.addEventListener('click', () => {
+          state = JSON.parse(JSON.stringify(seed));
+          render();
+        });
+
+        toggleGuidesButton.addEventListener('click', () => {
+          guidesVisible = !guidesVisible;
+          guides.forEach((guide) => { guide.style.display = guidesVisible ? '' : 'none'; });
+          toggleGuidesButton.textContent = guidesVisible ? 'Hide guides' : 'Show guides';
+        });
+
         guides.forEach((guide) => { guide.style.display = guidesVisible ? '' : 'none'; });
         toggleGuidesButton.textContent = guidesVisible ? 'Hide guides' : 'Show guides';
-      });
-
-      window.addEventListener('resize', render);
-      render();
+        window.removeEventListener('resize', render);
+        window.addEventListener('resize', render);
+        render();
+      }
+      document.addEventListener('astro:page-load', initializeMenuLab);
     </script>
     <Analytics />
   </body>

@@ -133,11 +133,15 @@ const defaultInputs = {
       const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
       const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       function sync(a, b) { $(a).addEventListener('input', () => { $(b).value = $(a).value; render(); }); $(b).addEventListener('input', () => { $(a).value = $(b).value; render(); }); $(a).addEventListener('change', announceResults); $(b).addEventListener('change', announceResults); }
-      pairs.forEach(([a,b]) => sync(a,b));
-      const simulatorShell = $('simulatorShell');
-      const controlsToggle = $('controlsToggle');
-      controlsToggle.addEventListener('click', () => { const isOpen = simulatorShell.classList.toggle('controls-open'); controlsToggle.setAttribute('aria-expanded', String(isOpen)); controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs'; });
-      document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { simulatorShell.classList.remove('controls-open'); controlsToggle.setAttribute('aria-expanded', 'false'); controlsToggle.textContent = 'Open simulator inputs'; } });
+      function closeSimulatorControls(event) {
+        if (event.key !== 'Escape') return;
+        const simulatorShell = $('simulatorShell');
+        const controlsToggle = $('controlsToggle');
+        if (!simulatorShell || !controlsToggle) return;
+        simulatorShell.classList.remove('controls-open');
+        controlsToggle.setAttribute('aria-expanded', 'false');
+        controlsToggle.textContent = 'Open simulator inputs';
+      }
       function getInputs() { return { starting: Number($('starting').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, acShare: Number($('acShare').value) / 100, g: Number($('growth').value) / 100, i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
@@ -155,7 +159,20 @@ const defaultInputs = {
         const dots = points.map((r) => `<circle cx="${x(r)}" cy="${y(incomeValue(r))}" r="5" fill="#bf7327" stroke="#fffdf7" stroke-width="2"/><circle cx="${x(r)}" cy="${y(realIncomeValue(r))}" r="5" fill="#617f3e" stroke="#fffdf7" stroke-width="2"/><circle cx="${x(r)}" cy="${y(expenseValue(r))}" r="5" fill="#aa463d" stroke="#fffdf7" stroke-width="2"/>`).join('');
         svg.innerHTML = `${grid}<path d="${pointPath(incomeValue)}" fill="none" stroke="#bf7327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${pointPath(realIncomeValue)}" fill="none" stroke="#617f3e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${pointPath(expenseValue)}" fill="none" stroke="#aa463d" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" stroke-linejoin="round"/>${dots}<line x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><text x="${p.l}" y="18" fill="#617086" font-size="12">Line plot: monthly dollars · weekly contributions</text><text x="${W-p.r}" y="18" text-anchor="end" fill="#617086" font-size="12">${input.projectionYears}-year projection</text>`;
       }
-      render();
+      function initializeSimulator() {
+        const simulatorShell = $('simulatorShell');
+        const controlsToggle = $('controlsToggle');
+        if (!simulatorShell || !controlsToggle) {
+          document.removeEventListener('keydown', closeSimulatorControls);
+          return;
+        }
+        pairs.forEach(([a,b]) => sync(a,b));
+        controlsToggle.addEventListener('click', () => { const isOpen = simulatorShell.classList.toggle('controls-open'); controlsToggle.setAttribute('aria-expanded', String(isOpen)); controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs'; });
+        document.removeEventListener('keydown', closeSimulatorControls);
+        document.addEventListener('keydown', closeSimulatorControls);
+        render();
+      }
+      document.addEventListener('astro:page-load', initializeSimulator);
     </script>
     <Analytics />
   </body>
