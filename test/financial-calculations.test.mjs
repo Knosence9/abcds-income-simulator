@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateExpenseCoverage,
   calculateMarginAccount,
   calculateMarginInterest,
   calculatePillarDistributions,
@@ -15,6 +16,28 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('uses spendable distributions to pay expenses before retaining cash', () => {
+  assert.deepEqual(
+    calculateExpenseCoverage({ spendableCash: 100, expenses: 70 }),
+    {
+      expensesPaid: 70,
+      uncoveredExpenses: 0,
+      remainingCash: 30,
+    },
+  );
+});
+
+test('reports expenses that spendable distributions cannot cover', () => {
+  assert.deepEqual(
+    calculateExpenseCoverage({ spendableCash: 40, expenses: 70 }),
+    {
+      expensesPaid: 40,
+      uncoveredExpenses: 30,
+      remainingCash: 0,
+    },
+  );
+});
 
 test('applies annual NAV price return over one monthly period', () => {
   const result = calculatePeriodicMarketReturn({
@@ -378,6 +401,26 @@ test('requires the four pillar allocations to total 100%', () => {
   assert.equal(validatePillarAllocations({ anchor: 40, booster: 20, closedEnd: 30, dynamo: 10 }), true);
   assert.equal(validatePillarAllocations({ anchor: 40, booster: 20, closedEnd: 20, dynamo: 10 }), false);
   assert.equal(validatePillarAllocations({ anchor: 40, booster: 20, closedEnd: Number.NaN, dynamo: 40 }), false);
+});
+
+test('simulator accumulates spendable cash expense coverage in separate ledgers', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /calculateExpenseCoverage/);
+  assert.match(simulatorPage, /id="expensesPaid"/);
+  assert.match(simulatorPage, /id="uncoveredExpenses"/);
+  assert.match(simulatorPage, /id="remainingCash"/);
+  assert.match(
+    simulatorPage,
+    /calculateExpenseCoverage\(\{ spendableCash: remainingCash \+ routed\.spendableDistributions, expenses: periodExpenses \}\)/,
+  );
+  assert.match(simulatorPage, /expensesPaid \+= expenseCoverage\.expensesPaid/);
+  assert.match(simulatorPage, /uncoveredExpenses \+= expenseCoverage\.uncoveredExpenses/);
+  assert.match(simulatorPage, /remainingCash = expenseCoverage\.remainingCash/);
+  assert.match(simulatorPage, /Margin interest remains a separate unpaid estimate/i);
 });
 
 test('simulator exposes explicit pillar assumptions and uses their distribution ledgers', async () => {
