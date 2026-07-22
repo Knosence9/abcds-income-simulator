@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import SkipLink from '../components/SkipLink.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 
 const defaultInputs = {
   starting: 60450,
@@ -145,6 +146,7 @@ const defaultInputs = {
         </div>
       </section>
       </main>
+      <SiteFooter />
     </div>
 
     <RadialSiteMenu page="simulator" />
