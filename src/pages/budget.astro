@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
+import { WEEKLY_BUDGET_MAX_AMOUNT } from '../lib/weekly-budget-storage.mjs';
 
 const weekly100 = monthlyToWeekly(100).toFixed(2);
 const weekly200 = monthlyToWeekly(200).toFixed(2);
@@ -128,19 +129,20 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         <div class="section-head"><h2>Plan one sustainable week</h2><span class="pill">local-only calculator</span></div>
         <div class="planner">
           <form id="weeklyBudgetForm" class="planner-fields">
-            <div class="planner-field"><label for="weeklyIncome">Weekly take-home income</label><input id="weeklyIncome" type="number" min="0" step="0.01" value="1000" inputmode="decimal" required /></div>
-            <div class="planner-field"><label for="weeklyEssentials">Weekly essentials</label><input id="weeklyEssentials" type="number" min="0" step="0.01" value="500" inputmode="decimal" required /></div>
-            <div class="planner-field"><label for="weeklyFlexible">Weekly flexible spending</label><input id="weeklyFlexible" type="number" min="0" step="0.01" value="150" inputmode="decimal" required /></div>
-            <div class="planner-field"><label for="weeklySinkingFunds">Weekly sinking funds</label><input id="weeklySinkingFunds" type="number" min="0" step="0.01" value="100" inputmode="decimal" required /></div>
-            <div class="planner-field"><label for="weeklyBreathingRoom">Weekly breathing-room buffer</label><input id="weeklyBreathingRoom" type="number" min="0" step="0.01" value="50" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyIncome">Weekly take-home income</label><input id="weeklyIncome" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="1000" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyEssentials">Weekly essentials</label><input id="weeklyEssentials" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="500" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyFlexible">Weekly flexible spending</label><input id="weeklyFlexible" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="150" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklySinkingFunds">Weekly sinking funds</label><input id="weeklySinkingFunds" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="100" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyBreathingRoom">Weekly breathing-room buffer</label><input id="weeklyBreathingRoom" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="50" inputmode="decimal" required /></div>
           </form>
           <div class="planner-results" aria-describedby="weeklyBudgetPrivacy">
             <div class="planner-result"><span>Total weekly outflow</span><strong id="weeklyOutflow">—</strong></div>
             <div class="planner-result"><span>Weekly surplus or deficit</span><strong id="weeklyBalance">—</strong></div>
             <div class="planner-result"><span>Safe weekly contribution</span><strong id="weeklySafeContribution">—</strong></div>
             <a id="sendBudgetToSimulator" class="button primary" role="link" aria-disabled="true" tabindex="-1">Send this budget to simulator</a>
+            <button id="resetWeeklyBudget" class="button secondary" type="button">Reset saved budget</button>
             <p id="weeklyBudgetStatus" role="status" aria-live="polite" aria-atomic="true"></p>
-            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Local calculation:</b> Calculations run locally in this page; this planner does not save or submit the amounts you enter.</p>
+            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Use “Reset saved budget” to remove them.</p>
           </div>
         </div>
       </section>
@@ -251,11 +253,29 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
     <RadialSiteMenu page="budget" />
     <script>
       import { calculateWeeklyBudget } from '../lib/financial-calculations.mjs';
+      import {
+        clearWeeklyBudget,
+        getWeeklyBudgetStorage,
+        loadWeeklyBudget,
+        saveWeeklyBudget,
+        WEEKLY_BUDGET_DEFAULTS,
+        WEEKLY_BUDGET_FIELD_IDS,
+      } from '../lib/weekly-budget-storage.mjs';
 
-      const weeklyBudgetIds = ['weeklyIncome', 'weeklyEssentials', 'weeklyFlexible', 'weeklySinkingFunds', 'weeklyBreathingRoom'];
+      const weeklyBudgetIds = WEEKLY_BUDGET_FIELD_IDS;
+      const storage = getWeeklyBudgetStorage(window);
       const weeklyCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       const weeklyValue = (id) => Number(document.getElementById(id)?.value);
-      function renderWeeklyBudget() {
+      const weeklySnapshot = () => Object.fromEntries(
+        weeklyBudgetIds.map((id) => [id, weeklyValue(id)]),
+      );
+      function applyWeeklyBudget(snapshot) {
+        weeklyBudgetIds.forEach((id) => {
+          const input = document.getElementById(id);
+          if (input) input.value = String(snapshot[id]);
+        });
+      }
+      function renderWeeklyBudget(event) {
         const form = document.getElementById('weeklyBudgetForm');
         const outflow = document.getElementById('weeklyOutflow');
         const balance = document.getElementById('weeklyBalance');
@@ -274,7 +294,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           simulatorLink.removeAttribute('href');
           simulatorLink.setAttribute('aria-disabled', 'true');
           simulatorLink.setAttribute('tabindex', '-1');
-          status.textContent = 'Enter a non-negative amount in every field to calculate this weekly plan.';
+          status.textContent = 'Enter an amount within the allowed range in every field to calculate this weekly plan.';
           return;
         }
         const result = calculateWeeklyBudget({
@@ -284,6 +304,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           sinkingFunds: weeklyValue('weeklySinkingFunds'),
           breathingRoom: weeklyValue('weeklyBreathingRoom'),
         });
+        if (event?.type === 'input') saveWeeklyBudget(storage, weeklySnapshot());
 
         outflow.textContent = weeklyCurrency.format(result.totalOutflow);
         balance.textContent = weeklyCurrency.format(result.surplusOrDeficit);
@@ -297,10 +318,24 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       }
       function initializeWeeklyBudget() {
         const form = document.getElementById('weeklyBudgetForm');
-        if (!form || form.dataset.initialized === 'true') return;
+        const resetButton = document.getElementById('resetWeeklyBudget');
+        if (!form || !resetButton || form.dataset.initialized === 'true') return;
         form.dataset.initialized = 'true';
+        const storedBudget = loadWeeklyBudget(storage);
+        if (storedBudget) applyWeeklyBudget(storedBudget);
         weeklyBudgetIds.forEach((id) => document.getElementById(id)?.addEventListener('input', renderWeeklyBudget));
         form.addEventListener('submit', (event) => event.preventDefault());
+        resetButton.addEventListener('click', () => {
+          applyWeeklyBudget(WEEKLY_BUDGET_DEFAULTS);
+          const storageCleared = clearWeeklyBudget(storage);
+          renderWeeklyBudget();
+          const status = document.getElementById('weeklyBudgetStatus');
+          if (status) {
+            status.textContent = storageCleared
+              ? 'Weekly budget reset to defaults and saved browser data removed.'
+              : 'Weekly budget reset to defaults, but saved browser data could not be removed.';
+          }
+        });
         renderWeeklyBudget();
       }
       initializeWeeklyBudget();
