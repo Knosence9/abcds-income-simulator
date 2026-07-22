@@ -26,16 +26,16 @@ test('all public pages render shared conventional navigation with a current-page
 
   assert.match(navigation, /<nav class="reader-navigation" aria-label="Primary navigation">/);
   assert.match(navigation, /<a href=\{item\.href\} aria-current=\{page === item\.page \? 'page' : undefined\}>\{item\.label\}<\/a>/);
-  for (const [href, label] of [
-    ['/', 'Home'],
-    ['/budget', 'Budget'],
-    ['/getting-started', 'Getting started'],
-    ['/closed-end-funds', 'Closed-end funds'],
-    ['/simulator', 'Simulator'],
+  for (const { page, href, label } of [
+    { page: 'home', href: '/', label: 'Home' },
+    { page: 'budget', href: '/budget', label: 'Budget' },
+    { page: 'getting-started', href: '/getting-started', label: 'Getting started' },
+    { page: 'closed-end-funds', href: '/closed-end-funds', label: 'Closed-end funds' },
+    { page: 'simulator', href: '/simulator', label: 'Simulator' },
   ]) {
     assert.match(
       navigation,
-      new RegExp(`href: '${href.replaceAll('/', '\\/')}', label: '${label}'`),
+      new RegExp(`page: '${page}', href: '${href.replaceAll('/', '\\/')}', label: '${label}'`),
     );
   }
   assert.match(navigation, /aria-current=\{page === item\.page \? 'page' : undefined\}/);
