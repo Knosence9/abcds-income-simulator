@@ -1,3 +1,69 @@
+export function attachAllocationSnapshot({
+  balanceInputs,
+  applyButton,
+  summary,
+  allocationControls,
+  calculateSnapshot,
+  formatCurrency,
+  render,
+}) {
+  const getSnapshot = () => {
+    let isValid = true;
+    const balances = Object.fromEntries(
+      Object.entries(balanceInputs).map(([name, input]) => {
+        const rawValue = String(input.value).trim();
+        const value = Number(rawValue);
+        const inputIsValid = rawValue !== '' && Number.isFinite(value) && value >= 0;
+        if (inputIsValid) input.removeAttribute?.('aria-invalid');
+        else input.setAttribute?.('aria-invalid', 'true');
+        isValid &&= inputIsValid;
+        return [name, value];
+      }),
+    );
+    if (!isValid) {
+      throw new RangeError('Pillar balances must contain four finite, non-negative values.');
+    }
+    return calculateSnapshot(balances);
+  };
+
+  let currentSnapshot = null;
+  const updateSummary = () => {
+    try {
+      currentSnapshot = getSnapshot();
+    } catch {
+      currentSnapshot = null;
+      applyButton.disabled = true;
+      summary.textContent = 'Enter four non-negative pillar balances.';
+      return;
+    }
+    applyButton.disabled = currentSnapshot.weights === null;
+    if (!currentSnapshot.weights) {
+      summary.textContent = 'Enter at least one pillar balance to calculate weights.';
+      return;
+    }
+    const { anchor, booster, closedEnd, dynamo } = currentSnapshot.weights;
+    summary.textContent = `${formatCurrency(currentSnapshot.totalValue)} total — A ${anchor.toFixed(1)}%, B ${booster.toFixed(1)}%, C ${closedEnd.toFixed(1)}%, D ${dynamo.toFixed(1)}%.`;
+  };
+
+  for (const input of Object.values(balanceInputs)) {
+    input.addEventListener('input', updateSummary);
+  }
+  updateSummary();
+
+  applyButton.addEventListener('click', () => {
+    const snapshot = getSnapshot();
+    if (!snapshot.weights) return;
+    for (const [name, weight] of Object.entries(snapshot.weights)) {
+      const [range, number] = allocationControls[name];
+      range.value = String(weight);
+      number.value = range.value;
+      number.removeAttribute('aria-invalid');
+    }
+    render();
+    summary.textContent = 'Allocation snapshot applied to the projection.';
+  });
+}
+
 export function attachProjectionScenarioPresets({
   buttons,
   controls,

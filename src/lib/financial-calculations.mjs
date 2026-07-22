@@ -199,6 +199,31 @@ export function calculateProjectionContributionPeriod({
   };
 }
 
+export function calculatePillarAllocationSnapshot(balances) {
+  const pillarNames = ['anchor', 'booster', 'closedEnd', 'dynamo'];
+  const balanceKeys = Object.keys(balances);
+  const values = pillarNames.map((name) => balances[name]);
+  if (
+    balanceKeys.length !== pillarNames.length
+    || !pillarNames.every((name) => Object.hasOwn(balances, name))
+    || !values.every((value) => Number.isFinite(value) && value >= 0)
+  ) {
+    throw new RangeError('Pillar balances must contain four finite, non-negative values.');
+  }
+  const totalValue = values.reduce((total, balance) => total + balance, 0);
+  if (!Number.isFinite(totalValue)) {
+    throw new RangeError('Pillar balance total must be finite.');
+  }
+  if (totalValue === 0) return { totalValue, weights: null };
+
+  return {
+    totalValue,
+    weights: Object.fromEntries(
+      pillarNames.map((name) => [name, (balances[name] / totalValue) * 100]),
+    ),
+  };
+}
+
 export function validatePillarAllocations(allocations) {
   const values = Object.values(allocations);
   return values.length === 4
