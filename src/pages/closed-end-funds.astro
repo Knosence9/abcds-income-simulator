@@ -104,6 +104,7 @@ import SkipLink from '../components/SkipLink.astro';
         .hero, .cols-4, .cols-3, .cols-2 { grid-template-columns: 1fr; }
         .hero { min-height:auto; }
       }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
     </style>
   </head>
   <body>
