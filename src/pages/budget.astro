@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import SkipLink from '../components/SkipLink.astro';
 import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
 import { WEEKLY_BUDGET_MAX_AMOUNT } from '../lib/weekly-budget-storage.mjs';
 
@@ -115,9 +116,11 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
     </style>
   </head>
   <body>
+    <SkipLink />
     <div class="shell">
       <div class="donate-strip"><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
 
+      <main id="main-content" tabindex="-1">
       <header class="hero" transition:name="hero">
         <div class="eyebrow">Companion guide</div>
         <h1>Budget the strategy before you fund the strategy.</h1>
@@ -251,6 +254,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         </div>
         <p class="footer-note">Suggested navigation role: keep this as a dedicated companion page linked from the hero, the start-from-zero page, and the examples area of the main guide.</p>
       </section>
+      </main>
     </div>
 
     <RadialSiteMenu page="budget" />

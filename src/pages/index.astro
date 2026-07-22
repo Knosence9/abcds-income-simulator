@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import SkipLink from '../components/SkipLink.astro';
 import { classifyMarginRepairState } from '../lib/financial-calculations.mjs';
 
 const marginRepairStates = [
@@ -228,12 +229,15 @@ const marginRepairStates = [
         .pillar-split::before { display:none; }
         .life-row { grid-template-columns:1fr; }
       }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
     </style>
   </head>
   <body>
+    <SkipLink />
     <div class="shell">
       <div class="donate-strip"><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
 
+      <main id="main-content" tabindex="-1">
       <header id="overview" class="hero" transition:name="hero">
         <div>
           <div class="eyebrow">A one-page income engine map</div>
@@ -477,6 +481,7 @@ const marginRepairStates = [
           </table>
         </div>
       </section>
+      </main>
     </div>
 
     <RadialSiteMenu page="home" />
