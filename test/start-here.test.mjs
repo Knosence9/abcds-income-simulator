@@ -13,6 +13,7 @@ test('homepage surfaces the connected three-step reader path beneath the hero', 
   const pillars = source.indexOf('<section id="pillars"');
 
   assert.ok(heroEnd >= 0 && heroEnd < startHere && startHere < pillars);
+  assert.equal((source.match(/class="start-here__step"/g) ?? []).length, 3);
   assert.match(source, /<h2 id="start-here-title">Start here<\/h2>/);
   assert.match(
     source,

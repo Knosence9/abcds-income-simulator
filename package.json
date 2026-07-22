@@ -7,6 +7,7 @@
     "dev": "astro dev --host 127.0.0.1",
     "check": "astro check",
     "test": "node --test",
+    "test:built-start-here": "node --test scripts/verify-built-start-here.mjs",
     "test:built-icons": "node --test scripts/verify-built-site-icons.mjs",
     "test:built-links": "node scripts/verify-built-internal-links.mjs dist",
     "build": "astro build",
