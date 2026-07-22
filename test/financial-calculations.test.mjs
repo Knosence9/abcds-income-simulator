@@ -543,6 +543,23 @@ test('simulator keeps repair-band contributions outside projected market value',
   assert.match(simulatorPage, /not assumed to pay margin debt/i);
 });
 
+test('projection contribution period invests above 70% without changing paused total', () => {
+  assert.deepEqual(
+    calculateProjectionContributionPeriod({
+      beginningMarketValue: 10_000,
+      marginDebt: 2_000,
+      contribution: 500,
+      marketValueAfterReturn: 10_100,
+      reinvestedDistributions: 25,
+      cumulativePausedContributions: 100,
+    }),
+    {
+      endingMarketValue: 10_625,
+      cumulativePausedContributions: 100,
+    },
+  );
+});
+
 test('simulator exposes explicit pillar assumptions and uses their distribution ledgers', async () => {
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),
