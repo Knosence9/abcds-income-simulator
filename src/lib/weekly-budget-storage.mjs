@@ -46,6 +46,34 @@ export function parseWeeklyBudgetSnapshot(serializedSnapshot) {
   }
 }
 
+export function serializeWeeklyBudgetExport(snapshot) {
+  const normalized = normalizeWeeklyBudgetSnapshot(snapshot);
+  if (!normalized) return null;
+
+  return JSON.stringify({
+    format: 'abcds-weekly-budget',
+    version: 1,
+    budget: normalized,
+  }, null, 2);
+}
+
+export function parseWeeklyBudgetImport(serializedExport) {
+  try {
+    const parsed = JSON.parse(serializedExport);
+    if (
+      !parsed
+      || typeof parsed !== 'object'
+      || Array.isArray(parsed)
+      || parsed.format !== 'abcds-weekly-budget'
+      || parsed.version !== 1
+    ) return null;
+
+    return normalizeWeeklyBudgetSnapshot(parsed.budget);
+  } catch {
+    return null;
+  }
+}
+
 export function saveWeeklyBudget(storage, snapshot) {
   const normalized = normalizeWeeklyBudgetSnapshot(snapshot);
   if (!normalized) return false;

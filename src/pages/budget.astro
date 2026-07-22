@@ -140,9 +140,12 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
             <div class="planner-result"><span>Weekly surplus or deficit</span><strong id="weeklyBalance">—</strong></div>
             <div class="planner-result"><span>Safe weekly contribution</span><strong id="weeklySafeContribution">—</strong></div>
             <a id="sendBudgetToSimulator" class="button primary" role="link" aria-disabled="true" tabindex="-1">Send this budget to simulator</a>
+            <button id="exportWeeklyBudget" class="button secondary" type="button">Export budget JSON</button>
+            <button id="importWeeklyBudget" class="button secondary" type="button">Import budget JSON</button>
+            <input id="weeklyBudgetFile" type="file" accept="application/json,.json" hidden />
             <button id="resetWeeklyBudget" class="button secondary" type="button">Reset saved budget</button>
             <p id="weeklyBudgetStatus" role="status" aria-live="polite" aria-atomic="true"></p>
-            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Use “Reset saved budget” to remove them.</p>
+            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Import and export stay on this device. Use “Reset saved budget” to remove stored values.</p>
           </div>
         </div>
       </section>
@@ -257,7 +260,9 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         clearWeeklyBudget,
         getWeeklyBudgetStorage,
         loadWeeklyBudget,
+        parseWeeklyBudgetImport,
         saveWeeklyBudget,
+        serializeWeeklyBudgetExport,
         WEEKLY_BUDGET_DEFAULTS,
         WEEKLY_BUDGET_FIELD_IDS,
       } from '../lib/weekly-budget-storage.mjs';
@@ -316,15 +321,60 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           ? `Weekly deficit ${weeklyCurrency.format(Math.abs(result.surplusOrDeficit))}. Safe contribution is ${weeklyCurrency.format(0)}.`
           : `Weekly surplus ${weeklyCurrency.format(result.surplusOrDeficit)}. Safe contribution is ${weeklyCurrency.format(result.safeContribution)}.`;
       }
+      function exportWeeklyBudget() {
+        const status = document.getElementById('weeklyBudgetStatus');
+        const serialized = serializeWeeklyBudgetExport(weeklySnapshot());
+        if (!serialized || !status) return;
+
+        const downloadUrl = URL.createObjectURL(new Blob([serialized], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = 'abcds-weekly-budget.json';
+        link.click();
+        URL.revokeObjectURL(downloadUrl);
+        status.textContent = 'Weekly budget exported as JSON.';
+      }
+      async function importWeeklyBudget(event) {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        const status = document.getElementById('weeklyBudgetStatus');
+        if (!file || !status) return;
+
+        try {
+          const importedBudget = parseWeeklyBudgetImport(await file.text());
+          if (!importedBudget) throw new Error('Invalid weekly budget export');
+          applyWeeklyBudget(importedBudget);
+          saveWeeklyBudget(storage, importedBudget);
+          renderWeeklyBudget();
+          status.textContent = 'Imported weekly budget from JSON.';
+        } catch {
+          status.textContent = 'Could not import that weekly budget JSON.';
+        } finally {
+          input.value = '';
+        }
+      }
       function initializeWeeklyBudget() {
         const form = document.getElementById('weeklyBudgetForm');
+        const exportButton = document.getElementById('exportWeeklyBudget');
+        const importButton = document.getElementById('importWeeklyBudget');
+        const fileInput = document.getElementById('weeklyBudgetFile');
         const resetButton = document.getElementById('resetWeeklyBudget');
-        if (!form || !resetButton || form.dataset.initialized === 'true') return;
+        if (
+          !form
+          || !exportButton
+          || !importButton
+          || !fileInput
+          || !resetButton
+          || form.dataset.initialized === 'true'
+        ) return;
         form.dataset.initialized = 'true';
         const storedBudget = loadWeeklyBudget(storage);
         if (storedBudget) applyWeeklyBudget(storedBudget);
         weeklyBudgetIds.forEach((id) => document.getElementById(id)?.addEventListener('input', renderWeeklyBudget));
         form.addEventListener('submit', (event) => event.preventDefault());
+        exportButton.addEventListener('click', exportWeeklyBudget);
+        importButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', importWeeklyBudget);
         resetButton.addEventListener('click', () => {
           applyWeeklyBudget(WEEKLY_BUDGET_DEFAULTS);
           const storageCleared = clearWeeklyBudget(storage);
