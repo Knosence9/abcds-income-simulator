@@ -4,13 +4,17 @@ import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import SkipLink from '../components/SkipLink.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import SiteMetadata from '../components/SiteMetadata.astro';
+import { buildPageMetadata } from '../lib/site-metadata.mjs';
+
+const metadata = buildPageMetadata('/closed-end-funds/');
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Closed-End Funds in the ABCD System</title>
+    <SiteMetadata metadata={metadata} />
     <ClientRouter />
     <style>
       :root {

@@ -1,0 +1,13 @@
+---
+const { metadata } = Astro.props;
+---
+<title>{metadata.title}</title>
+<meta name="description" content={metadata.description} />
+<link rel="canonical" href={metadata.canonicalUrl} />
+<meta property="og:type" content={metadata.openGraph.type} />
+<meta property="og:title" content={metadata.openGraph.title} />
+<meta property="og:description" content={metadata.openGraph.description} />
+<meta property="og:url" content={metadata.openGraph.url} />
+<meta name="twitter:card" content={metadata.twitter.card} />
+<meta name="twitter:title" content={metadata.twitter.title} />
+<meta name="twitter:description" content={metadata.twitter.description} />
