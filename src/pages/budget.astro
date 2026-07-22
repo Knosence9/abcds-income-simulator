@@ -329,7 +329,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         outflow.textContent = weeklyCurrency.format(result.totalOutflow);
         balance.textContent = weeklyCurrency.format(result.surplusOrDeficit);
         contribution.textContent = weeklyCurrency.format(result.safeContribution);
-        simulatorLink.href = `/simulator#weeklyContribution=${result.safeContribution.toFixed(2)}`;
+        simulatorLink.href = `/simulator#weeklyContribution=${result.safeContribution.toFixed(2)}&weeklyMarginRepair=${result.marginRepair.toFixed(2)}`;
         simulatorLink.setAttribute('aria-disabled', 'false');
         simulatorLink.removeAttribute('tabindex');
         status.textContent = result.surplusOrDeficit < 0

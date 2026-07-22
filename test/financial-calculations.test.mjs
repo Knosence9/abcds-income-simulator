@@ -6,6 +6,7 @@ import {
   calculateExpenseCoverage,
   calculateMarginAccount,
   calculateMarginInterest,
+  calculateMarginRepairPeriod,
   calculatePillarDistributions,
   calculatePeriodicMarketReturn,
   calculateWeeklyBudget,
@@ -58,6 +59,51 @@ test('calculates periodic and cumulative interest on constant margin debt', () =
     {
       monthlyInterest: 100,
       cumulativeInterest: 1_200,
+    },
+  );
+});
+
+test('applies margin repair to principal after charging simple interest on beginning debt', () => {
+  assert.deepEqual(
+    calculateMarginRepairPeriod({
+      marginDebt: 1_000,
+      annualRate: 12,
+      periodsPerYear: 12,
+      principalPayment: 200,
+    }),
+    {
+      interest: 10,
+      principalPaid: 200,
+      endingMarginDebt: 800,
+    },
+  );
+});
+
+test('bounds margin principal repair between zero and the remaining debt', () => {
+  assert.deepEqual(
+    calculateMarginRepairPeriod({
+      marginDebt: 1_000,
+      annualRate: 12,
+      periodsPerYear: 12,
+      principalPayment: 1_200,
+    }),
+    {
+      interest: 10,
+      principalPaid: 1_000,
+      endingMarginDebt: 0,
+    },
+  );
+  assert.deepEqual(
+    calculateMarginRepairPeriod({
+      marginDebt: 1_000,
+      annualRate: 12,
+      periodsPerYear: 12,
+      principalPayment: -50,
+    }),
+    {
+      interest: 10,
+      principalPaid: 0,
+      endingMarginDebt: 1_000,
     },
   );
 });
@@ -197,7 +243,7 @@ test('simulator exposes and applies accessible scenario starting points', async 
   assert.match(simulatorPage, /attachProjectionScenarioPresets/);
   assert.match(simulatorPage, /starting assumptions/i);
   assert.match(simulatorPage, /NAV\/price decline/i);
-  assert.match(simulatorPage, /margin principal repayment/i);
+  assert.match(simulatorPage, /weekly margin repair/i);
 });
 
 test('simulator exposes a bounded margin debt input and separate equity ledgers', async () => {
@@ -221,17 +267,25 @@ test('simulator exposes a bounded margin debt input and separate equity ledgers'
   assert.match(simulatorPage, /id="marginEquityPercent"/);
   assert.match(simulatorPage, /marginDebt\.max = starting\.value/);
   assert.match(simulatorPage, /marginDebtNumber\.max = starting\.value/);
-  assert.match(simulatorPage, /principal is held constant/i);
-  assert.match(simulatorPage, /principal repayment is not modeled/i);
+  assert.match(
+    simulatorPage,
+    /<label id="weeklyMarginRepairLabel" for="weeklyMarginRepairNumber">Weekly margin repair/,
+  );
+  assert.match(
+    simulatorPage,
+    /<input id="weeklyMarginRepair" type="range" aria-labelledby="weeklyMarginRepairLabel"/,
+  );
+  assert.match(simulatorPage, /id="cumulativePrincipalPaid"/);
+  assert.match(simulatorPage, /smooth principal-only planning assumption/i);
 });
 
-test('simulator reports constant-principal margin interest from an accessible APR input', async () => {
+test('simulator reduces principal and accumulates unpaid interest from beginning debt', async () => {
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),
     'utf8',
   );
 
-  assert.match(simulatorPage, /calculateMarginInterest/);
+  assert.match(simulatorPage, /calculateMarginRepairPeriod/);
   assert.match(
     simulatorPage,
     /<label id="marginAprLabel" for="marginAprNumber">Margin APR/,
@@ -241,14 +295,13 @@ test('simulator reports constant-principal margin interest from an accessible AP
     /<input id="marginApr" type="range" aria-labelledby="marginAprLabel"/,
   );
   assert.match(simulatorPage, /id="cumulativeMarginInterest"/);
-  assert.match(simulatorPage, /annualRate: input\.marginApr/);
-  assert.match(simulatorPage, /months: periods \* input\.projectionYears/);
-  assert.match(
-    simulatorPage,
-    /cumulativeMarginInterest'\)\.textContent = fmtSmall\.format\(marginInterest\.cumulativeInterest\)/,
-  );
-  assert.match(simulatorPage, /interest is reported separately/i);
-  assert.match(simulatorPage, /not deducted from margin debt or gross market value/i);
+  assert.match(simulatorPage, /principalPayment: marginRepairPerPeriod/);
+  assert.match(simulatorPage, /marginDebt = repairPeriod\.endingMarginDebt/);
+  assert.match(simulatorPage, /cumulativePrincipalPaid \+= repairPeriod\.principalPaid/);
+  assert.match(simulatorPage, /cumulativeMarginInterest \+= repairPeriod\.interest/);
+  assert.match(simulatorPage, /marginDebt: last\.marginDebt/);
+  assert.match(simulatorPage, /interest is not capitalized or paid/i);
+  assert.match(simulatorPage, /real brokerage timing may differ/i);
 });
 
 test('parses a valid budget contribution for the simulator', () => {
@@ -424,7 +477,7 @@ test('simulator accumulates spendable cash expense coverage in separate ledgers'
   assert.match(simulatorPage, /expensesPaid \+= expenseCoverage\.expensesPaid/);
   assert.match(simulatorPage, /uncoveredExpenses \+= expenseCoverage\.uncoveredExpenses/);
   assert.match(simulatorPage, /remainingCash = expenseCoverage\.remainingCash/);
-  assert.match(simulatorPage, /Margin interest remains a separate unpaid estimate/i);
+  assert.match(simulatorPage, /interest is not capitalized or paid/i);
 });
 
 test('simulator exposes explicit pillar assumptions and uses their distribution ledgers', async () => {
@@ -741,7 +794,7 @@ test('budget planner reserves a weekly margin repair obligation before simulator
   );
 });
 
-test('budget planner links only its calculated safe contribution to the simulator', async () => {
+test('budget planner links its calculated safe contribution and margin repair to the simulator', async () => {
   const budgetPage = await readFile(
     new URL('../src/pages/budget.astro', import.meta.url),
     'utf8',
@@ -756,10 +809,9 @@ test('budget planner links only its calculated safe contribution to the simulato
   assert.match(budgetPage, /simulatorLink\.removeAttribute\('tabindex'\)/);
   assert.match(
     budgetPage,
-    /simulatorLink\.href = `\/simulator#weeklyContribution=\$\{result\.safeContribution\.toFixed\(2\)\}`/,
+    /simulatorLink\.href = `\/simulator#weeklyContribution=\$\{result\.safeContribution\.toFixed\(2\)\}&weeklyMarginRepair=\$\{result\.marginRepair\.toFixed\(2\)\}`/,
   );
   assert.doesNotMatch(budgetPage, /\/simulator\?weeklyContribution=/);
-  assert.doesNotMatch(budgetPage, /#weeklyContribution=[^`]*&/);
   assert.doesNotMatch(budgetPage, /#weeklyContribution=[^`]*weeklyIncome/);
   assert.doesNotMatch(budgetPage, /\/simulator[?#][^`]*weeklyIncome/);
 });
