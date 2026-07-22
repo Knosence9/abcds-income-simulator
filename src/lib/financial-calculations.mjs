@@ -37,6 +37,18 @@ export function calculateMarginAccount({ marketValue, marginDebt }) {
   };
 }
 
+export function calculateMarginInterest({ marginDebt, annualRate, months }) {
+  const monthlyInterestCents = Math.round(marginDebt * (annualRate / 100) / 12 * 100);
+  const cumulativeInterestCents = Math.round(
+    marginDebt * (annualRate / 100) * (months / 12) * 100,
+  );
+
+  return {
+    monthlyInterest: monthlyInterestCents / 100,
+    cumulativeInterest: cumulativeInterestCents / 100,
+  };
+}
+
 export function monthlyToWeekly(monthlyAmount) {
   return monthlyAmount * 12 / 52;
 }
