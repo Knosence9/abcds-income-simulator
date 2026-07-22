@@ -90,10 +90,16 @@ const defaultInputs = {
       .legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; color:var(--muted); font-size:13px; }
       .legend span { display:inline-flex; align-items:center; gap:7px; }
       .swatch { width:18px; height:4px; border-radius:999px; display:inline-block; }
+      .methodology { margin-top:24px; border-top:1px solid var(--line); padding-top:24px; }
+      .methodology h2 { font-size:clamp(28px, 4vw, 44px); }
+      .methodology-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; margin-top:18px; }
+      .methodology-card { border:1px solid var(--line); border-radius:22px; padding:18px; background:rgba(255,255,255,.5); }
+      .methodology-card h3 { margin:0 0 8px; color:var(--a); }
+      .methodology-card p { margin:0; }
       .callout { border-left:6px solid var(--gold); border-radius:18px; padding:16px 18px; background:rgba(199,154,44,.13); }
       .compact { min-height:auto; }
       .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
-      @media (max-width: 900px) { .stats { grid-template-columns:1fr; } .section-head, .topbar { align-items:flex-start; flex-direction:column; } }
+      @media (max-width: 900px) { .stats, .methodology-grid { grid-template-columns:1fr; } .section-head, .topbar { align-items:flex-start; flex-direction:column; } }
       @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
     </style>
   </head>
@@ -177,6 +183,27 @@ const defaultInputs = {
             <div class="legend"><span><i class="swatch" style="background:var(--b)"></i>Nominal dividend income</span><span><i class="swatch" style="background:var(--c)"></i>Inflation-adjusted income</span><span><i class="swatch" style="background:var(--d)"></i>Inflated expense target</span></div>
           </div>
         </div>
+        <section class="methodology" aria-labelledby="projection-methodology-title">
+          <h2 id="projection-methodology-title">Projection methodology and limitations</h2>
+          <div class="methodology-grid">
+            <div class="methodology-card">
+              <h3>Monthly calculation order</h3>
+              <p>Each month starts with beginning gross market value. Pillar distributions are calculated first, then the selected NAV/price return is applied. A/C distributions are reinvested and any eligible external contribution is added to market value. B/D cash pays the inflated expense target, margin principal repair reduces debt, and interest is estimated separately from beginning debt.</p>
+            </div>
+            <div class="methodology-card">
+              <h3>Assumptions, not predictions</h3>
+              <p>Returns, yields, dividend growth, inflation, and distribution behavior are smooth user-selected assumptions, not forecasts. Actual markets and fund distributions can change unevenly or abruptly.</p>
+            </div>
+            <div class="methodology-card">
+              <h3>What is outside this model</h3>
+              <p>This projection does not model taxes, fund or trading fees, slippage, brokerage-specific margin rules, or distribution timing and cuts beyond the assumptions you select. Review current fund and brokerage documents before acting.</p>
+            </div>
+            <div class="methodology-card">
+              <h3>Use the result as a planning range</h3>
+              <p><b>Educational planning tool—not financial advice.</b> Compare multiple assumptions, pay attention to uncovered expenses and margin equity, and do not treat any displayed result as a promised return.</p>
+            </div>
+          </div>
+        </section>
       </section>
       </main>
       <SiteFooter />
