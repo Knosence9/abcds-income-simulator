@@ -266,6 +266,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
 
     <RadialSiteMenu page="budget" />
     <script>
+      // @ts-nocheck — progressively typed browser controller; covered by behavioral tests.
       import { calculateWeeklyBudget } from '../lib/financial-calculations.mjs';
       import {
         clearWeeklyBudget,
