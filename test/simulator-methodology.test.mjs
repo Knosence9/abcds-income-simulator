@@ -16,6 +16,14 @@ test('places a labeled projection methodology below the simulator outputs', () =
     simulatorPage,
     /<section[^>]*aria-labelledby="projection-methodology-title"[^>]*>/,
   );
+  const chartPosition = simulatorPage.indexOf('<svg id="chart"');
+  const legendPosition = simulatorPage.indexOf('<div class="legend">');
+  assert.ok(chartPosition >= 0);
+  assert.ok(legendPosition > chartPosition);
+  assert.match(
+    simulatorPage,
+    /<div class="legend">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<section class="methodology"/,
+  );
   assert.match(
     simulatorPage,
     /<h2 id="projection-methodology-title">Projection methodology and limitations<\/h2>/,
