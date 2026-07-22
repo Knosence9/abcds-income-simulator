@@ -77,3 +77,19 @@ test('manifest icons provide compatible install and maskable PNG sizes', async (
     assert.equal(icon.readUInt32BE(20), size);
   }
 });
+
+test('shared icon artwork keeps the ABCD mark inside the maskable safe zone', async () => {
+  const icon = await readFile(projectFile('public/favicon.svg'), 'utf8');
+  const viewBox = icon.match(/viewBox="0 0 (\d+) (\d+)"/);
+  const ring = icon.match(/<circle cx="90" cy="90" r="(\d+)"[^>]*stroke-width="(\d+)"/);
+
+  assert.ok(viewBox);
+  assert.ok(ring);
+  assert.equal(viewBox[1], viewBox[2]);
+
+  const canvasSize = Number(viewBox[1]);
+  const outerRingRadius = Number(ring[1]) + Number(ring[2]) / 2;
+
+  // Maskable artwork must stay inside the central 80%-diameter safe circle.
+  assert.ok(outerRingRadius * 2 <= canvasSize * 0.8);
+});

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-labelledby="title">
   <title id="title">ABCDs Income Simulator</title>
-  <rect width="128" height="128" rx="24" fill="#101f3d"/>
-  <circle cx="64" cy="64" r="48" fill="none" stroke="#e8783d" stroke-width="7"/>
-  <text x="64" y="70" fill="#f4eddf" font-family="Georgia, serif" font-size="25" font-weight="700" text-anchor="middle">ABCD</text>
+  <rect width="180" height="180" rx="36" fill="#101f3d"/>
+  <circle cx="90" cy="90" r="67" fill="none" stroke="#e8783d" stroke-width="10"/>
+  <text x="90" y="99" fill="#f4eddf" font-family="Georgia, serif" font-size="35" font-weight="700" text-anchor="middle">ABCD</text>
 </svg>
