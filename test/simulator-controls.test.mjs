@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachSimulatorControlsToggle } from '../src/lib/simulator-controls.mjs';
+import {
+  attachProjectionScenarioPresets,
+  attachSimulatorControlsToggle,
+} from '../src/lib/simulator-controls.mjs';
 
 function createFixture({ narrow = true, reducedMotion = false } = {}) {
   const classes = new Set();
@@ -109,4 +112,122 @@ test('reopening controls invalidates the stale queued scroll', () => {
   fixture.frames.shift()();
 
   assert.deepEqual(fixture.scrollCalls, [{ behavior: 'smooth', block: 'start' }]);
+});
+
+test('scenario preset updates paired controls and renders once', () => {
+  const handlers = new Map();
+  const button = {
+    dataset: { scenario: 'stress' },
+    textContent: 'Stress',
+    attributes: new Map(),
+    addEventListener(name, handler) { handlers.set(name, handler); },
+    setAttribute(name, value) { this.attributes.set(name, value); },
+  };
+  const control = () => ({
+    value: '',
+    addEventListener() {},
+    removeAttribute() {},
+  });
+  const controls = {
+    dividendYield: [control(), control()],
+    acDistributionShare: [control(), control()],
+    dividendGrowth: [control(), control()],
+    inflation: [control(), control()],
+  };
+  const resultsStatus = { textContent: '' };
+  let renderCount = 0;
+
+  attachProjectionScenarioPresets({
+    buttons: [button],
+    controls,
+    resultsStatus,
+    getScenario: () => ({
+      dividendYield: 8,
+      acDistributionShare: 25,
+      dividendGrowth: -10,
+      inflation: 7,
+    }),
+    render: () => { renderCount += 1; },
+  });
+  handlers.get('click')();
+
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(controls).map(([name, [range, number]]) => [
+        name,
+        [range.value, number.value],
+      ]),
+    ),
+    {
+      dividendYield: ['8', '8'],
+      acDistributionShare: ['25', '25'],
+      dividendGrowth: ['-10', '-10'],
+      inflation: ['7', '7'],
+    },
+  );
+  assert.equal(button.attributes.get('aria-pressed'), 'true');
+  assert.equal(renderCount, 1);
+  assert.match(resultsStatus.textContent, /Stress starting assumptions applied/);
+});
+
+test('scenario preset keeps results unavailable while another input is invalid', () => {
+  const handlers = new Map();
+  const button = {
+    dataset: { scenario: 'base' },
+    textContent: 'Base',
+    attributes: new Map(),
+    addEventListener(name, handler) { handlers.set(name, handler); },
+    setAttribute(name, value) { this.attributes.set(name, value); },
+  };
+  const control = () => ({
+    value: '',
+    addEventListener() {},
+    removeAttribute() {},
+  });
+  const resultsStatus = { textContent: 'Enter a value within the allowed range.' };
+  let invalidationCount = 0;
+  let renderCount = 0;
+
+  attachProjectionScenarioPresets({
+    buttons: [button],
+    controls: { dividendYield: [control(), control()] },
+    resultsStatus,
+    getScenario: () => ({ dividendYield: 12 }),
+    isValid: () => false,
+    invalidateResults: () => { invalidationCount += 1; },
+    render: () => { renderCount += 1; },
+  });
+  handlers.get('click')();
+
+  assert.equal(renderCount, 0);
+  assert.equal(invalidationCount, 1);
+  assert.equal(resultsStatus.textContent, 'Enter a value within the allowed range.');
+});
+
+test('manual scenario control edits clear the selected preset', () => {
+  const inputHandlers = [];
+  const button = {
+    dataset: { scenario: 'base' },
+    textContent: 'Base',
+    attributes: new Map(),
+    addEventListener() {},
+    setAttribute(name, value) { this.attributes.set(name, value); },
+  };
+  const control = () => ({
+    addEventListener(name, handler) {
+      if (name === 'input') inputHandlers.push(handler);
+    },
+  });
+
+  attachProjectionScenarioPresets({
+    buttons: [button],
+    controls: { dividendYield: [control(), control()] },
+    resultsStatus: { textContent: '' },
+    getScenario: () => ({}),
+    render() {},
+  });
+  button.setAttribute('aria-pressed', 'true');
+  inputHandlers[0]();
+
+  assert.equal(button.attributes.get('aria-pressed'), 'false');
 });

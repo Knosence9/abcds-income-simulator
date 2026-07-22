@@ -1,3 +1,43 @@
+export function attachProjectionScenarioPresets({
+  buttons,
+  controls,
+  resultsStatus,
+  getScenario,
+  isValid = () => true,
+  invalidateResults = () => {},
+  render,
+}) {
+  const clearSelectedPreset = () => {
+    for (const button of buttons) button.setAttribute('aria-pressed', 'false');
+  };
+  for (const pair of Object.values(controls)) {
+    for (const control of pair) {
+      control.addEventListener('input', clearSelectedPreset);
+    }
+  }
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => {
+      const scenario = getScenario(button.dataset.scenario);
+      for (const [name, value] of Object.entries(scenario)) {
+        const [range, number] = controls[name];
+        range.value = String(value);
+        number.value = range.value;
+        number.removeAttribute('aria-invalid');
+      }
+      for (const presetButton of buttons) {
+        presetButton.setAttribute('aria-pressed', String(presetButton === button));
+      }
+      if (!isValid()) {
+        invalidateResults();
+        return;
+      }
+      render();
+      resultsStatus.textContent = `${button.textContent.trim()} starting assumptions applied. Projection updated.`;
+    });
+  }
+}
+
 export function attachSimulatorControlsToggle({
   simulatorShell,
   controlsToggle,

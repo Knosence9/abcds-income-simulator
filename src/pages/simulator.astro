@@ -60,6 +60,11 @@ const defaultInputs = {
       .field label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:850; color:var(--a); }
       .field input[type='range'] { width:100%; accent-color:var(--a); }
       .field input[type='number'] { width:130px; border:1px solid var(--line); border-radius:12px; padding:8px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
+      .scenario-presets { margin-bottom:18px; border:0; padding:0; }
+      .scenario-presets legend { margin-bottom:8px; font-weight:900; color:var(--a); }
+      .scenario-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+      .scenario-button { min-height:40px; border:1px solid var(--line); border-radius:999px; padding:0 13px; background:var(--paper); color:var(--a); font-weight:850; cursor:pointer; }
+      .scenario-button[aria-pressed='true'] { border-color:var(--a); background:var(--a); color:var(--paper); }
       .chart-wrap { border:1px solid var(--line); border-radius:26px; background:linear-gradient(180deg, rgba(32,63,105,.05), rgba(255,253,247,.7)); padding:18px; min-height:560px; }
       .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:10px; margin-bottom:14px; }
       .stat { border:1px solid var(--line); border-radius:18px; padding:12px; background:rgba(255,255,255,.62); }
@@ -93,6 +98,15 @@ const defaultInputs = {
         <div class="sim" id="simulatorShell">
           <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="simulatorControls">Open simulator inputs</button>
           <aside class="controls" id="simulatorControls">
+            <fieldset class="scenario-presets">
+              <legend>Starting assumptions</legend>
+              <div class="scenario-buttons">
+                <button class="scenario-button" type="button" data-scenario="conservative" aria-pressed="false">Conservative</button>
+                <button class="scenario-button" type="button" data-scenario="base" aria-pressed="false">Base</button>
+                <button class="scenario-button" type="button" data-scenario="stress" aria-pressed="false">Stress</button>
+              </div>
+              <p class="footer-note">These presets fill only the income assumptions below as transparent starting points. The stress preset applies a synthetic distribution-cut path; NAV/price decline, margin interest and principal repayment remain outside this bounded model.</p>
+            </fieldset>
             <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
             <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></div>
             <div class="field"><label id="paycheckLabel" for="paycheckNumber">Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></label><input id="paycheck" type="range" aria-labelledby="paycheckLabel" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></div>
@@ -132,8 +146,8 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateMarginAccount, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
-      import { attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
+      import { calculateMarginAccount, getProjectionScenario, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
+      import { attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const $ = (id) => document.getElementById(id);
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
@@ -271,6 +285,20 @@ const defaultInputs = {
         }
         const transferredContribution = applyTransferredContribution();
         pairs.forEach(([a,b]) => sync(a,b));
+        attachProjectionScenarioPresets({
+          buttons: [...document.querySelectorAll('[data-scenario]')],
+          controls: {
+            dividendYield: [$('yield'), $('yieldNumber')],
+            acDistributionShare: [$('acShare'), $('acShareNumber')],
+            dividendGrowth: [$('growth'), $('growthNumber')],
+            inflation: [$('inflation'), $('inflationNumber')],
+          },
+          resultsStatus: $('resultsStatus'),
+          getScenario: getProjectionScenario,
+          isValid: () => !hasInvalidInputs(),
+          invalidateResults,
+          render,
+        });
         const simulatorControls = $('simulatorControls');
         attachSimulatorControlsToggle({
           simulatorShell,
