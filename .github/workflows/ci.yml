@@ -27,3 +27,4 @@ jobs:
       - run: npm run test:built-start-here
       - run: npm run test:built-icons
       - run: npm run test:built-links
+      - run: npm run test:built-accessibility

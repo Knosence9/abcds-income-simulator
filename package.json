@@ -10,6 +10,7 @@
     "test:built-start-here": "node --test scripts/verify-built-start-here.mjs",
     "test:built-icons": "node --test scripts/verify-built-site-icons.mjs",
     "test:built-links": "node scripts/verify-built-internal-links.mjs dist",
+    "test:built-accessibility": "node scripts/verify-built-accessibility.mjs dist",
     "build": "astro build",
     "preview": "astro preview --host 127.0.0.1"
   },
