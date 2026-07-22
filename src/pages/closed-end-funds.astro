@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import SkipLink from '../components/SkipLink.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -106,7 +107,9 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
     </style>
   </head>
   <body>
+    <SkipLink />
     <div class="shell">
+      <main id="main-content" tabindex="-1">
       <header class="hero">
         <div>
           <div class="eyebrow">Closed-end funds · first principles</div>
@@ -320,6 +323,7 @@ import RadialSiteMenu from '../components/RadialSiteMenu.astro';
         </div>
         <p class="footer-note">If you want, this page can later be expanded with deeper fund-specific notes, premium/discount examples, or a dedicated comparison table between CEF compounding logic and covered-call ETF cash-flow logic.</p>
       </section>
+      </main>
     </div>
 
     <RadialSiteMenu page="closed-end-funds" />
