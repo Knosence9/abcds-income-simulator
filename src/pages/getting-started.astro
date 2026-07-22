@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import ReaderNavigation from '../components/ReaderNavigation.astro';
 import SkipLink from '../components/SkipLink.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteMetadata from '../components/SiteMetadata.astro';
@@ -227,6 +228,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
   </head>
   <body>
     <SkipLink />
+    <ReaderNavigation page="getting-started" />
     <div class="shell">
       <div class="donate-strip"><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
 
