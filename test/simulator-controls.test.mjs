@@ -170,6 +170,40 @@ test('scenario preset updates paired controls and renders once', () => {
   assert.match(resultsStatus.textContent, /Stress starting assumptions applied/);
 });
 
+test('scenario preset keeps results unavailable while another input is invalid', () => {
+  const handlers = new Map();
+  const button = {
+    dataset: { scenario: 'base' },
+    textContent: 'Base',
+    attributes: new Map(),
+    addEventListener(name, handler) { handlers.set(name, handler); },
+    setAttribute(name, value) { this.attributes.set(name, value); },
+  };
+  const control = () => ({
+    value: '',
+    addEventListener() {},
+    removeAttribute() {},
+  });
+  const resultsStatus = { textContent: 'Enter a value within the allowed range.' };
+  let invalidationCount = 0;
+  let renderCount = 0;
+
+  attachProjectionScenarioPresets({
+    buttons: [button],
+    controls: { dividendYield: [control(), control()] },
+    resultsStatus,
+    getScenario: () => ({ dividendYield: 12 }),
+    isValid: () => false,
+    invalidateResults: () => { invalidationCount += 1; },
+    render: () => { renderCount += 1; },
+  });
+  handlers.get('click')();
+
+  assert.equal(renderCount, 0);
+  assert.equal(invalidationCount, 1);
+  assert.equal(resultsStatus.textContent, 'Enter a value within the allowed range.');
+});
+
 test('manual scenario control edits clear the selected preset', () => {
   const inputHandlers = [];
   const button = {

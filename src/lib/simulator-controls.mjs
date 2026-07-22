@@ -3,6 +3,8 @@ export function attachProjectionScenarioPresets({
   controls,
   resultsStatus,
   getScenario,
+  isValid = () => true,
+  invalidateResults = () => {},
   render,
 }) {
   const clearSelectedPreset = () => {
@@ -25,6 +27,10 @@ export function attachProjectionScenarioPresets({
       }
       for (const presetButton of buttons) {
         presetButton.setAttribute('aria-pressed', String(presetButton === button));
+      }
+      if (!isValid()) {
+        invalidateResults();
+        return;
       }
       render();
       resultsStatus.textContent = `${button.textContent.trim()} starting assumptions applied. Projection updated.`;

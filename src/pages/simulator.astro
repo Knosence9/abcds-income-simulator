@@ -295,6 +295,8 @@ const defaultInputs = {
           },
           resultsStatus: $('resultsStatus'),
           getScenario: getProjectionScenario,
+          isValid: () => !hasInvalidInputs(),
+          invalidateResults,
           render,
         });
         const simulatorControls = $('simulatorControls');
