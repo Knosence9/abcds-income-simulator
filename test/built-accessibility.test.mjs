@@ -55,6 +55,34 @@ test('rejects dangling aria-labelledby even when aria-label is present', () => {
   ]);
 });
 
+test('rejects invalid aria-labelledby references on other elements', () => {
+  const html = `
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <main id="main-content">
+      <section aria-labelledby="missing-heading">Content</section>
+    </main>
+  `;
+
+  assert.deepEqual(verifyAccessibilityMarkup(html, 'index.html'), [
+    'index.html: <section> aria-labelledby must reference unique elements with non-empty text',
+  ]);
+});
+
+test('rejects duplicate aria-labelledby target IDs', () => {
+  const html = `
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <main id="main-content">
+      <span id="projection-label"></span>
+      <span id="projection-label">Projection</span>
+      <input id="projection" type="range" aria-labelledby="projection-label">
+    </main>
+  `;
+
+  assert.deepEqual(verifyAccessibilityMarkup(html, 'simulator/index.html'), [
+    'simulator/index.html: range input #projection requires an accessible name',
+  ]);
+});
+
 test('accepts explicit and wrapping labels for range inputs', () => {
   const html = `
     <a class="skip-link" href="#main-content">Skip to main content</a>

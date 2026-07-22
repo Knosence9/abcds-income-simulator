@@ -44,14 +44,20 @@ function hasNativeLabel(element, elements) {
   return false;
 }
 
-function hasAccessibleName(element, elementsById, elements, allowNativeLabel = false) {
+function labelledByReferencesAreValid(element, elementsById) {
   const labelledBy = attributeValue(element, 'aria-labelledby');
-  if (labelledBy !== undefined) {
-    const ids = labelledBy.trim().split(/\s+/).filter(Boolean);
-    return ids.length > 0 && ids.every((id) => {
-      const label = elementsById.get(id);
-      return label !== undefined && textContent(label).trim() !== '';
-    });
+  if (labelledBy === undefined) return false;
+
+  const ids = labelledBy.trim().split(/\s+/).filter(Boolean);
+  return ids.length > 0 && ids.every((id) => {
+    const labels = elementsById.get(id);
+    return labels?.length === 1 && textContent(labels[0]).trim() !== '';
+  });
+}
+
+function hasAccessibleName(element, elementsById, elements, allowNativeLabel = false) {
+  if (attributeValue(element, 'aria-labelledby') !== undefined) {
+    return labelledByReferencesAreValid(element, elementsById);
   }
 
   const ariaLabel = attributeValue(element, 'aria-label');
@@ -62,11 +68,14 @@ function hasAccessibleName(element, elementsById, elements, allowNativeLabel = f
 
 export function verifyAccessibilityMarkup(html, displayPath) {
   const elements = [...elementNodes(parse(html))];
-  const elementsById = new Map(
-    elements
-      .map((element) => [attributeValue(element, 'id'), element])
-      .filter(([id]) => id !== undefined),
-  );
+  const elementsById = new Map();
+  for (const element of elements) {
+    const id = attributeValue(element, 'id');
+    if (id === undefined) continue;
+    const matches = elementsById.get(id) ?? [];
+    matches.push(element);
+    elementsById.set(id, matches);
+  }
   const errors = [];
   const skipLinks = elements.filter(
     (element) => element.tagName === 'a' && hasClass(element, 'skip-link'),
@@ -83,6 +92,21 @@ export function verifyAccessibilityMarkup(html, displayPath) {
   }
   if (mainLandmarks.length !== 1) {
     errors.push(`${displayPath}: expected one <main id="main-content"> landmark`);
+  }
+
+  for (const element of elements) {
+    const isTableRegion = hasClass(element, 'table-wrap');
+    const isRange = element.tagName === 'input' && attributeValue(element, 'type') === 'range';
+    if (
+      attributeValue(element, 'aria-labelledby') !== undefined
+      && !isTableRegion
+      && !isRange
+      && !labelledByReferencesAreValid(element, elementsById)
+    ) {
+      errors.push(
+        `${displayPath}: <${element.tagName}> aria-labelledby must reference unique elements with non-empty text`,
+      );
+    }
   }
 
   for (const element of elements.filter((candidate) => hasClass(candidate, 'table-wrap'))) {
