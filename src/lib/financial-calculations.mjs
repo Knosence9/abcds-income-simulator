@@ -78,6 +78,26 @@ export function calculateMarginAccount({ marketValue, marginDebt }) {
   };
 }
 
+export function calculateMarginRepairPeriod({
+  marginDebt,
+  annualRate,
+  periodsPerYear,
+  principalPayment,
+}) {
+  const debtCents = Math.round(marginDebt * 100);
+  const interestCents = Math.round(marginDebt * (annualRate / 100) / periodsPerYear * 100);
+  const principalPaidCents = Math.min(
+    debtCents,
+    Math.max(0, Math.round(principalPayment * 100)),
+  );
+
+  return {
+    interest: interestCents / 100,
+    principalPaid: principalPaidCents / 100,
+    endingMarginDebt: (debtCents - principalPaidCents) / 100,
+  };
+}
+
 export function calculateMarginInterest({ marginDebt, annualRate, months }) {
   const monthlyInterestCents = Math.round(marginDebt * (annualRate / 100) / 12 * 100);
   const cumulativeInterestCents = Math.round(
