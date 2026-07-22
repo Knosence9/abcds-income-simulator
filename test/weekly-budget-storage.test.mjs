@@ -21,10 +21,20 @@ const validSnapshot = {
   weeklyFlexible: 150,
   weeklySinkingFunds: 100,
   weeklyBreathingRoom: 50,
+  weeklyMarginRepair: 100,
 };
 
-test('accepts a complete weekly budget containing only finite non-negative values', () => {
+test('accepts a complete weekly budget with a non-negative margin repair reserve', () => {
   assert.deepEqual(normalizeWeeklyBudgetSnapshot(validSnapshot), validSnapshot);
+});
+
+test('migrates a legacy weekly budget with no margin repair reserve to zero', () => {
+  const { weeklyMarginRepair, ...legacySnapshot } = validSnapshot;
+
+  assert.deepEqual(normalizeWeeklyBudgetSnapshot(legacySnapshot), {
+    ...legacySnapshot,
+    weeklyMarginRepair: 0,
+  });
 });
 
 test('rejects weekly amounts above the planner calculation bound', () => {
@@ -73,17 +83,35 @@ test('round-trips a weekly budget through the versioned JSON export format', () 
 
   assert.deepEqual(JSON.parse(exported), {
     format: 'abcds-weekly-budget',
-    version: 1,
+    version: 2,
     budget: validSnapshot,
   });
   assert.deepEqual(parseWeeklyBudgetImport(exported), validSnapshot);
+});
+
+test('migrates version 1 imports but rejects incomplete version 2 budgets', () => {
+  const { weeklyMarginRepair, ...legacyBudget } = validSnapshot;
+  const exportEnvelope = {
+    format: 'abcds-weekly-budget',
+    version: 1,
+    budget: legacyBudget,
+  };
+
+  assert.deepEqual(parseWeeklyBudgetImport(JSON.stringify(exportEnvelope)), {
+    ...legacyBudget,
+    weeklyMarginRepair: 0,
+  });
+  assert.equal(parseWeeklyBudgetImport(JSON.stringify({
+    ...exportEnvelope,
+    version: 2,
+  })), null);
 });
 
 test('rejects malformed, unsupported, and invalid weekly budget imports', () => {
   assert.equal(parseWeeklyBudgetImport('{broken'), null);
   assert.equal(parseWeeklyBudgetImport(JSON.stringify({
     format: 'abcds-weekly-budget',
-    version: 2,
+    version: 3,
     budget: validSnapshot,
   })), null);
   assert.equal(parseWeeklyBudgetImport(JSON.stringify({
@@ -103,7 +131,7 @@ test('budget planner restores valid browser-local values and provides an explici
   assert.match(budgetPage, /id="resetWeeklyBudget"[^>]*type="button"/);
   assert.equal(
     (budgetPage.match(/max=\{WEEKLY_BUDGET_MAX_AMOUNT\}/g) ?? []).length,
-    5,
+    6,
   );
   assert.match(budgetPage, /Enter an amount within the allowed range in every field/);
   assert.match(budgetPage, /const storage = getWeeklyBudgetStorage\(window\)/);
@@ -113,7 +141,7 @@ test('budget planner restores valid browser-local values and provides an explici
   assert.match(budgetPage, /form\.dataset\.initialized === 'true'/);
   assert.match(budgetPage, /stored only in this browser/i);
   assert.match(budgetPage, /not submitted by this planner/i);
-  assert.doesNotMatch(budgetPage, /analytics[^.]*weekly(?:Income|Essentials|Flexible|SinkingFunds|BreathingRoom)/i);
+  assert.doesNotMatch(budgetPage, /analytics[^.]*weekly(?:Income|Essentials|Flexible|SinkingFunds|BreathingRoom|MarginRepair)/i);
 });
 
 test('budget planner provides local JSON import and export controls', async () => {

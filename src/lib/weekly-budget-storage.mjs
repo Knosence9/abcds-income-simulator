@@ -7,6 +7,7 @@ export const WEEKLY_BUDGET_DEFAULTS = Object.freeze({
   weeklyFlexible: 150,
   weeklySinkingFunds: 100,
   weeklyBreathingRoom: 50,
+  weeklyMarginRepair: 0,
 });
 
 export const WEEKLY_BUDGET_FIELD_IDS = [
@@ -15,6 +16,7 @@ export const WEEKLY_BUDGET_FIELD_IDS = [
   'weeklyFlexible',
   'weeklySinkingFunds',
   'weeklyBreathingRoom',
+  'weeklyMarginRepair',
 ];
 
 export function getWeeklyBudgetStorage(windowObject) {
@@ -30,7 +32,9 @@ export function normalizeWeeklyBudgetSnapshot(snapshot) {
 
   const normalized = {};
   for (const fieldId of WEEKLY_BUDGET_FIELD_IDS) {
-    const value = snapshot[fieldId];
+    const value = fieldId === 'weeklyMarginRepair' && snapshot[fieldId] === undefined
+      ? WEEKLY_BUDGET_DEFAULTS.weeklyMarginRepair
+      : snapshot[fieldId];
     if (!Number.isFinite(value) || value < 0 || value > WEEKLY_BUDGET_MAX_AMOUNT) return null;
     normalized[fieldId] = value;
   }
@@ -52,7 +56,7 @@ export function serializeWeeklyBudgetExport(snapshot) {
 
   return JSON.stringify({
     format: 'abcds-weekly-budget',
-    version: 1,
+    version: 2,
     budget: normalized,
   }, null, 2);
 }
@@ -65,7 +69,8 @@ export function parseWeeklyBudgetImport(serializedExport) {
       || typeof parsed !== 'object'
       || Array.isArray(parsed)
       || parsed.format !== 'abcds-weekly-budget'
-      || parsed.version !== 1
+      || ![1, 2].includes(parsed.version)
+      || (parsed.version === 2 && parsed.budget?.weeklyMarginRepair === undefined)
     ) return null;
 
     return normalizeWeeklyBudgetSnapshot(parsed.budget);
