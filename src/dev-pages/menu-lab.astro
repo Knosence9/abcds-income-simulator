@@ -300,18 +300,19 @@ import Analytics from '@vercel/analytics/astro';
           window.removeEventListener('resize', render);
           return;
         }
-        output = document.getElementById('configOutput') as HTMLTextAreaElement | null;
+        const outputElement = document.getElementById('configOutput');
         const copyButton = document.getElementById('copyConfig');
         const resetButton = document.getElementById('resetLayout');
         const toggleGuidesButton = document.getElementById('toggleGuides');
         if (
-          !output
+          !(outputElement instanceof HTMLTextAreaElement)
           || !(copyButton instanceof HTMLButtonElement)
           || !(resetButton instanceof HTMLButtonElement)
           || !(toggleGuidesButton instanceof HTMLButtonElement)
         ) {
           return;
         }
+        output = outputElement;
         guides = [...lab.querySelectorAll('.guide, .axis, .ghost')]
           .filter((node) => node instanceof HTMLElement);
 
