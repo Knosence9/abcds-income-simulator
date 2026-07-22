@@ -1,6 +1,6 @@
 import { readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'parse5';
 
 const EXCLUDED_SCHEMES = /^(?:https?:|mailto:|tel:|javascript:|data:)/i;
@@ -144,8 +144,12 @@ export async function verifyBuiltInternalLinks(root) {
   return errors;
 }
 
+export function builtRootForModule(moduleUrl) {
+  return join(dirname(fileURLToPath(moduleUrl)), '..', 'dist');
+}
+
 async function run() {
-  const root = process.argv[2] ?? join(dirname(new URL(import.meta.url).pathname), '..', 'dist');
+  const root = process.argv[2] ?? builtRootForModule(import.meta.url);
   const errors = await verifyBuiltInternalLinks(root);
 
   if (errors.length) {

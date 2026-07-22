@@ -3,8 +3,12 @@ import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 
-import { verifyBuiltInternalLinks } from '../scripts/verify-built-internal-links.mjs';
+import {
+  builtRootForModule,
+  verifyBuiltInternalLinks,
+} from '../scripts/verify-built-internal-links.mjs';
 
 async function withBuiltSite(files, run) {
   const root = await mkdtemp(join(tmpdir(), 'abcds-links-'));
@@ -20,6 +24,13 @@ async function withBuiltSite(files, run) {
     await rm(root, { recursive: true, force: true });
   }
 }
+
+test('decodes the module file URL when deriving the default built root', () => {
+  const project = join(tmpdir(), 'ABCDs site with spaces');
+  const moduleUrl = pathToFileURL(join(project, 'scripts', 'verify-links.mjs'));
+
+  assert.equal(builtRootForModule(moduleUrl), join(project, 'dist'));
+});
 
 test('reports missing local routes and fragment targets', async () => {
   await withBuiltSite(
