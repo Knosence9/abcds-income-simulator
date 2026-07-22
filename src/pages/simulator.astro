@@ -182,7 +182,7 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateExpenseCoverage, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, getProjectionScenario, parseWeeklyContribution, routeInvestmentContribution, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { calculateExpenseCoverage, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const $ = (id) => document.getElementById(id);
@@ -391,7 +391,14 @@ const defaultInputs = {
           });
           if (t === totalPeriods) break;
           const marketReturn = calculatePeriodicMarketReturn({ marketValue: portfolio, annualReturn: input.navReturn, periodsPerYear: periods });
-          const contributionRoute = routeInvestmentContribution({ marketValue: portfolio, marginDebt, contribution });
+          const contributionPeriod = calculateProjectionContributionPeriod({
+            beginningMarketValue: portfolio,
+            marginDebt,
+            contribution,
+            marketValueAfterReturn: marketReturn.endingMarketValue,
+            reinvestedDistributions: routed.reinvestedDistributions,
+            cumulativePausedContributions: pausedContributions,
+          });
           const expenseCoverage = calculateExpenseCoverage({ spendableCash: remainingCash + routed.spendableDistributions, expenses: periodExpenses });
           const repairPeriod = calculateMarginRepairPeriod({
             marginDebt,
@@ -407,9 +414,9 @@ const defaultInputs = {
           remainingCash = expenseCoverage.remainingCash;
           marginDebt = repairPeriod.endingMarginDebt;
           cumulativePrincipalPaid += repairPeriod.principalPaid;
-          pausedContributions += contributionRoute.pausedContribution;
+          pausedContributions = contributionPeriod.cumulativePausedContributions;
           cumulativeMarginInterest += repairPeriod.interest;
-          portfolio = marketReturn.endingMarketValue + routed.reinvestedDistributions + contributionRoute.investedContribution;
+          portfolio = contributionPeriod.endingMarketValue;
         }
         return rows;
       }

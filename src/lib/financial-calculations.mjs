@@ -162,6 +162,29 @@ export function routeInvestmentContribution({ marketValue, marginDebt, contribut
   };
 }
 
+export function calculateProjectionContributionPeriod({
+  beginningMarketValue,
+  marginDebt,
+  contribution,
+  marketValueAfterReturn,
+  reinvestedDistributions,
+  cumulativePausedContributions,
+}) {
+  const contributionRoute = routeInvestmentContribution({
+    marketValue: beginningMarketValue,
+    marginDebt,
+    contribution,
+  });
+
+  return {
+    endingMarketValue: marketValueAfterReturn
+      + reinvestedDistributions
+      + contributionRoute.investedContribution,
+    cumulativePausedContributions: cumulativePausedContributions
+      + contributionRoute.pausedContribution,
+  };
+}
+
 export function validatePillarAllocations(allocations) {
   const values = Object.values(allocations);
   return values.length === 4

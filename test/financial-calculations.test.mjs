@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateProjectionContributionPeriod,
   calculateExpenseCoverage,
   calculateMarginAccount,
   calculateMarginInterest,
@@ -516,22 +517,28 @@ test('simulator accumulates spendable cash expense coverage in separate ledgers'
 });
 
 test('simulator keeps repair-band contributions outside projected market value', async () => {
+  assert.deepEqual(
+    calculateProjectionContributionPeriod({
+      beginningMarketValue: 10_000,
+      marginDebt: 3_000,
+      contribution: 500,
+      marketValueAfterReturn: 10_100,
+      reinvestedDistributions: 25,
+      cumulativePausedContributions: 100,
+    }),
+    {
+      endingMarketValue: 10_125,
+      cumulativePausedContributions: 600,
+    },
+  );
+
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),
     'utf8',
   );
 
-  assert.match(simulatorPage, /routeInvestmentContribution/);
+  assert.match(simulatorPage, /calculateProjectionContributionPeriod/);
   assert.match(simulatorPage, /id="pausedContributions"/);
-  assert.match(
-    simulatorPage,
-    /routeInvestmentContribution\(\{ marketValue: portfolio, marginDebt, contribution \}\)/,
-  );
-  assert.match(simulatorPage, /pausedContributions \+= contributionRoute\.pausedContribution/);
-  assert.match(
-    simulatorPage,
-    /portfolio = marketReturn\.endingMarketValue \+ routed\.reinvestedDistributions \+ contributionRoute\.investedContribution/,
-  );
   assert.match(simulatorPage, /held outside this projection/i);
   assert.match(simulatorPage, /not assumed to pay margin debt/i);
 });
