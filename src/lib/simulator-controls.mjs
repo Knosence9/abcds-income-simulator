@@ -3,11 +3,14 @@ export function attachAllocationSnapshot({
   applyButton,
   summary,
   allocationControls,
+  startingControls = null,
   calculateSnapshot,
+  prepareProjectionSnapshot = null,
+  maxStartingValue = Number.POSITIVE_INFINITY,
   formatCurrency,
   render,
 }) {
-  const getSnapshot = () => {
+  const getBalances = () => {
     let isValid = true;
     const balances = Object.fromEntries(
       Object.entries(balanceInputs).map(([name, input]) => {
@@ -23,8 +26,9 @@ export function attachAllocationSnapshot({
     if (!isValid) {
       throw new RangeError('Pillar balances must contain four finite, non-negative values.');
     }
-    return calculateSnapshot(balances);
+    return balances;
   };
+  const getSnapshot = () => calculateSnapshot(getBalances());
 
   let currentSnapshot = null;
   const updateSummary = () => {
@@ -36,11 +40,21 @@ export function attachAllocationSnapshot({
       summary.textContent = 'Enter four non-negative pillar balances.';
       return;
     }
-    applyButton.disabled = currentSnapshot.weights === null;
     if (!currentSnapshot.weights) {
+      applyButton.disabled = true;
       summary.textContent = 'Enter at least one pillar balance to calculate weights.';
       return;
     }
+    if (prepareProjectionSnapshot) {
+      try {
+        prepareProjectionSnapshot(getBalances(), { maxStartingValue });
+      } catch {
+        applyButton.disabled = true;
+        summary.textContent = `${formatCurrency(currentSnapshot.totalValue)} total exceeds the ${formatCurrency(maxStartingValue)} projection maximum. Reduce the aggregate balances to apply it.`;
+        return;
+      }
+    }
+    applyButton.disabled = false;
     const { anchor, booster, closedEnd, dynamo } = currentSnapshot.weights;
     summary.textContent = `${formatCurrency(currentSnapshot.totalValue)} total — A ${anchor.toFixed(1)}%, B ${booster.toFixed(1)}%, C ${closedEnd.toFixed(1)}%, D ${dynamo.toFixed(1)}%.`;
   };
@@ -53,14 +67,25 @@ export function attachAllocationSnapshot({
   applyButton.addEventListener('click', () => {
     const snapshot = getSnapshot();
     if (!snapshot.weights) return;
-    for (const [name, weight] of Object.entries(snapshot.weights)) {
+    const projectionSnapshot = prepareProjectionSnapshot
+      ? prepareProjectionSnapshot(getBalances(), { maxStartingValue })
+      : { startingValue: null, allocations: snapshot.weights };
+    if (startingControls && projectionSnapshot.startingValue !== null) {
+      const [range, number] = startingControls;
+      range.value = String(projectionSnapshot.startingValue);
+      number.value = range.value;
+      number.removeAttribute('aria-invalid');
+    }
+    for (const [name, weight] of Object.entries(projectionSnapshot.allocations)) {
       const [range, number] = allocationControls[name];
       range.value = String(weight);
       number.value = range.value;
       number.removeAttribute('aria-invalid');
     }
     render();
-    summary.textContent = 'Allocation snapshot applied to the projection.';
+    summary.textContent = projectionSnapshot.startingValue === null
+      ? 'Allocation snapshot applied to the projection.'
+      : `Allocation snapshot and ${formatCurrency(projectionSnapshot.startingValue)} starting value applied to the projection.`;
   });
 }
 
