@@ -446,7 +446,7 @@ test('simulator keyboard cleanup ignores routes without simulator controls', asy
 
 test('menu lab reinitializes drag controls after ClientRouter navigation', async () => {
   const menuLabPage = await readFile(
-    new URL('../src/pages/menu-lab.astro', import.meta.url),
+    new URL('../src/dev-pages/menu-lab.astro', import.meta.url),
     'utf8',
   );
 
@@ -456,13 +456,29 @@ test('menu lab reinitializes drag controls after ClientRouter navigation', async
 
 test('menu lab initializer ignores ClientRouter visits to other routes', async () => {
   const menuLabPage = await readFile(
-    new URL('../src/pages/menu-lab.astro', import.meta.url),
+    new URL('../src/dev-pages/menu-lab.astro', import.meta.url),
     'utf8',
   );
 
   assert.match(
     menuLabPage,
     /function initializeMenuLab\(\) \{[\s\S]*if \(!lab\) \{[\s\S]*return;/,
+  );
+});
+
+test('menu lab stage keeps every seeded control inside its clipped viewport', async () => {
+  const menuLabPage = await readFile(
+    new URL('../src/dev-pages/menu-lab.astro', import.meta.url),
+    'utf8',
+  );
+  const stageMinimumHeights = [...menuLabPage.matchAll(
+    /\.stage\s*\{[^}]*min-height:\s*(\d+)px;/g,
+  )].map((match) => Number(match[1]));
+
+  assert.equal(stageMinimumHeights.length, 2);
+  assert.ok(
+    stageMinimumHeights.every((height) => height >= 855),
+    'R20 needs at least 855px of stage height to remain fully draggable',
   );
 });
 
