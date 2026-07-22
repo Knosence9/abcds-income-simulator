@@ -6,10 +6,54 @@ import {
   calculateMarginAccount,
   calculateWeeklyBudget,
   classifyMarginRepairState,
+  getProjectionScenario,
   monthlyToWeekly,
   parseWeeklyContribution,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('provides conservative projection starting assumptions', () => {
+  assert.deepEqual(getProjectionScenario('conservative'), {
+    dividendYield: 8,
+    acDistributionShare: 75,
+    dividendGrowth: 1,
+    inflation: 3,
+  });
+});
+
+test('provides base projection starting assumptions', () => {
+  assert.deepEqual(getProjectionScenario('base'), {
+    dividendYield: 12,
+    acDistributionShare: 50,
+    dividendGrowth: 2,
+    inflation: 3,
+  });
+});
+
+test('provides distribution stress starting assumptions', () => {
+  assert.deepEqual(getProjectionScenario('stress'), {
+    dividendYield: 8,
+    acDistributionShare: 25,
+    dividendGrowth: -10,
+    inflation: 7,
+  });
+});
+
+test('returns a defensive copy of projection assumptions', () => {
+  const scenario = getProjectionScenario('base');
+  scenario.dividendYield = 80;
+
+  assert.equal(getProjectionScenario('base').dividendYield, 12);
+});
+
+test('rejects an unknown projection scenario', () => {
+  for (const name of ['optimistic', 'toString']) {
+    assert.throws(
+      () => getProjectionScenario(name),
+      new RegExp(`Unknown projection scenario: ${name}`),
+    );
+  }
+});
 
 test('separates gross market value, margin debt, and net equity', () => {
   assert.deepEqual(
@@ -21,6 +65,29 @@ test('separates gross market value, margin debt, and net equity', () => {
       marginEquityPercent: 75,
     },
   );
+});
+
+test('simulator exposes and applies accessible scenario starting points', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  for (const [name, label] of [
+    ['conservative', 'Conservative'],
+    ['base', 'Base'],
+    ['stress', 'Stress'],
+  ]) {
+    assert.match(
+      simulatorPage,
+      new RegExp(`<button[^>]*data-scenario="${name}"[^>]*aria-pressed="false"[^>]*>${label}<\\/button>`),
+    );
+  }
+  assert.match(simulatorPage, /getProjectionScenario/);
+  assert.match(simulatorPage, /attachProjectionScenarioPresets/);
+  assert.match(simulatorPage, /starting assumptions/i);
+  assert.match(simulatorPage, /NAV\/price decline/i);
+  assert.match(simulatorPage, /margin interest and principal repayment/i);
 });
 
 test('simulator exposes a bounded margin debt input and separate equity ledgers', async () => {

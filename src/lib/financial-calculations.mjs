@@ -1,3 +1,31 @@
+const projectionScenarios = {
+  conservative: {
+    dividendYield: 8,
+    acDistributionShare: 75,
+    dividendGrowth: 1,
+    inflation: 3,
+  },
+  base: {
+    dividendYield: 12,
+    acDistributionShare: 50,
+    dividendGrowth: 2,
+    inflation: 3,
+  },
+  stress: {
+    dividendYield: 8,
+    acDistributionShare: 25,
+    dividendGrowth: -10,
+    inflation: 7,
+  },
+};
+
+export function getProjectionScenario(name) {
+  if (!Object.hasOwn(projectionScenarios, name)) {
+    throw new RangeError(`Unknown projection scenario: ${name}`);
+  }
+  return { ...projectionScenarios[name] };
+}
+
 export function calculateMarginAccount({ marketValue, marginDebt }) {
   const netEquity = marketValue - marginDebt;
 
