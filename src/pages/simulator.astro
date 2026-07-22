@@ -282,8 +282,8 @@ const defaultInputs = {
       }
       function closeSimulatorControls(event: KeyboardEvent) {
         if (event.key !== 'Escape') return;
-        const simulatorShell = $('simulatorShell');
-        const controlsToggle = $('controlsToggle');
+        const simulatorShell = document.getElementById('simulatorShell');
+        const controlsToggle = document.getElementById('controlsToggle');
         if (!simulatorShell || !controlsToggle) return;
         simulatorShell.classList.remove('controls-open');
         controlsToggle.setAttribute('aria-expanded', 'false');
@@ -498,8 +498,8 @@ const defaultInputs = {
         svg.innerHTML = `${grid}<path d="${pointPath(incomeValue)}" fill="none" stroke="#bf7327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${pointPath(realIncomeValue)}" fill="none" stroke="#617f3e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="${pointPath(expenseValue)}" fill="none" stroke="#aa463d" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" stroke-linejoin="round"/>${dots}<line x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}" stroke="rgba(23,36,58,.16)" stroke-width="1"/><text x="${p.l}" y="18" fill="#617086" font-size="12">Line plot: monthly dollars · weekly contributions</text><text x="${W-p.r}" y="18" text-anchor="end" fill="#617086" font-size="12">${input.projectionYears}-year projection</text>`;
       }
       function initializeSimulator() {
-        const simulatorShell = $('simulatorShell');
-        const controlsToggle = $('controlsToggle');
+        const simulatorShell = document.getElementById('simulatorShell');
+        const controlsToggle = document.getElementById('controlsToggle');
         if (!simulatorShell || !controlsToggle) {
           document.removeEventListener('keydown', closeSimulatorControls);
           return;
