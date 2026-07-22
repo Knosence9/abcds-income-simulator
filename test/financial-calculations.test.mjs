@@ -154,6 +154,10 @@ test('simulator reports constant-principal margin interest from an accessible AP
   assert.match(simulatorPage, /id="cumulativeMarginInterest"/);
   assert.match(simulatorPage, /annualRate: input\.marginApr/);
   assert.match(simulatorPage, /months: periods \* input\.projectionYears/);
+  assert.match(
+    simulatorPage,
+    /cumulativeMarginInterest'\)\.textContent = fmtSmall\.format\(marginInterest\.cumulativeInterest\)/,
+  );
   assert.match(simulatorPage, /interest is reported separately/i);
   assert.match(simulatorPage, /not deducted from margin debt or gross market value/i);
 });
