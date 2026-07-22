@@ -13,5 +13,9 @@ test('built homepage places the Start here path between the hero and pillars', a
   const pillars = html.indexOf('id="pillars"');
 
   assert.ok(heroEnd >= 0 && heroEnd < startHere && startHere < pillars);
-  assert.equal((html.match(/class="start-here__step"/g) ?? []).length, 3);
+  const stepDestinations = Array.from(
+    html.matchAll(/class="start-here__step" href="([^"]+)"/g),
+    (match) => match[1],
+  );
+  assert.deepEqual(stepDestinations, ['/budget', '#pillars', '/simulator']);
 });
