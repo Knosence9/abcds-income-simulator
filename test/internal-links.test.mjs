@@ -235,6 +235,49 @@ test('treats name as a fragment target only on anchor elements', async () => {
   );
 });
 
+test('reports invalid production search-discovery artifacts', async () => {
+  await withBuiltSite(
+    {
+      'index.html': '<main></main>',
+      'robots.txt': 'User-agent: *\nDisallow: /\n',
+      'sitemap-index.xml': '<sitemapindex><sitemap><loc>https://example.com/sitemap.xml</loc></sitemap></sitemapindex>',
+      'sitemap-0.xml': '<urlset><url><loc>https://abcds-income-simulator.vercel.app/menu-lab/</loc></url></urlset>',
+    },
+    async (root) => {
+      assert.deepEqual(await verifyBuiltInternalLinks(root), [
+        'robots.txt does not match the canonical crawl policy',
+        'sitemap-index.xml does not reference the canonical sitemap',
+        'sitemap-0.xml public URLs do not match the five reader routes',
+      ]);
+    },
+  );
+});
+
+test('rejects malformed sitemap XML even when it contains the canonical locations', async () => {
+  const origin = 'https://abcds-income-simulator.vercel.app';
+  const readerLocations = [
+    `${origin}/`,
+    `${origin}/budget/`,
+    `${origin}/closed-end-funds/`,
+    `${origin}/getting-started/`,
+    `${origin}/simulator/`,
+  ].map((location) => `<loc>${location}</loc>`).join('');
+
+  await withBuiltSite(
+    {
+      'robots.txt': `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap-index.xml\n`,
+      'sitemap-index.xml': `<garbage><loc>${origin}/sitemap-0.xml</loc></garbage>`,
+      'sitemap-0.xml': `<garbage>${readerLocations}</garbage>`,
+    },
+    async (root) => {
+      assert.deepEqual(await verifyBuiltInternalLinks(root), [
+        'sitemap-index.xml does not reference the canonical sitemap',
+        'sitemap-0.xml public URLs do not match the five reader routes',
+      ]);
+    },
+  );
+});
+
 test('accepts built routes, query strings, fragments, and excluded schemes', async () => {
   await withBuiltSite(
     {

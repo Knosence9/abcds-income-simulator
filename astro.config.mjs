@@ -1,3 +1,4 @@
+import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 
 const developmentRoutes = {
@@ -17,5 +18,5 @@ const developmentRoutes = {
 export default defineConfig({
   site: 'https://abcds-income-simulator.vercel.app',
   output: 'static',
-  integrations: [developmentRoutes],
+  integrations: [developmentRoutes, sitemap()],
 });

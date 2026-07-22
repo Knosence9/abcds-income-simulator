@@ -24,7 +24,7 @@ test('menu lab stays available only as a development route', async () => {
   assert.equal(await exists(projectFile('src/pages/menu-lab.astro')), false);
   assert.equal(await exists(projectFile('src/dev-pages/menu-lab.astro')), true);
   assert.match(configSource, /command\s*===\s*['"]dev['"]/);
-  assert.match(configSource, /integrations:\s*\[\s*developmentRoutes\s*\]/);
+  assert.match(configSource, /integrations:\s*\[[^\]]*developmentRoutes[^\]]*\]/s);
   assert.match(configSource, /injectRoute\(\{[\s\S]*pattern:\s*['"]\/menu-lab['"]/);
   assert.match(
     configSource,
