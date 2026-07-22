@@ -4,18 +4,21 @@ const projectionScenarios = {
     acDistributionShare: 75,
     dividendGrowth: 1,
     inflation: 3,
+    annualNavReturn: 0,
   },
   base: {
     dividendYield: 12,
     acDistributionShare: 50,
     dividendGrowth: 2,
     inflation: 3,
+    annualNavReturn: 3,
   },
   stress: {
     dividendYield: 8,
     acDistributionShare: 25,
     dividendGrowth: -10,
     inflation: 7,
+    annualNavReturn: -12,
   },
 };
 
@@ -24,6 +27,16 @@ export function getProjectionScenario(name) {
     throw new RangeError(`Unknown projection scenario: ${name}`);
   }
   return { ...projectionScenarios[name] };
+}
+
+export function calculatePeriodicMarketReturn({ marketValue, annualReturn, periodsPerYear }) {
+  const periodicRate = Math.pow(1 + annualReturn / 100, 1 / periodsPerYear) - 1;
+  const marketReturn = marketValue * periodicRate;
+
+  return {
+    marketReturn,
+    endingMarketValue: marketValue + marketReturn,
+  };
 }
 
 export function calculateMarginAccount({ marketValue, marginDebt }) {
