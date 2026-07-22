@@ -446,7 +446,7 @@ test('simulator keyboard cleanup ignores routes without simulator controls', asy
 
 test('menu lab reinitializes drag controls after ClientRouter navigation', async () => {
   const menuLabPage = await readFile(
-    new URL('../src/pages/menu-lab.astro', import.meta.url),
+    new URL('../src/dev-pages/menu-lab.astro', import.meta.url),
     'utf8',
   );
 
@@ -456,7 +456,7 @@ test('menu lab reinitializes drag controls after ClientRouter navigation', async
 
 test('menu lab initializer ignores ClientRouter visits to other routes', async () => {
   const menuLabPage = await readFile(
-    new URL('../src/pages/menu-lab.astro', import.meta.url),
+    new URL('../src/dev-pages/menu-lab.astro', import.meta.url),
     'utf8',
   );
 
