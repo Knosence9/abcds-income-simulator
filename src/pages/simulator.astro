@@ -73,6 +73,7 @@ const defaultInputs = {
       .compact { min-height:auto; }
       .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
       @media (max-width: 900px) { .stats { grid-template-columns:1fr; } .section-head, .topbar { align-items:flex-start; flex-direction:column; } }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
     </style>
   </head>
   <body>
@@ -132,6 +133,7 @@ const defaultInputs = {
 
     <script>
       import { calculateMarginAccount, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
+      import { attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const $ = (id) => document.getElementById(id);
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
@@ -269,7 +271,14 @@ const defaultInputs = {
         }
         const transferredContribution = applyTransferredContribution();
         pairs.forEach(([a,b]) => sync(a,b));
-        controlsToggle.addEventListener('click', () => { const isOpen = simulatorShell.classList.toggle('controls-open'); controlsToggle.setAttribute('aria-expanded', String(isOpen)); controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs'; });
+        const simulatorControls = $('simulatorControls');
+        attachSimulatorControlsToggle({
+          simulatorShell,
+          controlsToggle,
+          simulatorControls,
+          matchMedia: window.matchMedia.bind(window),
+          requestFrame: requestAnimationFrame,
+        });
         document.removeEventListener('keydown', closeSimulatorControls);
         document.addEventListener('keydown', closeSimulatorControls);
         render();
