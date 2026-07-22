@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
+import ReaderNavigation from '../components/ReaderNavigation.astro';
 import SkipLink from '../components/SkipLink.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteMetadata from '../components/SiteMetadata.astro';
@@ -98,6 +99,7 @@ const defaultInputs = {
   </head>
   <body>
     <SkipLink />
+    <ReaderNavigation page="simulator" />
     <div class="shell">
       <div class="topbar"><a class="pill" href="/">← Back to main guide</a><a class="donate-link" href="https://cash.app/$knosence" target="_blank" rel="noopener noreferrer">Donate $knosence</a></div>
 

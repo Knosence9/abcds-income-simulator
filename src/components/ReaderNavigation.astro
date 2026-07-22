@@ -1,0 +1,65 @@
+---
+interface Props {
+  page: 'home' | 'budget' | 'getting-started' | 'closed-end-funds' | 'simulator';
+}
+
+const { page } = Astro.props;
+const items = [
+  { page: 'home', href: '/', label: 'Home' },
+  { page: 'budget', href: '/budget', label: 'Budget' },
+  { page: 'getting-started', href: '/getting-started', label: 'Getting started' },
+  { page: 'closed-end-funds', href: '/closed-end-funds', label: 'Closed-end funds' },
+  { page: 'simulator', href: '/simulator', label: 'Simulator' },
+] as const;
+---
+
+<nav class="reader-navigation" aria-label="Primary navigation">
+  <div class="reader-navigation__links">
+    {items.map((item) => (
+      <a href={item.href} aria-current={page === item.page ? 'page' : undefined}>{item.label}</a>
+    ))}
+  </div>
+</nav>
+
+<style>
+  .reader-navigation {
+    width: min(1440px, calc(100vw - 28px));
+    margin: 14px auto 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .reader-navigation__links {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    gap: 8px;
+    padding: 3px;
+  }
+  .reader-navigation a {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--line, rgba(23, 36, 58, .15));
+    border-radius: 999px;
+    padding: 0 14px;
+    background: rgba(255, 253, 247, .78);
+    color: var(--a, #203f69);
+    font-weight: 850;
+    font-size: 13px;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(42, 31, 13, .06);
+  }
+  .reader-navigation a:hover { background: rgba(32, 63, 105, .08); }
+  .reader-navigation a[aria-current='page'] {
+    border-color: var(--a, #203f69);
+    background: var(--a, #203f69);
+    color: var(--paper, #fffdf7);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .reader-navigation a:focus-visible {
+    outline: 3px solid var(--b, #bf7327);
+    outline-offset: 2px;
+  }
+</style>
