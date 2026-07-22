@@ -98,3 +98,15 @@ test('closing simulator controls before the queued frame skips scrolling', () =>
 
   assert.deepEqual(fixture.scrollCalls, []);
 });
+
+test('reopening controls invalidates the stale queued scroll', () => {
+  const fixture = createFixture();
+
+  fixture.controlsToggle.click();
+  fixture.controlsToggle.click();
+  fixture.controlsToggle.click();
+  fixture.frames.shift()();
+  fixture.frames.shift()();
+
+  assert.deepEqual(fixture.scrollCalls, [{ behavior: 'smooth', block: 'start' }]);
+});
