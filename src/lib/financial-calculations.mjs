@@ -57,6 +57,16 @@ export function calculatePeriodicMarketReturn({ marketValue, annualReturn, perio
   };
 }
 
+export function calculateExpenseCoverage({ spendableCash, expenses }) {
+  const expensesPaid = Math.min(spendableCash, expenses);
+
+  return {
+    expensesPaid,
+    uncoveredExpenses: expenses - expensesPaid,
+    remainingCash: spendableCash - expensesPaid,
+  };
+}
+
 export function calculateMarginAccount({ marketValue, marginDebt }) {
   const netEquity = marketValue - marginDebt;
 
