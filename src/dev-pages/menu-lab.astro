@@ -132,8 +132,11 @@ import Analytics from '@vercel/analytics/astro';
     </div>
 
     <script>
-      // @ts-nocheck — development-only visual layout controller.
-      const seed = {
+      type ItemKind = 'blue' | 'red';
+      type LayoutItem = { label: string; x: number; y: number };
+      type LayoutState = { blue: LayoutItem[]; red: LayoutItem[] };
+
+      const seed: LayoutState = {
         blue: [
           { label: 'B1', x: -54, y: -66 },
           { label: 'B2', x: -83, y: -20 },
@@ -180,18 +183,18 @@ import Analytics from '@vercel/analytics/astro';
         ],
       };
 
-      const icons = {
+      const icons: Record<ItemKind, string[]> = {
         blue: ['M5 12h14', 'M12 5v14'],
         red: ['M7 7h10', 'M7 12h10', 'M7 17h10'],
       };
 
-      let lab;
-      let output;
-      let guides = [];
+      let lab: HTMLElement | null = null;
+      let output: HTMLTextAreaElement | null = null;
+      let guides: HTMLElement[] = [];
       let guidesVisible = true;
-      let state = JSON.parse(JSON.stringify(seed));
+      let state: LayoutState = JSON.parse(JSON.stringify(seed));
 
-      const makeIcon = (kind) => {
+      const makeIcon = (kind: ItemKind) => {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', '0 0 24 24');
         for (const d of icons[kind]) {
@@ -203,12 +206,16 @@ import Analytics from '@vercel/analytics/astro';
       };
 
       const updateOutput = () => {
+        if (!output) return;
         output.value = JSON.stringify(state, null, 2);
       };
 
-      const getAnchor = () => ({ x: lab.clientWidth - 36, y: lab.clientHeight - 36 });
+      const getAnchor = () => ({
+        x: (lab?.clientWidth ?? 0) - 36,
+        y: (lab?.clientHeight ?? 0) - 36,
+      });
 
-      const place = (el, item) => {
+      const place = (el: HTMLElement, item: LayoutItem) => {
         const anchor = getAnchor();
         const size = el.classList.contains('trigger') ? 72 : 50;
         el.style.left = `${anchor.x + item.x - (size / 2)}px`;
@@ -216,8 +223,10 @@ import Analytics from '@vercel/analytics/astro';
       };
 
       const render = () => {
+        if (!lab || !output) return;
         [...lab.querySelectorAll('.item.draggable')].forEach((node) => node.remove());
-        ['blue', 'red'].forEach((kind) => {
+        const kinds: ItemKind[] = ['blue', 'red'];
+        kinds.forEach((kind) => {
           state[kind].forEach((item, index) => {
             const el = document.createElement('div');
             el.className = `item draggable ${kind}`;
@@ -250,17 +259,18 @@ import Analytics from '@vercel/analytics/astro';
         updateOutput();
       };
 
-      const enableDrag = (el) => {
+      const enableDrag = (el: HTMLElement) => {
         el.addEventListener('pointerdown', (event) => {
-          const { kind, index } = el.dataset;
-          const item = state[kind][Number(index)];
+          const kind = el.dataset.kind as ItemKind;
+          const item = state[kind][Number(el.dataset.index)];
+          if (!item) return;
           const startX = event.clientX;
           const startY = event.clientY;
           const originX = item.x;
           const originY = item.y;
           el.setPointerCapture(event.pointerId);
 
-          const onMove = (moveEvent) => {
+          const onMove = (moveEvent: PointerEvent) => {
             item.x = Math.round(originX + (moveEvent.clientX - startX));
             item.y = Math.round(originY + (moveEvent.clientY - startY));
             place(el, item);
@@ -285,16 +295,25 @@ import Analytics from '@vercel/analytics/astro';
       function initializeMenuLab() {
         lab = document.getElementById('lab');
         if (!lab) {
-          output = undefined;
+          output = null;
           guides = [];
           window.removeEventListener('resize', render);
           return;
         }
-        output = document.getElementById('configOutput');
+        output = document.getElementById('configOutput') as HTMLTextAreaElement | null;
         const copyButton = document.getElementById('copyConfig');
         const resetButton = document.getElementById('resetLayout');
         const toggleGuidesButton = document.getElementById('toggleGuides');
-        guides = [...lab.querySelectorAll('.guide, .axis, .ghost')];
+        if (
+          !output
+          || !(copyButton instanceof HTMLButtonElement)
+          || !(resetButton instanceof HTMLButtonElement)
+          || !(toggleGuidesButton instanceof HTMLButtonElement)
+        ) {
+          return;
+        }
+        guides = [...lab.querySelectorAll('.guide, .axis, .ghost')]
+          .filter((node) => node instanceof HTMLElement);
 
         copyButton.addEventListener('click', async () => {
           updateOutput();
