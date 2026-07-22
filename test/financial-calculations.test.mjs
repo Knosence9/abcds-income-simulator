@@ -731,7 +731,7 @@ test('simulator applies a validated weekly contribution from the budget URL', as
   assert.match(simulatorPage, /searchParams\.get\('weeklyContribution'\)/);
   assert.match(simulatorPage, /paycheck\.value = transferredContribution/);
   assert.match(simulatorPage, /const appliedContribution = Number\(paycheck\.value\)/);
-  assert.match(simulatorPage, /paycheckNumber\.value = appliedContribution/);
+  assert.match(simulatorPage, /paycheckNumber\.value = String\(appliedContribution\)/);
   assert.match(simulatorPage, /Number\.isFinite\(requestedNumber\)/);
   assert.match(simulatorPage, /\? appliedContribution/);
   assert.match(simulatorPage, /Weekly contribution imported from budget:/);
@@ -821,7 +821,7 @@ test('simulator initializer ignores ClientRouter visits to other routes', async 
 
   assert.match(
     simulatorPage,
-    /function initializeSimulator\(\) \{[\s\S]*if \(!simulatorShell \|\| !controlsToggle\) \{[\s\S]*return;/,
+    /function initializeSimulator\(\) \{[\s\S]*document\.getElementById\('simulatorShell'\)[\s\S]*if \(!simulatorShell \|\| !controlsToggle\) \{[\s\S]*return;/,
   );
 });
 
@@ -833,7 +833,7 @@ test('simulator keyboard cleanup ignores routes without simulator controls', asy
 
   assert.match(
     simulatorPage,
-    /if \(!simulatorShell \|\| !controlsToggle\) \{[\s\S]*document\.removeEventListener\('keydown', closeSimulatorControls\);[\s\S]*return;/,
+    /function closeSimulatorControls[\s\S]*document\.getElementById\('simulatorShell'\)[\s\S]*if \(!simulatorShell \|\| !controlsToggle\) return;/,
   );
 });
 
