@@ -43,10 +43,13 @@ test('shared site footer provides navigation, disclosure, and privacy context', 
   assert.match(source, /href="\/simulator"/);
   assert.match(source, /href="\/#rules"/);
   assert.match(source, /not financial advice/i);
-  assert.match(source, /browser|local/i);
+  assert.match(
+    source,
+    /Your planner inputs and imported budget snapshots stay in your browser's local storage unless you choose to export them\./,
+  );
   assert.doesNotMatch(source, /menu-lab/);
   assert.match(source, /\.site-footer a:focus-visible\s*\{/);
-  assert.match(source, /flex-wrap:\s*wrap/);
+  assert.match(source, /\.site-footer nav\s*\{[^}]*flex-wrap:\s*wrap/);
 });
 
 for (const page of readerPages) {
