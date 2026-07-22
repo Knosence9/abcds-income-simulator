@@ -466,6 +466,22 @@ test('menu lab initializer ignores ClientRouter visits to other routes', async (
   );
 });
 
+test('menu lab stage keeps every seeded control inside its clipped viewport', async () => {
+  const menuLabPage = await readFile(
+    new URL('../src/dev-pages/menu-lab.astro', import.meta.url),
+    'utf8',
+  );
+  const stageMinimumHeights = [...menuLabPage.matchAll(
+    /\.stage\s*\{[^}]*min-height:\s*(\d+)px;/g,
+  )].map((match) => Number(match[1]));
+
+  assert.equal(stageMinimumHeights.length, 2);
+  assert.ok(
+    stageMinimumHeights.every((height) => height >= 855),
+    'R20 needs at least 855px of stage height to remain fully draggable',
+  );
+});
+
 test('converts a $100 monthly amount to approximately $23.08 per week', () => {
   const weeklyAmount = monthlyToWeekly(100);
 
