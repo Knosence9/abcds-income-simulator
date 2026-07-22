@@ -5,6 +5,7 @@ import test from 'node:test';
 import {
   calculateMarginAccount,
   calculateMarginInterest,
+  calculatePeriodicMarketReturn,
   calculateWeeklyBudget,
   classifyMarginRepairState,
   getProjectionScenario,
@@ -12,6 +13,19 @@ import {
   parseWeeklyContribution,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('applies annual NAV price return over one monthly period', () => {
+  const result = calculatePeriodicMarketReturn({
+    marketValue: 10_000,
+    annualReturn: 12,
+    periodsPerYear: 12,
+  });
+
+  const expectedReturn = 10_000 * (Math.pow(1.12, 1 / 12) - 1);
+  assert.equal(result.marketReturn, expectedReturn);
+  assert.equal(result.endingMarketValue, 10_000 + expectedReturn);
+  assert.deepEqual(Object.keys(result), ['marketReturn', 'endingMarketValue']);
+});
 
 test('calculates periodic and cumulative interest on constant margin debt', () => {
   assert.deepEqual(
@@ -39,6 +53,7 @@ test('provides conservative projection starting assumptions', () => {
     acDistributionShare: 75,
     dividendGrowth: 1,
     inflation: 3,
+    annualNavReturn: 0,
   });
 });
 
@@ -48,6 +63,7 @@ test('provides base projection starting assumptions', () => {
     acDistributionShare: 50,
     dividendGrowth: 2,
     inflation: 3,
+    annualNavReturn: 3,
   });
 });
 
@@ -57,6 +73,7 @@ test('provides distribution stress starting assumptions', () => {
     acDistributionShare: 25,
     dividendGrowth: -10,
     inflation: 7,
+    annualNavReturn: -12,
   });
 });
 
@@ -86,6 +103,35 @@ test('separates gross market value, margin debt, and net equity', () => {
       marginEquityPercent: 75,
     },
   );
+});
+
+test('simulator models annual NAV price return as an accessible preset assumption', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /calculatePeriodicMarketReturn/);
+  assert.match(
+    simulatorPage,
+    /<label id="navReturnLabel" for="navReturnNumber">Annual NAV\/price return/,
+  );
+  assert.match(
+    simulatorPage,
+    /<input id="navReturn" type="range" aria-labelledby="navReturnLabel"/,
+  );
+  assert.match(simulatorPage, /annualNavReturn: \[\$\('navReturn'\), \$\('navReturnNumber'\)\]/);
+  assert.match(simulatorPage, /navReturn: Number\(\$\('navReturn'\)\.value\)/);
+  assert.match(
+    simulatorPage,
+    /calculatePeriodicMarketReturn\(\{ marketValue: portfolio, annualReturn: input\.navReturn, periodsPerYear: periods \}\)/,
+  );
+  assert.match(
+    simulatorPage,
+    /marketReturn\.endingMarketValue[\s\S]*routed\.reinvestedDistributions[\s\S]*contribution/,
+  );
+  assert.match(simulatorPage, /smooth user-selected estimate, not a forecast/i);
+  assert.match(simulatorPage, /stress preset includes a synthetic NAV\/price decline/i);
 });
 
 test('simulator exposes and applies accessible scenario starting points', async () => {

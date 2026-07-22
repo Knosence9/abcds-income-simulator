@@ -17,6 +17,7 @@ const defaultInputs = {
   dividendYield: 22,
   acDistributionShare: 50,
   dividendGrowth: 4,
+  annualNavReturn: 3,
   inflation: 7,
   monthlyExpenses: 2600,
   projectionYears: 5,
@@ -113,7 +114,7 @@ const defaultInputs = {
                 <button class="scenario-button" type="button" data-scenario="base" aria-pressed="false">Base</button>
                 <button class="scenario-button" type="button" data-scenario="stress" aria-pressed="false">Stress</button>
               </div>
-              <p class="footer-note">These presets fill only the income assumptions below as transparent starting points. The stress preset applies a synthetic distribution-cut path; NAV/price decline and margin principal repayment remain outside this bounded model.</p>
+              <p class="footer-note">These presets fill transparent starting assumptions below. The stress preset includes a synthetic NAV/price decline and distribution-cut path; margin principal repayment remains outside this bounded model.</p>
             </fieldset>
             <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
             <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></div>
@@ -124,6 +125,8 @@ const defaultInputs = {
             <div class="field"><label id="acShareLabel" for="acShareNumber">A/C distribution share (DRIP on) <input id="acShareNumber" type="number" value={defaultInputs.acDistributionShare} min="0" max="100" step="1" /></label><input id="acShare" type="range" aria-labelledby="acShareLabel" value={defaultInputs.acDistributionShare} min="0" max="100" step="1" /></div>
             <div class="callout compact"><b>Distribution routing:</b> Anchor and Closed-end (A/C) distributions are reinvested into market value. Booster and Dynamo (B/D) distributions remain spendable cash.</div>
             <div class="field"><label id="growthLabel" for="growthNumber">Dividend growth % <input id="growthNumber" type="number" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></label><input id="growth" type="range" aria-labelledby="growthLabel" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></div>
+            <div class="field"><label id="navReturnLabel" for="navReturnNumber">Annual NAV/price return % <input id="navReturnNumber" type="number" value={defaultInputs.annualNavReturn} min="-50" max="30" step="0.1" /></label><input id="navReturn" type="range" aria-labelledby="navReturnLabel" value={defaultInputs.annualNavReturn} min="-50" max="30" step="0.1" /></div>
+            <div class="callout compact"><b>NAV/price assumption:</b> this compounds as a smooth user-selected estimate, not a forecast. It changes gross market value without being counted as a distribution.</div>
             <div class="field"><label id="inflationLabel" for="inflationNumber">Inflation % <input id="inflationNumber" type="number" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></label><input id="inflation" type="range" aria-labelledby="inflationLabel" value={defaultInputs.inflation} min="0" max="20" step="0.1" /></div>
             <div class="field"><label id="expensesLabel" for="expensesNumber">Monthly expenses <input id="expensesNumber" type="number" value={defaultInputs.monthlyExpenses} min="0" step="50" /></label><input id="expenses" type="range" aria-labelledby="expensesLabel" value={defaultInputs.monthlyExpenses} min="0" max="15000" step="50" /></div>
             <div class="field"><label id="projectionYearsLabel" for="projectionYearsNumber">Projection years <input id="projectionYearsNumber" type="number" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></label><input id="projectionYears" type="range" aria-labelledby="projectionYearsLabel" value={defaultInputs.projectionYears} min="1" max="30" step="1" /></div>
@@ -144,7 +147,7 @@ const defaultInputs = {
               <div class="stat"><span>Spendable B/D distributions</span><strong id="spendableDistributions">—</strong></div>
             </div>
             <p id="resultsStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
-            <p class="footer-note" style="margin-top:0">Distribution and interest ledgers are cumulative for the projection. Gross market value includes external contributions and reinvested A/C distributions, but excludes spendable B/D cash. Margin principal is held constant and interest is reported separately; it is not deducted from margin debt or gross market value. Principal repayment is not modeled.</p>
+            <p class="footer-note" style="margin-top:0">Distribution and interest ledgers are cumulative for the projection. Gross market value includes compounded NAV/price return, external contributions, and reinvested A/C distributions, but excludes spendable B/D cash. Margin principal is held constant and interest is reported separately; it is not deducted from margin debt or gross market value. Principal repayment is not modeled.</p>
             <p class="footer-note" style="margin-top:0"><b>How to read it:</b> orange = projected monthly dividends, green = today-dollar buying power, red = expenses after inflation.</p>
             <svg id="chart" viewBox="0 0 900 440" role="img" aria-label="Line plot of projected dividend income"></svg>
             <div class="legend"><span><i class="swatch" style="background:var(--b)"></i>Nominal dividend income</span><span><i class="swatch" style="background:var(--c)"></i>Inflation-adjusted income</span><span><i class="swatch" style="background:var(--d)"></i>Inflated expense target</span></div>
@@ -158,11 +161,11 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateMarginAccount, calculateMarginInterest, getProjectionScenario, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
+      import { calculateMarginAccount, calculateMarginInterest, calculatePeriodicMarketReturn, getProjectionScenario, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
       import { attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const $ = (id) => document.getElementById(id);
-      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
+      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
       const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
       const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       let marginDebtAdjustmentAnnouncement = '';
@@ -247,7 +250,7 @@ const defaultInputs = {
           ? 'Margin debt was adjusted because it cannot exceed starting gross market value.'
           : '';
       }
-      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, acShare: Number($('acShare').value) / 100, g: Number($('growth').value) / 100, i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
+      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, acShare: Number($('acShare').value) / 100, g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
       function announceResults() {
@@ -273,7 +276,7 @@ const defaultInputs = {
           ? appliedContribution
           : null;
       }
-      function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const acDistribution = periodIncome * input.acShare; const bdDistribution = periodIncome - acDistribution; const routed = routePillarDistributions({ marketValue: portfolio, anchor: acDistribution / 2, booster: bdDistribution / 2, closedEnd: acDistribution / 2, dynamo: bdDistribution / 2 }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = routed.endingMarketValue + contribution; } return rows; }
+      function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const acDistribution = periodIncome * input.acShare; const bdDistribution = periodIncome - acDistribution; const routed = routePillarDistributions({ marketValue: portfolio, anchor: acDistribution / 2, booster: bdDistribution / 2, closedEnd: acDistribution / 2, dynamo: bdDistribution / 2 }); const marketReturn = calculatePeriodicMarketReturn({ marketValue: portfolio, annualReturn: input.navReturn, periodsPerYear: periods }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = marketReturn.endingMarketValue + routed.reinvestedDistributions + contribution; } return rows; }
       function render() {
         constrainMarginDebt();
         const rows = simulate(); const last = rows[rows.length - 1]; const input = getInputs(); const periods = periodCount();
@@ -304,6 +307,7 @@ const defaultInputs = {
             dividendYield: [$('yield'), $('yieldNumber')],
             acDistributionShare: [$('acShare'), $('acShareNumber')],
             dividendGrowth: [$('growth'), $('growthNumber')],
+            annualNavReturn: [$('navReturn'), $('navReturnNumber')],
             inflation: [$('inflation'), $('inflationNumber')],
           },
           resultsStatus: $('resultsStatus'),
