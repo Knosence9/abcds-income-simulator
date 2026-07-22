@@ -24,5 +24,6 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+      - run: npm run test:built-start-here
       - run: npm run test:built-icons
       - run: npm run test:built-links
