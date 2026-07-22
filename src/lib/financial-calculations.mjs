@@ -67,6 +67,20 @@ export function calculateExpenseCoverage({ spendableCash, expenses }) {
   };
 }
 
+export function calculateExpenseCrossoverPeriod(periods) {
+  if (periods.length > 0 && periods.every(({ expenses }) => expenses === 0)) {
+    return { status: 'already-covered', period: 0 };
+  }
+
+  const crossoverIndex = periods.findIndex(
+    ({ spendableDistributions, expenses }) => spendableDistributions >= expenses,
+  );
+
+  return crossoverIndex === -1
+    ? { status: 'not-reached', period: null }
+    : { status: 'reached', period: crossoverIndex + 1 };
+}
+
 export function calculateMarginAccount({ marketValue, marginDebt }) {
   const netEquity = marketValue - marginDebt;
 

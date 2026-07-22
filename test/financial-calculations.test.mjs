@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateExpenseCrossoverPeriod,
   calculateProjectionContributionPeriod,
   calculateExpenseCoverage,
   calculateMarginAccount,
@@ -19,6 +20,57 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('reports the first period when spendable distributions cover expenses', () => {
+  assert.deepEqual(
+    calculateExpenseCrossoverPeriod([
+      { spendableDistributions: 40, expenses: 70 },
+      { spendableDistributions: 60, expenses: 70 },
+      { spendableDistributions: 70, expenses: 70 },
+      { spendableDistributions: 80, expenses: 70 },
+    ]),
+    { status: 'reached', period: 3 },
+  );
+});
+
+test('reports when spendable distributions never cover expenses', () => {
+  assert.deepEqual(
+    calculateExpenseCrossoverPeriod([
+      { spendableDistributions: 40, expenses: 70 },
+      { spendableDistributions: 60, expenses: 70 },
+    ]),
+    { status: 'not-reached', period: null },
+  );
+});
+
+test('reports a zero expense target as already covered', () => {
+  assert.deepEqual(
+    calculateExpenseCrossoverPeriod([
+      { spendableDistributions: 0, expenses: 0 },
+      { spendableDistributions: 10, expenses: 0 },
+    ]),
+    { status: 'already-covered', period: 0 },
+  );
+});
+
+test('simulator displays expense-crossover timing from period cash flow', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /<span>Expense crossover<\/span><strong id="expenseCrossover">—<\/strong>/);
+  assert.match(simulatorPage, /periodSpendableDistributions: routed\.spendableDistributions/);
+  assert.match(simulatorPage, /periodExpenses/);
+  assert.match(simulatorPage, /calculateExpenseCrossoverPeriod\(/);
+  assert.match(simulatorPage, /`Month \$\{expenseCrossover\.period\}`/);
+  assert.match(simulatorPage, /Already covered \(no expense target\)/);
+  assert.match(simulatorPage, /Not reached/);
+  assert.match(
+    simulatorPage,
+    /compares each month’s B\/D distributions with that month’s inflated expense target/,
+  );
+});
 
 test('allows contributions when no margin debt exists', () => {
   assert.deepEqual(
