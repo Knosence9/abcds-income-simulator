@@ -14,8 +14,14 @@ const defaultInputs = {
   marginDebt: 0,
   marginApr: 10,
   paycheck: 750,
-  dividendYield: 22,
-  acDistributionShare: 50,
+  anchorAllocation: 30,
+  anchorYield: 4,
+  boosterAllocation: 20,
+  boosterYield: 9,
+  closedEndAllocation: 30,
+  closedEndYield: 12,
+  dynamoAllocation: 20,
+  dynamoYield: 18,
   dividendGrowth: 4,
   annualNavReturn: 3,
   inflation: 7,
@@ -121,9 +127,16 @@ const defaultInputs = {
             <div class="field"><label id="marginAprLabel" for="marginAprNumber">Margin APR <input id="marginAprNumber" type="number" value={defaultInputs.marginApr} min="0" max="30" step="0.1" /></label><input id="marginApr" type="range" aria-labelledby="marginAprLabel" value={defaultInputs.marginApr} min="0" max="30" step="0.1" /></div>
             <div class="field"><label id="paycheckLabel" for="paycheckNumber">Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></label><input id="paycheck" type="range" aria-labelledby="paycheckLabel" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></div>
             <div class="callout compact"><b>Paid bi-weekly?</b> Divide your paycheck contribution by 2 and enter that weekly amount here. Example: if you contribute $1,500 every two weeks, enter $750.</div>
-            <div class="field"><label id="yieldLabel" for="yieldNumber">Portfolio dividend % <input id="yieldNumber" type="number" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></label><input id="yield" type="range" aria-labelledby="yieldLabel" value={defaultInputs.dividendYield} min="0" max="80" step="0.1" /></div>
-            <div class="field"><label id="acShareLabel" for="acShareNumber">A/C distribution share (DRIP on) <input id="acShareNumber" type="number" value={defaultInputs.acDistributionShare} min="0" max="100" step="1" /></label><input id="acShare" type="range" aria-labelledby="acShareLabel" value={defaultInputs.acDistributionShare} min="0" max="100" step="1" /></div>
-            <div class="callout compact"><b>Distribution routing:</b> Anchor and Closed-end (A/C) distributions are reinvested into market value. Booster and Dynamo (B/D) distributions remain spendable cash.</div>
+            <div class="callout compact"><b>Pillar assumptions:</b> allocations must total 100%. Each yield applies only to that pillar's share. Anchor and Closed-end (A/C) distributions are reinvested; Booster and Dynamo (B/D) distributions remain spendable cash.</div>
+            <div class="field"><label id="anchorAllocationLabel" for="anchorAllocationNumber">Anchor allocation % <input id="anchorAllocationNumber" type="number" value={defaultInputs.anchorAllocation} min="0" max="100" step="1" /></label><input id="anchorAllocation" type="range" aria-labelledby="anchorAllocationLabel" value={defaultInputs.anchorAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="anchorYieldLabel" for="anchorYieldNumber">Anchor annual yield % <input id="anchorYieldNumber" type="number" value={defaultInputs.anchorYield} min="0" max="80" step="0.1" /></label><input id="anchorYield" type="range" aria-labelledby="anchorYieldLabel" value={defaultInputs.anchorYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label id="boosterAllocationLabel" for="boosterAllocationNumber">Booster allocation % <input id="boosterAllocationNumber" type="number" value={defaultInputs.boosterAllocation} min="0" max="100" step="1" /></label><input id="boosterAllocation" type="range" aria-labelledby="boosterAllocationLabel" value={defaultInputs.boosterAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="boosterYieldLabel" for="boosterYieldNumber">Booster annual yield % <input id="boosterYieldNumber" type="number" value={defaultInputs.boosterYield} min="0" max="80" step="0.1" /></label><input id="boosterYield" type="range" aria-labelledby="boosterYieldLabel" value={defaultInputs.boosterYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label id="closedEndAllocationLabel" for="closedEndAllocationNumber">Closed-end allocation % <input id="closedEndAllocationNumber" type="number" value={defaultInputs.closedEndAllocation} min="0" max="100" step="1" /></label><input id="closedEndAllocation" type="range" aria-labelledby="closedEndAllocationLabel" value={defaultInputs.closedEndAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="closedEndYieldLabel" for="closedEndYieldNumber">Closed-end annual yield % <input id="closedEndYieldNumber" type="number" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></label><input id="closedEndYield" type="range" aria-labelledby="closedEndYieldLabel" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label id="dynamoAllocationLabel" for="dynamoAllocationNumber">Dynamo allocation % <input id="dynamoAllocationNumber" type="number" value={defaultInputs.dynamoAllocation} min="0" max="100" step="1" /></label><input id="dynamoAllocation" type="range" aria-labelledby="dynamoAllocationLabel" value={defaultInputs.dynamoAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="dynamoYieldLabel" for="dynamoYieldNumber">Dynamo annual yield % <input id="dynamoYieldNumber" type="number" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></label><input id="dynamoYield" type="range" aria-labelledby="dynamoYieldLabel" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></div>
+            <p id="allocationStatus" class="footer-note" aria-live="polite">Pillar allocations total 100%.</p>
             <div class="field"><label id="growthLabel" for="growthNumber">Dividend growth % <input id="growthNumber" type="number" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></label><input id="growth" type="range" aria-labelledby="growthLabel" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></div>
             <div class="field"><label id="navReturnLabel" for="navReturnNumber">Annual NAV/price return % <input id="navReturnNumber" type="number" value={defaultInputs.annualNavReturn} min="-50" max="30" step="0.1" /></label><input id="navReturn" type="range" aria-labelledby="navReturnLabel" value={defaultInputs.annualNavReturn} min="-50" max="30" step="0.1" /></div>
             <div class="callout compact"><b>NAV/price assumption:</b> this compounds as a smooth user-selected estimate, not a forecast. It changes gross market value without being counted as a distribution.</div>
@@ -161,16 +174,22 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateMarginAccount, calculateMarginInterest, calculatePeriodicMarketReturn, getProjectionScenario, parseWeeklyContribution, routePillarDistributions } from '../lib/financial-calculations.mjs';
+      import { calculateMarginAccount, calculateMarginInterest, calculatePeriodicMarketReturn, calculatePillarDistributions, getProjectionScenario, parseWeeklyContribution, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const $ = (id) => document.getElementById(id);
-      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['paycheck', 'paycheckNumber'], ['yield', 'yieldNumber'], ['acShare', 'acShareNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
+      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
       const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
       const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       let marginDebtAdjustmentAnnouncement = '';
+      function getAllocations() { return { anchor: Number($('anchorAllocation').value), booster: Number($('boosterAllocation').value), closedEnd: Number($('closedEndAllocation').value), dynamo: Number($('dynamoAllocation').value) }; }
       function hasInvalidInputs() {
-        return pairs.some(([, numberId]) => $(numberId).getAttribute('aria-invalid') === 'true');
+        return pairs.some(([, numberId]) => $(numberId).getAttribute('aria-invalid') === 'true') || !validatePillarAllocations(getAllocations());
+      }
+      function invalidInputMessage() {
+        return validatePillarAllocations(getAllocations())
+          ? 'Enter a value within the allowed range.'
+          : 'Pillar allocations must total 100%.';
       }
       function invalidateResults() {
         const resultIds = ['grossMarketValue', 'marginDebtResult', 'cumulativeMarginInterest', 'netEquity', 'marginEquityPercent', 'periodIncome', 'annualIncome', 'realIncome', 'grossDistributions', 'reinvestedDistributions', 'spendableDistributions'];
@@ -182,7 +201,7 @@ const defaultInputs = {
       function announceResultsIfValid() {
         const resultsStatus = $('resultsStatus');
         if (hasInvalidInputs()) {
-          resultsStatus.textContent = 'Enter a value within the allowed range.';
+          resultsStatus.textContent = invalidInputMessage();
           return;
         }
         announceResults();
@@ -195,9 +214,13 @@ const defaultInputs = {
           number.value = range.value;
           number.removeAttribute('aria-invalid');
           if (hasInvalidInputs()) {
-            resultsStatus.textContent = 'Enter a value within the allowed range.';
+            invalidateResults();
+            const message = invalidInputMessage();
+            resultsStatus.textContent = message;
+            $('allocationStatus').textContent = message;
             return;
           }
+          $('allocationStatus').textContent = 'Pillar allocations total 100%.';
           resultsStatus.textContent = '';
           render();
         });
@@ -209,7 +232,7 @@ const defaultInputs = {
           ) {
             number.setAttribute('aria-invalid', 'true');
             invalidateResults();
-            resultsStatus.textContent = 'Enter a value within the allowed range.';
+            resultsStatus.textContent = invalidInputMessage();
             return;
           }
           const enteredValue = number.valueAsNumber;
@@ -217,9 +240,13 @@ const defaultInputs = {
           number.value = range.value;
           number.removeAttribute('aria-invalid');
           if (hasInvalidInputs()) {
-            resultsStatus.textContent = 'Enter a value within the allowed range.';
+            invalidateResults();
+            const message = invalidInputMessage();
+            resultsStatus.textContent = message;
+            $('allocationStatus').textContent = message;
             return;
           }
+          $('allocationStatus').textContent = 'Pillar allocations total 100%.';
           resultsStatus.textContent = '';
           render();
         });
@@ -250,7 +277,7 @@ const defaultInputs = {
           ? 'Margin debt was adjusted because it cannot exceed starting gross market value.'
           : '';
       }
-      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), paycheck: Number($('paycheck').value), y: Number($('yield').value) / 100, acShare: Number($('acShare').value) / 100, g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
+      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), paycheck: Number($('paycheck').value), pillars: { anchor: { allocation: Number($('anchorAllocation').value), annualYield: Number($('anchorYield').value) }, booster: { allocation: Number($('boosterAllocation').value), annualYield: Number($('boosterYield').value) }, closedEnd: { allocation: Number($('closedEndAllocation').value), annualYield: Number($('closedEndYield').value) }, dynamo: { allocation: Number($('dynamoAllocation').value), annualYield: Number($('dynamoYield').value) } }, g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
       function announceResults() {
@@ -276,9 +303,17 @@ const defaultInputs = {
           ? appliedContribution
           : null;
       }
-      function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const currentYield = Math.max(0, input.y * Math.pow(1 + input.g, year)); const annualIncome = portfolio * currentYield; const periodIncome = annualIncome / periods; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const acDistribution = periodIncome * input.acShare; const bdDistribution = periodIncome - acDistribution; const routed = routePillarDistributions({ marketValue: portfolio, anchor: acDistribution / 2, booster: bdDistribution / 2, closedEnd: acDistribution / 2, dynamo: bdDistribution / 2 }); const marketReturn = calculatePeriodicMarketReturn({ marketValue: portfolio, annualReturn: input.navReturn, periodsPerYear: periods }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = marketReturn.endingMarketValue + routed.reinvestedDistributions + contribution; } return rows; }
+      function simulate() { const input = getInputs(); const periods = periodCount(); const totalPeriods = periods * input.projectionYears; const contribution = (input.paycheck * 52) / periods; let portfolio = input.starting; let grossDistributions = 0; let reinvestedDistributions = 0; let spendableDistributions = 0; const rows = []; for (let t = 0; t <= totalPeriods; t++) { const year = t / periods; const growthFactor = Math.pow(1 + input.g, year); const currentPillars = Object.fromEntries(Object.entries(input.pillars).map(([name, pillar]) => [name, { ...pillar, annualYield: Math.max(0, pillar.annualYield * growthFactor) }])); const distributions = calculatePillarDistributions({ marketValue: portfolio, periodsPerYear: periods, pillars: currentPillars }); const routed = routePillarDistributions({ marketValue: portfolio, ...distributions }); const annualIncome = routed.grossDistributions * periods; const periodIncome = routed.grossDistributions; const inflationNeed = input.monthlyExpenses * 12 * Math.pow(1 + input.i, year); rows.push({ t, year, portfolio, annualIncome, periodIncome, inflationNeed, grossDistributions, reinvestedDistributions, spendableDistributions }); const marketReturn = calculatePeriodicMarketReturn({ marketValue: portfolio, annualReturn: input.navReturn, periodsPerYear: periods }); grossDistributions += routed.grossDistributions; reinvestedDistributions += routed.reinvestedDistributions; spendableDistributions += routed.spendableDistributions; portfolio = marketReturn.endingMarketValue + routed.reinvestedDistributions + contribution; } return rows; }
       function render() {
         constrainMarginDebt();
+        if (hasInvalidInputs()) {
+          invalidateResults();
+          const message = invalidInputMessage();
+          $('allocationStatus').textContent = message;
+          $('resultsStatus').textContent = message;
+          return;
+        }
+        $('allocationStatus').textContent = 'Pillar allocations total 100%.';
         const rows = simulate(); const last = rows[rows.length - 1]; const input = getInputs(); const periods = periodCount();
         const marginAccount = calculateMarginAccount({ marketValue: last.portfolio, marginDebt: input.marginDebt });
         const marginInterest = calculateMarginInterest({ marginDebt: input.marginDebt, annualRate: input.marginApr, months: periods * input.projectionYears });
@@ -304,8 +339,14 @@ const defaultInputs = {
         attachProjectionScenarioPresets({
           buttons: [...document.querySelectorAll('[data-scenario]')],
           controls: {
-            dividendYield: [$('yield'), $('yieldNumber')],
-            acDistributionShare: [$('acShare'), $('acShareNumber')],
+            anchorAllocation: [$('anchorAllocation'), $('anchorAllocationNumber')],
+            anchorYield: [$('anchorYield'), $('anchorYieldNumber')],
+            boosterAllocation: [$('boosterAllocation'), $('boosterAllocationNumber')],
+            boosterYield: [$('boosterYield'), $('boosterYieldNumber')],
+            closedEndAllocation: [$('closedEndAllocation'), $('closedEndAllocationNumber')],
+            closedEndYield: [$('closedEndYield'), $('closedEndYieldNumber')],
+            dynamoAllocation: [$('dynamoAllocation'), $('dynamoAllocationNumber')],
+            dynamoYield: [$('dynamoYield'), $('dynamoYieldNumber')],
             dividendGrowth: [$('growth'), $('growthNumber')],
             annualNavReturn: [$('navReturn'), $('navReturnNumber')],
             inflation: [$('inflation'), $('inflationNumber')],

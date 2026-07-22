@@ -1,21 +1,39 @@
 const projectionScenarios = {
   conservative: {
-    dividendYield: 8,
-    acDistributionShare: 75,
+    anchorAllocation: 45,
+    anchorYield: 3,
+    boosterAllocation: 15,
+    boosterYield: 7,
+    closedEndAllocation: 30,
+    closedEndYield: 8,
+    dynamoAllocation: 10,
+    dynamoYield: 10,
     dividendGrowth: 1,
     inflation: 3,
     annualNavReturn: 0,
   },
   base: {
-    dividendYield: 12,
-    acDistributionShare: 50,
+    anchorAllocation: 30,
+    anchorYield: 4,
+    boosterAllocation: 20,
+    boosterYield: 9,
+    closedEndAllocation: 30,
+    closedEndYield: 12,
+    dynamoAllocation: 20,
+    dynamoYield: 18,
     dividendGrowth: 2,
     inflation: 3,
     annualNavReturn: 3,
   },
   stress: {
-    dividendYield: 8,
-    acDistributionShare: 25,
+    anchorAllocation: 45,
+    anchorYield: 2,
+    boosterAllocation: 15,
+    boosterYield: 5,
+    closedEndAllocation: 30,
+    closedEndYield: 7,
+    dynamoAllocation: 10,
+    dynamoYield: 8,
     dividendGrowth: -10,
     inflation: 7,
     annualNavReturn: -12,
@@ -99,6 +117,22 @@ export function classifyMarginRepairState(marginEquityPercent) {
   if (marginEquityPercent < 60) return 'repair-immediately';
   if (marginEquityPercent <= 70) return 'repair-band';
   return 'eligible-to-resume';
+}
+
+export function validatePillarAllocations(allocations) {
+  const values = Object.values(allocations);
+  return values.length === 4
+    && values.every((value) => Number.isFinite(value) && value >= 0 && value <= 100)
+    && Math.abs(values.reduce((total, value) => total + value, 0) - 100) < 1e-9;
+}
+
+export function calculatePillarDistributions({ marketValue, periodsPerYear, pillars }) {
+  return Object.fromEntries(
+    Object.entries(pillars).map(([name, { allocation, annualYield }]) => [
+      name,
+      marketValue * (allocation / 100) * (annualYield / 100) / periodsPerYear,
+    ]),
+  );
 }
 
 export function routePillarDistributions({
