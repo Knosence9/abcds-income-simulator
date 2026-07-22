@@ -1,9 +1,27 @@
 import { readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
+import { Readable } from 'node:stream';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'parse5';
+import { parseSitemap, parseSitemapIndex } from 'sitemap';
 
 const EXCLUDED_SCHEMES = /^(?:https?:|mailto:|tel:|javascript:|data:)/i;
+const SITE_ORIGIN = 'https://abcds-income-simulator.vercel.app';
+const READER_FILES = [
+  'index.html',
+  'budget/index.html',
+  'closed-end-funds/index.html',
+  'getting-started/index.html',
+  'simulator/index.html',
+];
+const READER_URLS = [
+  `${SITE_ORIGIN}/`,
+  `${SITE_ORIGIN}/budget/`,
+  `${SITE_ORIGIN}/closed-end-funds/`,
+  `${SITE_ORIGIN}/getting-started/`,
+  `${SITE_ORIGIN}/simulator/`,
+].sort();
+const ROBOTS_POLICY = `User-agent: *\nAllow: /\nSitemap: ${SITE_ORIGIN}/sitemap-index.xml\n`;
 
 async function walkHtml(root, directory = root) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -23,6 +41,31 @@ async function isFile(path) {
     return (await stat(path)).isFile();
   } catch {
     return false;
+  }
+}
+
+async function optionalText(path) {
+  try {
+    return await readFile(path, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function hasXmlRoot(xml, rootName) {
+  const declaration = String.raw`(?:<\?xml[^?]*\?>\s*)?`;
+  return new RegExp(
+    String.raw`^\s*${declaration}<${rootName}(?:\s[^>]*)?>[\s\S]*<\/${rootName}>\s*$`,
+  ).test(xml);
+}
+
+async function parsedSitemapLocations(xml, rootName, parser) {
+  if (xml === null || !hasXmlRoot(xml, rootName)) return null;
+
+  try {
+    return (await parser(Readable.from(xml))).map((item) => item.url).sort();
+  } catch {
+    return null;
   }
 }
 
@@ -138,6 +181,33 @@ export async function verifyBuiltInternalLinks(root) {
           `${sourcePath}: ${href} targets missing fragment "${targetId}" in ${displayPath(root, targetFile)}`,
         );
       }
+    }
+  }
+
+  const hasAllReaderPages = READER_FILES.every((file) => htmlFiles.includes(join(root, file)));
+  const robots = await optionalText(join(root, 'robots.txt'));
+  const sitemapIndex = await optionalText(join(root, 'sitemap-index.xml'));
+  const sitemap = await optionalText(join(root, 'sitemap-0.xml'));
+  const hasDiscoveryArtifact = [robots, sitemapIndex, sitemap].some((contents) => contents !== null);
+
+  if (hasAllReaderPages || hasDiscoveryArtifact) {
+    const sitemapIndexLocations = await parsedSitemapLocations(
+      sitemapIndex,
+      'sitemapindex',
+      parseSitemapIndex,
+    );
+    const sitemapLocations = await parsedSitemapLocations(sitemap, 'urlset', parseSitemap);
+
+    if (robots !== ROBOTS_POLICY) {
+      errors.push('robots.txt does not match the canonical crawl policy');
+    }
+    if (
+      JSON.stringify(sitemapIndexLocations) !== JSON.stringify([`${SITE_ORIGIN}/sitemap-0.xml`])
+    ) {
+      errors.push('sitemap-index.xml does not reference the canonical sitemap');
+    }
+    if (JSON.stringify(sitemapLocations) !== JSON.stringify(READER_URLS)) {
+      errors.push('sitemap-0.xml public URLs do not match the five reader routes');
     }
   }
 

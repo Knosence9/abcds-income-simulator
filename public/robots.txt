@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://abcds-income-simulator.vercel.app/sitemap-index.xml
