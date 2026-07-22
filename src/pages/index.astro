@@ -4,7 +4,11 @@ import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import SkipLink from '../components/SkipLink.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import SiteMetadata from '../components/SiteMetadata.astro';
 import { classifyMarginRepairState } from '../lib/financial-calculations.mjs';
+import { buildPageMetadata } from '../lib/site-metadata.mjs';
+
+const metadata = buildPageMetadata('/');
 
 const marginRepairStates = [
   {
@@ -35,7 +39,7 @@ const marginRepairStates = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ABCD Strategy Guide</title>
+    <SiteMetadata metadata={metadata} />
     <ClientRouter />
     <style>
       :root {

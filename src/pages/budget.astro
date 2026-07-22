@@ -4,9 +4,12 @@ import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import SkipLink from '../components/SkipLink.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import SiteMetadata from '../components/SiteMetadata.astro';
 import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
+import { buildPageMetadata } from '../lib/site-metadata.mjs';
 import { WEEKLY_BUDGET_MAX_AMOUNT } from '../lib/weekly-budget-storage.mjs';
 
+const metadata = buildPageMetadata('/budget/');
 const weekly100 = monthlyToWeekly(100).toFixed(2);
 const weekly200 = monthlyToWeekly(200).toFixed(2);
 ---
@@ -15,7 +18,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>ABCD Weekly Budget Planner</title>
+    <SiteMetadata metadata={metadata} />
     <ClientRouter />
     <style>
       :root {

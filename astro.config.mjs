@@ -15,6 +15,7 @@ const developmentRoutes = {
 };
 
 export default defineConfig({
+  site: 'https://abcds-income-simulator.vercel.app',
   output: 'static',
   integrations: [developmentRoutes],
 });
