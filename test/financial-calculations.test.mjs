@@ -341,6 +341,24 @@ test('simulator makes derived output unavailable while any input is invalid', as
   );
 });
 
+test('opening simulator controls brings them into view only on narrow screens', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /matchMedia\('\(max-width: 760px\)'\)\.matches/);
+  assert.match(simulatorPage, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches/);
+  assert.match(
+    simulatorPage,
+    /@media \(prefers-reduced-motion: reduce\) \{ html \{ scroll-behavior:auto; \} \}/,
+  );
+  assert.match(
+    simulatorPage,
+    /if \(isOpen && isNarrowViewport\)[\s\S]*requestAnimationFrame[\s\S]*simulatorControls\.scrollIntoView\(\{ behavior, block: 'start' \}\)/,
+  );
+});
+
 test('simulator initializer ignores ClientRouter visits to other routes', async () => {
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),

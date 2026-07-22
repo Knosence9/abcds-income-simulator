@@ -73,6 +73,7 @@ const defaultInputs = {
       .compact { min-height:auto; }
       .footer-note { margin-top:16px; color:var(--muted); font-size:13px; }
       @media (max-width: 900px) { .stats { grid-template-columns:1fr; } .section-head, .topbar { align-items:flex-start; flex-direction:column; } }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
     </style>
   </head>
   <body>
@@ -269,7 +270,21 @@ const defaultInputs = {
         }
         const transferredContribution = applyTransferredContribution();
         pairs.forEach(([a,b]) => sync(a,b));
-        controlsToggle.addEventListener('click', () => { const isOpen = simulatorShell.classList.toggle('controls-open'); controlsToggle.setAttribute('aria-expanded', String(isOpen)); controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs'; });
+        const simulatorControls = $('simulatorControls');
+        controlsToggle.addEventListener('click', () => {
+          const isOpen = simulatorShell.classList.toggle('controls-open');
+          controlsToggle.setAttribute('aria-expanded', String(isOpen));
+          controlsToggle.textContent = isOpen ? 'Hide simulator inputs' : 'Open simulator inputs';
+
+          const isNarrowViewport = window.matchMedia('(max-width: 760px)').matches;
+          if (isOpen && isNarrowViewport) {
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const behavior = prefersReducedMotion ? 'auto' : 'smooth';
+            requestAnimationFrame(() => {
+              simulatorControls.scrollIntoView({ behavior, block: 'start' });
+            });
+          }
+        });
         document.removeEventListener('keydown', closeSimulatorControls);
         document.addEventListener('keydown', closeSimulatorControls);
         render();
