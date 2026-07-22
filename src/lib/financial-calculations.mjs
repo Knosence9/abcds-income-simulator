@@ -151,6 +151,40 @@ export function classifyMarginRepairState(marginEquityPercent) {
   return 'eligible-to-resume';
 }
 
+export function routeInvestmentContribution({ marketValue, marginDebt, contribution }) {
+  const { marginEquityPercent } = calculateMarginAccount({ marketValue, marginDebt });
+  const buyingIsEligible = marginDebt === 0
+    || classifyMarginRepairState(marginEquityPercent) === 'eligible-to-resume';
+
+  return {
+    investedContribution: buyingIsEligible ? contribution : 0,
+    pausedContribution: buyingIsEligible ? 0 : contribution,
+  };
+}
+
+export function calculateProjectionContributionPeriod({
+  beginningMarketValue,
+  marginDebt,
+  contribution,
+  marketValueAfterReturn,
+  reinvestedDistributions,
+  cumulativePausedContributions,
+}) {
+  const contributionRoute = routeInvestmentContribution({
+    marketValue: beginningMarketValue,
+    marginDebt,
+    contribution,
+  });
+
+  return {
+    endingMarketValue: marketValueAfterReturn
+      + reinvestedDistributions
+      + contributionRoute.investedContribution,
+    cumulativePausedContributions: cumulativePausedContributions
+      + contributionRoute.pausedContribution,
+  };
+}
+
 export function validatePillarAllocations(allocations) {
   const values = Object.values(allocations);
   return values.length === 4
