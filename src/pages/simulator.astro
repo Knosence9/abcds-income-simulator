@@ -233,6 +233,9 @@ const defaultInputs = {
             number.setAttribute('aria-invalid', 'true');
             invalidateResults();
             resultsStatus.textContent = invalidInputMessage();
+            if (a.endsWith('Allocation')) {
+              $('allocationStatus').textContent = 'Enter a value within the allowed range.';
+            }
             return;
           }
           const enteredValue = number.valueAsNumber;

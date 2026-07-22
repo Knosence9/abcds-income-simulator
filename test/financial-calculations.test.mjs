@@ -557,6 +557,18 @@ test('simulator makes derived output unavailable while any input is invalid', as
   );
 });
 
+test('invalid allocation numbers replace the stale allocation-total status', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /number\.setAttribute\('aria-invalid', 'true'\);[\s\S]*invalidateResults\(\);[\s\S]*if \(a\.endsWith\('Allocation'\)\)[\s\S]*allocationStatus[\s\S]*Enter a value within the allowed range\./,
+  );
+});
+
 test('simulator disables document smooth scrolling for reduced motion', async () => {
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),
