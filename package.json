@@ -8,6 +8,7 @@
     "check": "astro check",
     "test": "node --test",
     "test:built-icons": "node --test scripts/verify-built-site-icons.mjs",
+    "test:built-links": "node scripts/verify-built-internal-links.mjs dist",
     "build": "astro build",
     "preview": "astro preview --host 127.0.0.1"
   },
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
+    "parse5": "7.3.0",
     "typescript": "5.9.3"
   }
 }
