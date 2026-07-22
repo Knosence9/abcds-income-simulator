@@ -731,7 +731,7 @@ test('simulator applies a validated weekly contribution from the budget URL', as
   assert.match(simulatorPage, /searchParams\.get\('weeklyContribution'\)/);
   assert.match(simulatorPage, /paycheck\.value = transferredContribution/);
   assert.match(simulatorPage, /const appliedContribution = Number\(paycheck\.value\)/);
-  assert.match(simulatorPage, /paycheckNumber\.value = appliedContribution/);
+  assert.match(simulatorPage, /paycheckNumber\.value = String\(appliedContribution\)/);
   assert.match(simulatorPage, /Number\.isFinite\(requestedNumber\)/);
   assert.match(simulatorPage, /\? appliedContribution/);
   assert.match(simulatorPage, /Weekly contribution imported from budget:/);

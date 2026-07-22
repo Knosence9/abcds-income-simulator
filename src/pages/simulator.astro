@@ -183,12 +183,26 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      // @ts-nocheck — progressively typed browser controller; covered by behavioral tests.
       import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
-      const $ = (id) => document.getElementById(id);
-      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']];
+      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
+      type InputId = (typeof pairs)[number][number];
+      const inputIds = new Set<string>(pairs.flat());
+      function $(id: InputId): HTMLInputElement;
+      function $(id: 'chart'): SVGSVGElement;
+      function $(id: string): HTMLElement;
+      function $(id: string): HTMLElement | SVGSVGElement {
+        const element = document.getElementById(id);
+        if (!element) throw new Error(`Missing required simulator element: #${id}`);
+        if (inputIds.has(id) && !(element instanceof HTMLInputElement)) {
+          throw new TypeError(`Expected #${id} to be an input element.`);
+        }
+        if (id === 'chart' && !(element instanceof SVGSVGElement)) {
+          throw new TypeError('Expected #chart to be an SVG element.');
+        }
+        return element;
+      }
       const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
       const fmtSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       let marginDebtAdjustmentAnnouncement = '';
@@ -216,7 +230,7 @@ const defaultInputs = {
         }
         announceResults();
       }
-      function sync(a, b) {
+      function sync(a: InputId, b: InputId) {
         const range = $(a);
         const number = $(b);
         const resultsStatus = $('resultsStatus');
@@ -266,7 +280,7 @@ const defaultInputs = {
         range.addEventListener('change', announceResultsIfValid);
         number.addEventListener('change', announceResultsIfValid);
       }
-      function closeSimulatorControls(event) {
+      function closeSimulatorControls(event: KeyboardEvent) {
         if (event.key !== 'Escape') return;
         const simulatorShell = $('simulatorShell');
         const controlsToggle = $('controlsToggle');
@@ -309,7 +323,7 @@ const defaultInputs = {
         const paycheckNumber = $('paycheckNumber');
         paycheck.value = transferredContribution;
         const appliedContribution = Number(paycheck.value);
-        paycheckNumber.value = appliedContribution;
+        paycheckNumber.value = String(appliedContribution);
 
         const requestedMarginRepair = searchParams.get('weeklyMarginRepair');
         const requestedMarginRepairNumber = Number(requestedMarginRepair);
@@ -321,7 +335,7 @@ const defaultInputs = {
         const weeklyMarginRepairNumber = $('weeklyMarginRepairNumber');
         weeklyMarginRepair.value = transferredMarginRepair;
         const appliedMarginRepair = Number(weeklyMarginRepair.value);
-        weeklyMarginRepairNumber.value = appliedMarginRepair;
+        weeklyMarginRepairNumber.value = String(appliedMarginRepair);
 
         return {
           contribution: requestedContribution !== null
@@ -336,7 +350,27 @@ const defaultInputs = {
             : null,
         };
       }
-      function simulate() {
+      type ProjectionRow = {
+        t: number;
+        year: number;
+        portfolio: number;
+        annualIncome: number;
+        periodIncome: number;
+        periodSpendableDistributions: number;
+        periodExpenses: number;
+        inflationNeed: number;
+        grossDistributions: number;
+        reinvestedDistributions: number;
+        spendableDistributions: number;
+        expensesPaid: number;
+        uncoveredExpenses: number;
+        remainingCash: number;
+        marginDebt: number;
+        cumulativePrincipalPaid: number;
+        pausedContributions: number;
+        cumulativeMarginInterest: number;
+      };
+      function simulate(): ProjectionRow[] {
         const input = getInputs();
         const periods = periodCount();
         const totalPeriods = periods * input.projectionYears;
@@ -353,7 +387,7 @@ const defaultInputs = {
         let expensesPaid = 0;
         let uncoveredExpenses = 0;
         let remainingCash = 0;
-        const rows = [];
+        const rows: ProjectionRow[] = [];
         for (let t = 0; t <= totalPeriods; t++) {
           const year = t / periods;
           const growthFactor = Math.pow(1 + input.g, year);
@@ -368,7 +402,13 @@ const defaultInputs = {
             periodsPerYear: periods,
             pillars: currentPillars,
           });
-          const routed = routePillarDistributions({ marketValue: portfolio, ...distributions });
+          const routed = routePillarDistributions({
+            marketValue: portfolio,
+            anchor: distributions.anchor,
+            booster: distributions.booster,
+            closedEnd: distributions.closedEnd,
+            dynamo: distributions.dynamo,
+          });
           const annualIncome = routed.grossDistributions * periods;
           const periodIncome = routed.grossDistributions;
           const periodExpenses = input.monthlyExpenses * Math.pow(1 + input.i, year);
@@ -448,7 +488,7 @@ const defaultInputs = {
             ? `Month ${expenseCrossover.period}`
             : 'Not reached';
         $('grossMarketValue').textContent = fmt.format(marginAccount.grossMarketValue); $('marginDebtResult').textContent = fmt.format(marginAccount.marginDebt); $('cumulativePrincipalPaid').textContent = fmtSmall.format(last.cumulativePrincipalPaid); $('pausedContributions').textContent = fmtSmall.format(last.pausedContributions); $('cumulativeMarginInterest').textContent = fmtSmall.format(last.cumulativeMarginInterest); $('netEquity').textContent = fmt.format(marginAccount.netEquity); $('marginEquityPercent').textContent = `${marginAccount.marginEquityPercent.toFixed(1)}%`; $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel(); $('annualIncome').textContent = fmt.format(last.annualIncome); $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears)); $('grossDistributions').textContent = fmt.format(last.grossDistributions); $('reinvestedDistributions').textContent = fmt.format(last.reinvestedDistributions); $('spendableDistributions').textContent = fmt.format(last.spendableDistributions); $('expensesPaid').textContent = fmt.format(last.expensesPaid); $('uncoveredExpenses').textContent = fmt.format(last.uncoveredExpenses); $('remainingCash').textContent = fmt.format(last.remainingCash); $('expenseCrossover').textContent = expenseCrossoverText;
-        const chart = $('chart'); chart.setAttribute('aria-label', 'Line plot of projected dividend income'); const svg = chart; const W = 900, H = 440, p = { l: 72, r: 26, t: 30, b: 56 }; const years = Array.from({ length: input.projectionYears }, (_, index) => index + 1); const points = years.map((year) => rows[Math.min(rows.length - 1, Math.round(year * periods))]); const incomeValue = (r) => r.annualIncome / periods; const realIncomeValue = (r) => (r.annualIncome / Math.pow(1 + input.i, r.year)) / periods; const expenseValue = (r) => r.inflationNeed / periods; const maxY = Math.max(...points.map(incomeValue), ...points.map(realIncomeValue), ...points.map(expenseValue)) * 1.12 || 1; const x = (r) => p.l + (input.projectionYears === 1 ? 0.5 : ((r.year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r); const y = (value) => p.t + (1 - value / maxY) * (H - p.t - p.b); const pointPath = (valueFor) => points.map((r, idx) => `${idx ? 'L' : 'M'} ${x(r)} ${y(valueFor(r))}`).join(' ');
+        const chart = $('chart'); chart.setAttribute('aria-label', 'Line plot of projected dividend income'); const svg = chart; const W = 900, H = 440, p = { l: 72, r: 26, t: 30, b: 56 }; const years = Array.from({ length: input.projectionYears }, (_, index) => index + 1); const points = years.map((year) => rows[Math.min(rows.length - 1, Math.round(year * periods))]); const incomeValue = (r: ProjectionRow) => r.annualIncome / periods; const realIncomeValue = (r: ProjectionRow) => (r.annualIncome / Math.pow(1 + input.i, r.year)) / periods; const expenseValue = (r: ProjectionRow) => r.inflationNeed / periods; const maxY = Math.max(...points.map(incomeValue), ...points.map(realIncomeValue), ...points.map(expenseValue)) * 1.12 || 1; const x = (r: ProjectionRow) => p.l + (input.projectionYears === 1 ? 0.5 : ((r.year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r); const y = (value: number) => p.t + (1 - value / maxY) * (H - p.t - p.b); const pointPath = (valueFor: (row: ProjectionRow) => number) => points.map((r, idx) => `${idx ? 'L' : 'M'} ${x(r)} ${y(valueFor(r))}`).join(' ');
         let grid = `<rect x="${p.l}" y="${p.t}" width="${W-p.l-p.r}" height="${H-p.t-p.b}" rx="10" fill="rgba(255,253,247,.72)" stroke="rgba(32,63,105,.18)" stroke-width="1" />`;
         for (let i = 0; i <= 16; i++) { const gy = p.t + i * (H - p.t - p.b) / 16; grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.075)" stroke-width="1" />`; }
         if (input.projectionYears > 1) { for (let i = 0; i <= (input.projectionYears - 1) * 2; i++) { const gx = p.l + (i / ((input.projectionYears - 1) * 2)) * (W - p.l - p.r); grid += `<line x1="${gx}" y1="${p.t}" x2="${gx}" y2="${H-p.b}" stroke="rgba(32,63,105,.065)" stroke-width="1" />`; } }
