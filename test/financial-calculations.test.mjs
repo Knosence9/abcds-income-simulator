@@ -5,6 +5,7 @@ import test from 'node:test';
 import {
   calculateMarginAccount,
   calculateMarginInterest,
+  calculatePillarDistributions,
   calculatePeriodicMarketReturn,
   calculateWeeklyBudget,
   classifyMarginRepairState,
@@ -12,6 +13,7 @@ import {
   monthlyToWeekly,
   parseWeeklyContribution,
   routePillarDistributions,
+  validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
 
 test('applies annual NAV price return over one monthly period', () => {
@@ -49,8 +51,14 @@ test('rounds periodic and cumulative margin interest independently', () => {
 
 test('provides conservative projection starting assumptions', () => {
   assert.deepEqual(getProjectionScenario('conservative'), {
-    dividendYield: 8,
-    acDistributionShare: 75,
+    anchorAllocation: 45,
+    anchorYield: 3,
+    boosterAllocation: 15,
+    boosterYield: 7,
+    closedEndAllocation: 30,
+    closedEndYield: 8,
+    dynamoAllocation: 10,
+    dynamoYield: 10,
     dividendGrowth: 1,
     inflation: 3,
     annualNavReturn: 0,
@@ -59,8 +67,14 @@ test('provides conservative projection starting assumptions', () => {
 
 test('provides base projection starting assumptions', () => {
   assert.deepEqual(getProjectionScenario('base'), {
-    dividendYield: 12,
-    acDistributionShare: 50,
+    anchorAllocation: 30,
+    anchorYield: 4,
+    boosterAllocation: 20,
+    boosterYield: 9,
+    closedEndAllocation: 30,
+    closedEndYield: 12,
+    dynamoAllocation: 20,
+    dynamoYield: 18,
     dividendGrowth: 2,
     inflation: 3,
     annualNavReturn: 3,
@@ -69,8 +83,14 @@ test('provides base projection starting assumptions', () => {
 
 test('provides distribution stress starting assumptions', () => {
   assert.deepEqual(getProjectionScenario('stress'), {
-    dividendYield: 8,
-    acDistributionShare: 25,
+    anchorAllocation: 45,
+    anchorYield: 2,
+    boosterAllocation: 15,
+    boosterYield: 5,
+    closedEndAllocation: 30,
+    closedEndYield: 7,
+    dynamoAllocation: 10,
+    dynamoYield: 8,
     dividendGrowth: -10,
     inflation: 7,
     annualNavReturn: -12,
@@ -79,9 +99,9 @@ test('provides distribution stress starting assumptions', () => {
 
 test('returns a defensive copy of projection assumptions', () => {
   const scenario = getProjectionScenario('base');
-  scenario.dividendYield = 80;
+  scenario.anchorYield = 80;
 
-  assert.equal(getProjectionScenario('base').dividendYield, 12);
+  assert.equal(getProjectionScenario('base').anchorYield, 4);
 });
 
 test('rejects an unknown projection scenario', () => {
@@ -334,20 +354,48 @@ test('routes A/C distributions to reinvestment and B/D distributions to spendabl
   });
 });
 
-test('simulator exposes and uses separate distribution ledgers', async () => {
+test('calculates periodic pillar distributions from explicit allocations and yields', () => {
+  const result = calculatePillarDistributions({
+    marketValue: 10_000,
+    periodsPerYear: 12,
+    pillars: {
+      anchor: { allocation: 40, annualYield: 3 },
+      booster: { allocation: 20, annualYield: 9 },
+      closedEnd: { allocation: 30, annualYield: 12 },
+      dynamo: { allocation: 10, annualYield: 18 },
+    },
+  });
+
+  assert.deepEqual(result, {
+    anchor: 10,
+    booster: 15,
+    closedEnd: 30,
+    dynamo: 15,
+  });
+});
+
+test('requires the four pillar allocations to total 100%', () => {
+  assert.equal(validatePillarAllocations({ anchor: 40, booster: 20, closedEnd: 30, dynamo: 10 }), true);
+  assert.equal(validatePillarAllocations({ anchor: 40, booster: 20, closedEnd: 20, dynamo: 10 }), false);
+  assert.equal(validatePillarAllocations({ anchor: 40, booster: 20, closedEnd: Number.NaN, dynamo: 40 }), false);
+});
+
+test('simulator exposes explicit pillar assumptions and uses their distribution ledgers', async () => {
   const simulatorPage = await readFile(
     new URL('../src/pages/simulator.astro', import.meta.url),
     'utf8',
   );
 
-  assert.match(simulatorPage, /routePillarDistributions/);
+  assert.match(simulatorPage, /calculatePillarDistributions/);
+  assert.match(simulatorPage, /validatePillarAllocations/);
   assert.match(simulatorPage, /id="grossDistributions"/);
   assert.match(simulatorPage, /id="reinvestedDistributions"/);
   assert.match(simulatorPage, /id="spendableDistributions"/);
-  assert.match(
-    simulatorPage,
-    /id="acShare"[^>]*aria-labelledby="acShareLabel"/,
-  );
+  for (const pillar of ['anchor', 'booster', 'closedEnd', 'dynamo']) {
+    assert.match(simulatorPage, new RegExp(`id="${pillar}AllocationNumber"`));
+    assert.match(simulatorPage, new RegExp(`id="${pillar}YieldNumber"`));
+  }
+  assert.match(simulatorPage, /Pillar allocations must total 100%/);
   assert.match(simulatorPage, />Reinvested A\/C distributions</);
   assert.match(simulatorPage, />Spendable B\/D distributions</);
 });
@@ -360,10 +408,18 @@ test('simulator range and number pairs share unique accessible labels', async ()
   const controls = [
     ['starting', 'startingNumber', 'Starting gross market value'],
     ['marginDebt', 'marginDebtNumber', 'Starting margin debt'],
+    ['marginApr', 'marginAprNumber', 'Margin APR'],
     ['paycheck', 'paycheckNumber', 'Weekly paycheck contribution'],
-    ['yield', 'yieldNumber', 'Portfolio dividend %'],
-    ['acShare', 'acShareNumber', 'A/C distribution share (DRIP on)'],
+    ['anchorAllocation', 'anchorAllocationNumber', 'Anchor allocation %'],
+    ['anchorYield', 'anchorYieldNumber', 'Anchor annual yield %'],
+    ['boosterAllocation', 'boosterAllocationNumber', 'Booster allocation %'],
+    ['boosterYield', 'boosterYieldNumber', 'Booster annual yield %'],
+    ['closedEndAllocation', 'closedEndAllocationNumber', 'Closed-end allocation %'],
+    ['closedEndYield', 'closedEndYieldNumber', 'Closed-end annual yield %'],
+    ['dynamoAllocation', 'dynamoAllocationNumber', 'Dynamo allocation %'],
+    ['dynamoYield', 'dynamoYieldNumber', 'Dynamo annual yield %'],
     ['growth', 'growthNumber', 'Dividend growth %'],
+    ['navReturn', 'navReturnNumber', 'Annual NAV/price return %'],
     ['inflation', 'inflationNumber', 'Inflation %'],
     ['expenses', 'expensesNumber', 'Monthly expenses'],
     ['projectionYears', 'projectionYearsNumber', 'Projection years'],
@@ -472,11 +528,11 @@ test('simulator keeps synchronized controls on the range-valid value', async () 
   );
   assert.match(
     simulatorPage,
-    /function announceResultsIfValid\(\)[\s\S]*hasInvalidInputs\(\)[\s\S]*Enter a value within the allowed range\.[\s\S]*return;[\s\S]*announceResults\(\)/,
+    /function announceResultsIfValid\(\)[\s\S]*hasInvalidInputs\(\)[\s\S]*resultsStatus\.textContent = invalidInputMessage\(\);[\s\S]*return;[\s\S]*announceResults\(\)/,
   );
   assert.match(
     simulatorPage,
-    /number\.removeAttribute\('aria-invalid'\);[\s\S]*if \(hasInvalidInputs\(\)\)[\s\S]*Enter a value within the allowed range\.[\s\S]*return;[\s\S]*resultsStatus\.textContent = '';[\s\S]*render\(\)/,
+    /number\.removeAttribute\('aria-invalid'\);[\s\S]*if \(hasInvalidInputs\(\)\)[\s\S]*invalidInputMessage\(\)[\s\S]*return;[\s\S]*resultsStatus\.textContent = '';[\s\S]*render\(\)/,
   );
   assert.match(simulatorPage, /range\.addEventListener\('change', announceResultsIfValid\)/);
 });
@@ -493,11 +549,23 @@ test('simulator makes derived output unavailable while any input is invalid', as
   );
   assert.match(
     simulatorPage,
-    /number\.setAttribute\('aria-invalid', 'true'\);[\s\S]*invalidateResults\(\);[\s\S]*Enter a value within the allowed range\./,
+    /number\.setAttribute\('aria-invalid', 'true'\);[\s\S]*invalidateResults\(\);[\s\S]*resultsStatus\.textContent = invalidInputMessage\(\)/,
   );
   assert.match(
     simulatorPage,
     /function render\(\)[\s\S]*chart\.setAttribute\('aria-label', 'Line plot of projected dividend income'\)/,
+  );
+});
+
+test('invalid allocation numbers replace the stale allocation-total status', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /number\.setAttribute\('aria-invalid', 'true'\);[\s\S]*invalidateResults\(\);[\s\S]*if \(a\.endsWith\('Allocation'\)\)[\s\S]*allocationStatus[\s\S]*Enter a value within the allowed range\./,
   );
 });
 
