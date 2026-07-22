@@ -141,8 +141,10 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
             <div class="planner-field"><label for="weeklyFlexible">Weekly flexible spending</label><input id="weeklyFlexible" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="150" inputmode="decimal" required /></div>
             <div class="planner-field"><label for="weeklySinkingFunds">Weekly sinking funds</label><input id="weeklySinkingFunds" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="100" inputmode="decimal" required /></div>
             <div class="planner-field"><label for="weeklyBreathingRoom">Weekly breathing-room buffer</label><input id="weeklyBreathingRoom" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="50" inputmode="decimal" required /></div>
+            <div class="planner-field"><label for="weeklyMarginRepair">Weekly margin repair</label><input id="weeklyMarginRepair" type="number" min="0" max={WEEKLY_BUDGET_MAX_AMOUNT} step="0.01" value="0" inputmode="decimal" required /></div>
           </form>
           <div class="planner-results" aria-describedby="weeklyBudgetPrivacy">
+            <div class="planner-result"><span>Reserved for margin repair</span><strong id="weeklyMarginRepairReserved">—</strong></div>
             <div class="planner-result"><span>Total weekly outflow</span><strong id="weeklyOutflow">—</strong></div>
             <div class="planner-result"><span>Weekly surplus or deficit</span><strong id="weeklyBalance">—</strong></div>
             <div class="planner-result"><span>Safe weekly contribution</span><strong id="weeklySafeContribution">—</strong></div>
@@ -291,17 +293,19 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       }
       function renderWeeklyBudget(event) {
         const form = document.getElementById('weeklyBudgetForm');
+        const marginRepairReserved = document.getElementById('weeklyMarginRepairReserved');
         const outflow = document.getElementById('weeklyOutflow');
         const balance = document.getElementById('weeklyBalance');
         const contribution = document.getElementById('weeklySafeContribution');
         const simulatorLink = document.getElementById('sendBudgetToSimulator');
         const status = document.getElementById('weeklyBudgetStatus');
-        if (!form || !outflow || !balance || !contribution || !simulatorLink || !status) return;
+        if (!form || !marginRepairReserved || !outflow || !balance || !contribution || !simulatorLink || !status) return;
         weeklyBudgetIds.forEach((id) => {
           const input = document.getElementById(id);
           input?.setAttribute('aria-invalid', String(!input.validity.valid));
         });
         if (!form.checkValidity()) {
+          marginRepairReserved.textContent = '—';
           outflow.textContent = '—';
           balance.textContent = '—';
           contribution.textContent = '—';
@@ -317,9 +321,11 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           flexible: weeklyValue('weeklyFlexible'),
           sinkingFunds: weeklyValue('weeklySinkingFunds'),
           breathingRoom: weeklyValue('weeklyBreathingRoom'),
+          marginRepair: weeklyValue('weeklyMarginRepair'),
         });
         if (event?.type === 'input') saveWeeklyBudget(storage, weeklySnapshot());
 
+        marginRepairReserved.textContent = weeklyCurrency.format(result.marginRepair);
         outflow.textContent = weeklyCurrency.format(result.totalOutflow);
         balance.textContent = weeklyCurrency.format(result.surplusOrDeficit);
         contribution.textContent = weeklyCurrency.format(result.safeContribution);

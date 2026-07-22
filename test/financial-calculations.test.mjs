@@ -270,7 +270,7 @@ test('normalizes an imported weekly contribution to whole cents', () => {
   assert.equal(parseWeeklyContribution('123.456', { fallback: 750, max: 5_000 }), 123.46);
 });
 
-test('calculates a safe contribution from the remaining weekly surplus', () => {
+test('reserves weekly margin repair before recommending a simulator contribution', () => {
   assert.deepEqual(
     calculateWeeklyBudget({
       income: 1_000,
@@ -278,11 +278,13 @@ test('calculates a safe contribution from the remaining weekly surplus', () => {
       flexible: 150,
       sinkingFunds: 100,
       breathingRoom: 50,
+      marginRepair: 100,
     }),
     {
-      totalOutflow: 800,
-      surplusOrDeficit: 200,
-      safeContribution: 200,
+      marginRepair: 100,
+      totalOutflow: 900,
+      surplusOrDeficit: 100,
+      safeContribution: 100,
     },
   );
 });
@@ -297,6 +299,7 @@ test('reports a weekly deficit without recommending a negative contribution', ()
       breathingRoom: 50,
     }),
     {
+      marginRepair: 0,
       totalOutflow: 800,
       surplusOrDeficit: -100,
       safeContribution: 0,
@@ -314,6 +317,7 @@ test('balances decimal currency values without a floating-point deficit', () => 
       breathingRoom: 0,
     }),
     {
+      marginRepair: 0,
       totalOutflow: 0.30,
       surplusOrDeficit: 0,
       safeContribution: 0,
@@ -718,6 +722,22 @@ test('budget page provides a local-only accessible weekly planner', async () => 
   assert.match(
     budgetPage,
     /initializeWeeklyBudget\(\);\s*document\.addEventListener\('astro:page-load', initializeWeeklyBudget\)/,
+  );
+});
+
+test('budget planner reserves a weekly margin repair obligation before simulator contributions', async () => {
+  const budgetPage = await readFile(
+    new URL('../src/pages/budget.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(budgetPage, /<label for="weeklyMarginRepair">Weekly margin repair<\/label>/);
+  assert.match(budgetPage, /<input id="weeklyMarginRepair"[^>]*type="number"[^>]*min="0"/);
+  assert.match(budgetPage, /marginRepair: weeklyValue\('weeklyMarginRepair'\)/);
+  assert.match(budgetPage, /id="weeklyMarginRepairReserved"/);
+  assert.match(
+    budgetPage,
+    /marginRepairReserved\.textContent = weeklyCurrency\.format\(result\.marginRepair\)/,
   );
 });
 

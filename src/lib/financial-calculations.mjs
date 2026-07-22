@@ -109,14 +109,16 @@ export function calculateWeeklyBudget({
   flexible,
   sinkingFunds,
   breathingRoom,
+  marginRepair = 0,
 }) {
   const toCents = (amount) => Math.round(amount * 100);
-  const totalOutflowCents = [essentials, flexible, sinkingFunds, breathingRoom]
+  const totalOutflowCents = [essentials, flexible, sinkingFunds, breathingRoom, marginRepair]
     .map(toCents)
     .reduce((total, amount) => total + amount, 0);
   const surplusOrDeficitCents = toCents(income) - totalOutflowCents;
 
   return {
+    marginRepair,
     totalOutflow: totalOutflowCents / 100,
     surplusOrDeficit: surplusOrDeficitCents / 100,
     safeContribution: Math.max(0, surplusOrDeficitCents) / 100,
