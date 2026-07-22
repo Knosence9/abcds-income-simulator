@@ -14,9 +14,44 @@ import {
   getProjectionScenario,
   monthlyToWeekly,
   parseWeeklyContribution,
+  routeInvestmentContribution,
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('allows contributions when no margin debt exists', () => {
+  assert.deepEqual(
+    routeInvestmentContribution({ marketValue: 0, marginDebt: 0, contribution: 500 }),
+    {
+      investedContribution: 500,
+      pausedContribution: 0,
+    },
+  );
+});
+
+test('invests only above the 70% margin-equity resume threshold', () => {
+  assert.deepEqual(
+    routeInvestmentContribution({ marketValue: 10_000, marginDebt: 4_001, contribution: 500 }),
+    {
+      investedContribution: 0,
+      pausedContribution: 500,
+    },
+  );
+  assert.deepEqual(
+    routeInvestmentContribution({ marketValue: 10_000, marginDebt: 3_000, contribution: 500 }),
+    {
+      investedContribution: 0,
+      pausedContribution: 500,
+    },
+  );
+  assert.deepEqual(
+    routeInvestmentContribution({ marketValue: 10_000, marginDebt: 2_999, contribution: 500 }),
+    {
+      investedContribution: 500,
+      pausedContribution: 0,
+    },
+  );
+});
 
 test('uses spendable distributions to pay expenses before retaining cash', () => {
   assert.deepEqual(
@@ -478,6 +513,27 @@ test('simulator accumulates spendable cash expense coverage in separate ledgers'
   assert.match(simulatorPage, /uncoveredExpenses \+= expenseCoverage\.uncoveredExpenses/);
   assert.match(simulatorPage, /remainingCash = expenseCoverage\.remainingCash/);
   assert.match(simulatorPage, /interest is not capitalized or paid/i);
+});
+
+test('simulator keeps repair-band contributions outside projected market value', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /routeInvestmentContribution/);
+  assert.match(simulatorPage, /id="pausedContributions"/);
+  assert.match(
+    simulatorPage,
+    /routeInvestmentContribution\(\{ marketValue: portfolio, marginDebt, contribution \}\)/,
+  );
+  assert.match(simulatorPage, /pausedContributions \+= contributionRoute\.pausedContribution/);
+  assert.match(
+    simulatorPage,
+    /portfolio = marketReturn\.endingMarketValue \+ routed\.reinvestedDistributions \+ contributionRoute\.investedContribution/,
+  );
+  assert.match(simulatorPage, /held outside this projection/i);
+  assert.match(simulatorPage, /not assumed to pay margin debt/i);
 });
 
 test('simulator exposes explicit pillar assumptions and uses their distribution ledgers', async () => {
