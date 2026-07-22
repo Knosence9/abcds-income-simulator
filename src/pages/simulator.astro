@@ -81,6 +81,13 @@ const defaultInputs = {
       .scenario-buttons { display:flex; flex-wrap:wrap; gap:8px; }
       .scenario-button { min-height:40px; border:1px solid var(--line); border-radius:999px; padding:0 13px; background:var(--paper); color:var(--a); font-weight:850; cursor:pointer; }
       .scenario-button[aria-pressed='true'] { border-color:var(--a); background:var(--a); color:var(--paper); }
+      .allocation-snapshot { margin:0 0 18px; border:1px solid var(--line); border-radius:20px; padding:14px; background:rgba(255,255,255,.55); }
+      .allocation-snapshot legend { padding:0 5px; font-weight:900; color:var(--a); }
+      .allocation-snapshot-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+      .snapshot-field { display:grid; gap:5px; color:var(--a); font-size:13px; font-weight:850; }
+      .snapshot-field input { width:100%; min-width:0; border:1px solid var(--line); border-radius:12px; padding:9px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
+      .allocation-snapshot .button { width:100%; margin-top:10px; }
+      .allocation-snapshot .button:disabled { cursor:not-allowed; opacity:.55; }
       .chart-wrap { border:1px solid var(--line); border-radius:26px; background:linear-gradient(180deg, rgba(32,63,105,.05), rgba(255,253,247,.7)); padding:18px; min-height:560px; }
       .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:10px; margin-bottom:14px; }
       .stat { border:1px solid var(--line); border-radius:18px; padding:12px; background:rgba(255,255,255,.62); }
@@ -131,6 +138,18 @@ const defaultInputs = {
               </div>
               <p class="footer-note">These presets fill transparent starting assumptions below. The stress preset includes a synthetic NAV/price decline and distribution-cut path.</p>
             </fieldset>
+            <fieldset class="allocation-snapshot">
+              <legend>Current ABCD allocation snapshot</legend>
+              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate pillar balances only—not holdings or account details. This tool does not save or export these values.</p>
+              <div class="allocation-snapshot-grid">
+                <div class="snapshot-field"><label for="anchorBalance">Anchor balance</label><input id="anchorBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
+                <div class="snapshot-field"><label for="boosterBalance">Booster balance</label><input id="boosterBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
+                <div class="snapshot-field"><label for="closedEndBalance">Closed-end balance</label><input id="closedEndBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
+                <div class="snapshot-field"><label for="dynamoBalance">Dynamo balance</label><input id="dynamoBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
+              </div>
+              <p id="allocationSnapshotSummary" class="footer-note" aria-live="polite">Enter at least one pillar balance to calculate weights.</p>
+              <button id="applyAllocationSnapshot" class="button secondary" type="button" disabled>Use in projection</button>
+            </fieldset>
             <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="500" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="500" /></div>
             <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></div>
             <div class="field"><label id="marginAprLabel" for="marginAprNumber">Margin APR <input id="marginAprNumber" type="number" value={defaultInputs.marginApr} min="0" max="30" step="0.1" /></label><input id="marginApr" type="range" aria-labelledby="marginAprLabel" value={defaultInputs.marginApr} min="0" max="30" step="0.1" /></div>
@@ -139,13 +158,13 @@ const defaultInputs = {
             <div class="field"><label id="paycheckLabel" for="paycheckNumber">Weekly paycheck contribution <input id="paycheckNumber" type="number" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></label><input id="paycheck" type="range" aria-labelledby="paycheckLabel" value={defaultInputs.paycheck} min="0" max="5000" step="0.01" /></div>
             <div class="callout compact"><b>Paid bi-weekly?</b> Divide your paycheck contribution by 2 and enter that weekly amount here. Example: if you contribute $1,500 every two weeks, enter $750.</div>
             <div class="callout compact"><b>Pillar assumptions:</b> allocations must total 100%. Each yield applies only to that pillar's share. Anchor and Closed-end (A/C) distributions are reinvested; Booster and Dynamo (B/D) distributions remain spendable cash.</div>
-            <div class="field"><label id="anchorAllocationLabel" for="anchorAllocationNumber">Anchor allocation % <input id="anchorAllocationNumber" type="number" value={defaultInputs.anchorAllocation} min="0" max="100" step="1" /></label><input id="anchorAllocation" type="range" aria-labelledby="anchorAllocationLabel" value={defaultInputs.anchorAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="anchorAllocationLabel" for="anchorAllocationNumber">Anchor allocation % <input id="anchorAllocationNumber" type="number" value={defaultInputs.anchorAllocation} min="0" max="100" step="any" /></label><input id="anchorAllocation" type="range" aria-labelledby="anchorAllocationLabel" value={defaultInputs.anchorAllocation} min="0" max="100" step="any" /></div>
             <div class="field"><label id="anchorYieldLabel" for="anchorYieldNumber">Anchor annual yield % <input id="anchorYieldNumber" type="number" value={defaultInputs.anchorYield} min="0" max="80" step="0.1" /></label><input id="anchorYield" type="range" aria-labelledby="anchorYieldLabel" value={defaultInputs.anchorYield} min="0" max="80" step="0.1" /></div>
-            <div class="field"><label id="boosterAllocationLabel" for="boosterAllocationNumber">Booster allocation % <input id="boosterAllocationNumber" type="number" value={defaultInputs.boosterAllocation} min="0" max="100" step="1" /></label><input id="boosterAllocation" type="range" aria-labelledby="boosterAllocationLabel" value={defaultInputs.boosterAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="boosterAllocationLabel" for="boosterAllocationNumber">Booster allocation % <input id="boosterAllocationNumber" type="number" value={defaultInputs.boosterAllocation} min="0" max="100" step="any" /></label><input id="boosterAllocation" type="range" aria-labelledby="boosterAllocationLabel" value={defaultInputs.boosterAllocation} min="0" max="100" step="any" /></div>
             <div class="field"><label id="boosterYieldLabel" for="boosterYieldNumber">Booster annual yield % <input id="boosterYieldNumber" type="number" value={defaultInputs.boosterYield} min="0" max="80" step="0.1" /></label><input id="boosterYield" type="range" aria-labelledby="boosterYieldLabel" value={defaultInputs.boosterYield} min="0" max="80" step="0.1" /></div>
-            <div class="field"><label id="closedEndAllocationLabel" for="closedEndAllocationNumber">Closed-end allocation % <input id="closedEndAllocationNumber" type="number" value={defaultInputs.closedEndAllocation} min="0" max="100" step="1" /></label><input id="closedEndAllocation" type="range" aria-labelledby="closedEndAllocationLabel" value={defaultInputs.closedEndAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="closedEndAllocationLabel" for="closedEndAllocationNumber">Closed-end allocation % <input id="closedEndAllocationNumber" type="number" value={defaultInputs.closedEndAllocation} min="0" max="100" step="any" /></label><input id="closedEndAllocation" type="range" aria-labelledby="closedEndAllocationLabel" value={defaultInputs.closedEndAllocation} min="0" max="100" step="any" /></div>
             <div class="field"><label id="closedEndYieldLabel" for="closedEndYieldNumber">Closed-end annual yield % <input id="closedEndYieldNumber" type="number" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></label><input id="closedEndYield" type="range" aria-labelledby="closedEndYieldLabel" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></div>
-            <div class="field"><label id="dynamoAllocationLabel" for="dynamoAllocationNumber">Dynamo allocation % <input id="dynamoAllocationNumber" type="number" value={defaultInputs.dynamoAllocation} min="0" max="100" step="1" /></label><input id="dynamoAllocation" type="range" aria-labelledby="dynamoAllocationLabel" value={defaultInputs.dynamoAllocation} min="0" max="100" step="1" /></div>
+            <div class="field"><label id="dynamoAllocationLabel" for="dynamoAllocationNumber">Dynamo allocation % <input id="dynamoAllocationNumber" type="number" value={defaultInputs.dynamoAllocation} min="0" max="100" step="any" /></label><input id="dynamoAllocation" type="range" aria-labelledby="dynamoAllocationLabel" value={defaultInputs.dynamoAllocation} min="0" max="100" step="any" /></div>
             <div class="field"><label id="dynamoYieldLabel" for="dynamoYieldNumber">Dynamo annual yield % <input id="dynamoYieldNumber" type="number" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></label><input id="dynamoYield" type="range" aria-labelledby="dynamoYieldLabel" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></div>
             <p id="allocationStatus" class="footer-note" aria-live="polite">Pillar allocations total 100%.</p>
             <div class="field"><label id="growthLabel" for="growthNumber">Dividend growth % <input id="growthNumber" type="number" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></label><input id="growth" type="range" aria-labelledby="growthLabel" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></div>
@@ -212,8 +231,8 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
-      import { attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
+      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { attachAllocationSnapshot, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
       type InputId = (typeof pairs)[number][number];
@@ -535,6 +554,28 @@ const defaultInputs = {
         }
         const transferredBudget = applyTransferredContribution();
         pairs.forEach(([a,b]) => sync(a,b));
+        attachAllocationSnapshot({
+          balanceInputs: {
+            anchor: $('anchorBalance') as HTMLInputElement,
+            booster: $('boosterBalance') as HTMLInputElement,
+            closedEnd: $('closedEndBalance') as HTMLInputElement,
+            dynamo: $('dynamoBalance') as HTMLInputElement,
+          },
+          applyButton: $('applyAllocationSnapshot') as HTMLButtonElement,
+          summary: $('allocationSnapshotSummary'),
+          allocationControls: {
+            anchor: [$('anchorAllocation'), $('anchorAllocationNumber')],
+            booster: [$('boosterAllocation'), $('boosterAllocationNumber')],
+            closedEnd: [$('closedEndAllocation'), $('closedEndAllocationNumber')],
+            dynamo: [$('dynamoAllocation'), $('dynamoAllocationNumber')],
+          },
+          calculateSnapshot: calculatePillarAllocationSnapshot,
+          formatCurrency: (value: number) => fmtSmall.format(value),
+          render: () => {
+            document.querySelectorAll('[data-scenario]').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+            render();
+          },
+        });
         attachProjectionScenarioPresets({
           buttons: [...document.querySelectorAll('[data-scenario]')],
           controls: {

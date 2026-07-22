@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculatePillarAllocationSnapshot,
   calculateExpenseCrossoverPeriod,
   calculateProjectionContributionPeriod,
   calculateExpenseCoverage,
@@ -20,6 +21,85 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('calculates ABCD weights from synthetic aggregate pillar balances', () => {
+  const balances = {
+    anchor: 3_000,
+    booster: 2_000,
+    closedEnd: 3_000,
+    dynamo: 2_000,
+  };
+
+  assert.deepEqual(calculatePillarAllocationSnapshot(balances), {
+    totalValue: 10_000,
+    weights: {
+      anchor: 30,
+      booster: 20,
+      closedEnd: 30,
+      dynamo: 20,
+    },
+  });
+  assert.deepEqual(balances, {
+    anchor: 3_000,
+    booster: 2_000,
+    closedEnd: 3_000,
+    dynamo: 2_000,
+  });
+});
+
+test('reports an empty allocation snapshot without misleading percentages', () => {
+  assert.deepEqual(
+    calculatePillarAllocationSnapshot({ anchor: 0, booster: 0, closedEnd: 0, dynamo: 0 }),
+    { totalValue: 0, weights: null },
+  );
+});
+
+test('rejects incomplete, negative, and non-finite pillar balances', () => {
+  for (const balances of [
+    { anchor: 3_000, booster: 2_000, closedEnd: 3_000 },
+    { anchor: 3_000, booster: -1, closedEnd: 3_000, dynamo: 2_000 },
+    { anchor: 3_000, booster: Number.NaN, closedEnd: 3_000, dynamo: 2_000 },
+  ]) {
+    assert.throws(
+      () => calculatePillarAllocationSnapshot(balances),
+      new RangeError('Pillar balances must contain four finite, non-negative values.'),
+    );
+  }
+});
+
+test('rejects pillar balances whose finite values overflow the total', () => {
+  assert.throws(
+    () => calculatePillarAllocationSnapshot({
+      anchor: Number.MAX_VALUE,
+      booster: Number.MAX_VALUE,
+      closedEnd: 0,
+      dynamo: 0,
+    }),
+    new RangeError('Pillar balance total must be finite.'),
+  );
+});
+
+test('simulator exposes a local-only aggregate ABCD allocation snapshot', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  for (const [id, label] of [
+    ['anchorBalance', 'Anchor balance'],
+    ['boosterBalance', 'Booster balance'],
+    ['closedEndBalance', 'Closed-end balance'],
+    ['dynamoBalance', 'Dynamo balance'],
+  ]) {
+    assert.match(simulatorPage, new RegExp(`<label for="${id}">${label}<\\/label>`));
+    assert.match(simulatorPage, new RegExp(`<input id="${id}" type="number"`));
+  }
+  assert.match(simulatorPage, /id="allocationSnapshotSummary"[^>]*aria-live="polite"/);
+  assert.match(simulatorPage, /id="applyAllocationSnapshot"/);
+  assert.match(simulatorPage, /This tool does not save or export these values\./);
+  assert.match(simulatorPage, /attachAllocationSnapshot/);
+  assert.match(simulatorPage, /calculatePillarAllocationSnapshot/);
+});
 
 test('reports the first period when spendable distributions cover expenses', () => {
   assert.deepEqual(
