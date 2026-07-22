@@ -65,6 +65,30 @@ test('rejects empty and out-of-range aggregate totals for projection', () => {
   );
 });
 
+test('validates projection maximums and accepts a total exactly at the maximum', () => {
+  const balances = { anchor: 250_000, booster: 0, closedEnd: 0, dynamo: 0 };
+
+  for (const maxStartingValue of [Number.NaN, -1, Number.NEGATIVE_INFINITY]) {
+    assert.throws(
+      () => preparePillarSnapshotForProjection(balances, { maxStartingValue }),
+      new RangeError('Projection maximum must be non-negative and finite or positive infinity.'),
+    );
+  }
+
+  assert.deepEqual(
+    preparePillarSnapshotForProjection(balances, { maxStartingValue: 250_000 }),
+    {
+      startingValue: 250_000,
+      allocations: { anchor: 100, booster: 0, closedEnd: 0, dynamo: 0 },
+    },
+  );
+  assert.doesNotThrow(
+    () => preparePillarSnapshotForProjection(balances, {
+      maxStartingValue: Number.POSITIVE_INFINITY,
+    }),
+  );
+});
+
 test('calculates ABCD weights from synthetic aggregate pillar balances', () => {
   const balances = {
     anchor: 3_000,

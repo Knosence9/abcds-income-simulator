@@ -225,6 +225,14 @@ export function calculatePillarAllocationSnapshot(balances) {
 }
 
 export function preparePillarSnapshotForProjection(balances, { maxStartingValue }) {
+  if (
+    maxStartingValue !== Number.POSITIVE_INFINITY
+    && (!Number.isFinite(maxStartingValue) || maxStartingValue < 0)
+  ) {
+    throw new RangeError(
+      'Projection maximum must be non-negative and finite or positive infinity.',
+    );
+  }
   const snapshot = calculatePillarAllocationSnapshot(balances);
   if (!snapshot.weights) {
     throw new RangeError('Enter at least one pillar balance before applying this snapshot.');
