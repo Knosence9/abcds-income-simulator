@@ -7,8 +7,10 @@ import {
   getWeeklyBudgetStorage,
   loadWeeklyBudget,
   normalizeWeeklyBudgetSnapshot,
+  parseWeeklyBudgetImport,
   parseWeeklyBudgetSnapshot,
   saveWeeklyBudget,
+  serializeWeeklyBudgetExport,
   WEEKLY_BUDGET_MAX_AMOUNT,
   WEEKLY_BUDGET_STORAGE_KEY,
 } from '../src/lib/weekly-budget-storage.mjs';
@@ -66,6 +68,32 @@ test('saves, restores, and clears a valid weekly budget through browser storage'
   assert.equal(loadWeeklyBudget(storage), null);
 });
 
+test('round-trips a weekly budget through the versioned JSON export format', () => {
+  const exported = serializeWeeklyBudgetExport(validSnapshot);
+
+  assert.deepEqual(JSON.parse(exported), {
+    format: 'abcds-weekly-budget',
+    version: 1,
+    budget: validSnapshot,
+  });
+  assert.deepEqual(parseWeeklyBudgetImport(exported), validSnapshot);
+});
+
+test('rejects malformed, unsupported, and invalid weekly budget imports', () => {
+  assert.equal(parseWeeklyBudgetImport('{broken'), null);
+  assert.equal(parseWeeklyBudgetImport(JSON.stringify({
+    format: 'abcds-weekly-budget',
+    version: 2,
+    budget: validSnapshot,
+  })), null);
+  assert.equal(parseWeeklyBudgetImport(JSON.stringify({
+    format: 'abcds-weekly-budget',
+    version: 1,
+    budget: { ...validSnapshot, weeklyIncome: -1 },
+  })), null);
+  assert.equal(serializeWeeklyBudgetExport({ ...validSnapshot, weeklyIncome: Infinity }), null);
+});
+
 test('budget planner restores valid browser-local values and provides an explicit reset', async () => {
   const budgetPage = await readFile(
     new URL('../src/pages/budget.astro', import.meta.url),
@@ -86,4 +114,24 @@ test('budget planner restores valid browser-local values and provides an explici
   assert.match(budgetPage, /stored only in this browser/i);
   assert.match(budgetPage, /not submitted by this planner/i);
   assert.doesNotMatch(budgetPage, /analytics[^.]*weekly(?:Income|Essentials|Flexible|SinkingFunds|BreathingRoom)/i);
+});
+
+test('budget planner provides local JSON import and export controls', async () => {
+  const budgetPage = await readFile(
+    new URL('../src/pages/budget.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(budgetPage, /id="exportWeeklyBudget"[^>]*type="button"/);
+  assert.match(budgetPage, /id="importWeeklyBudget"[^>]*type="button"/);
+  assert.match(
+    budgetPage,
+    /id="weeklyBudgetFile"[^>]*type="file"[^>]*accept="application\/json,\.json"/,
+  );
+  assert.match(budgetPage, /serializeWeeklyBudgetExport\(weeklySnapshot\(\)\)/);
+  assert.match(budgetPage, /parseWeeklyBudgetImport\(await file\.text\(\)\)/);
+  assert.match(budgetPage, /URL\.revokeObjectURL\(downloadUrl\)/);
+  assert.match(budgetPage, /Imported weekly budget from JSON\./);
+  assert.match(budgetPage, /Could not import that weekly budget JSON\./);
+  assert.match(budgetPage, /Import and export stay on this device/i);
 });
