@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import SkipLink from '../components/SkipLink.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import { monthlyToWeekly } from '../lib/financial-calculations.mjs';
 
 const weekly100 = monthlyToWeekly(100).toFixed(2);
@@ -302,6 +303,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
 
 
       </main>
+      <SiteFooter />
     </div>
 
     <RadialSiteMenu page="getting-started" />

@@ -31,6 +31,24 @@ test('shared skip link targets the main landmark and appears on focus', async ()
   );
 });
 
+test('shared site footer provides navigation, disclosure, and privacy context', async () => {
+  const source = await readFile(
+    new URL('../src/components/SiteFooter.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /<footer class="site-footer">/);
+  assert.match(source, /href="\/getting-started"/);
+  assert.match(source, /href="\/budget"/);
+  assert.match(source, /href="\/simulator"/);
+  assert.match(source, /href="\/#rules"/);
+  assert.match(source, /not financial advice/i);
+  assert.match(source, /browser|local/i);
+  assert.doesNotMatch(source, /menu-lab/);
+  assert.match(source, /\.site-footer a:focus-visible\s*\{/);
+  assert.match(source, /flex-wrap:\s*wrap/);
+});
+
 for (const page of readerPages) {
   test(`${page} lets keyboard users skip to its main landmark`, async () => {
     const source = await readFile(
@@ -39,7 +57,9 @@ for (const page of readerPages) {
     );
 
     assert.match(source, /import SkipLink from '..\/components\/SkipLink\.astro';/);
+    assert.match(source, /import SiteFooter from '..\/components\/SiteFooter\.astro';/);
     assert.match(source, /<body>\s*<SkipLink \/>/);
+    assert.equal((source.match(/<SiteFooter \/>/g) ?? []).length, 1);
     assert.equal(
       (source.match(/<main id="main-content" tabindex="-1">/g) ?? []).length,
       1,

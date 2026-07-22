@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro';
 import RadialSiteMenu from '../components/RadialSiteMenu.astro';
 import SkipLink from '../components/SkipLink.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import { classifyMarginRepairState } from '../lib/financial-calculations.mjs';
 
 const marginRepairStates = [
@@ -482,6 +483,7 @@ const marginRepairStates = [
         </div>
       </section>
       </main>
+      <SiteFooter />
     </div>
 
     <RadialSiteMenu page="home" />
