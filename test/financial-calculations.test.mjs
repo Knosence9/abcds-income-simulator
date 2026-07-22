@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import {
   calculateMarginAccount,
+  calculateMarginInterest,
   calculateWeeklyBudget,
   classifyMarginRepairState,
   getProjectionScenario,
@@ -11,6 +12,26 @@ import {
   parseWeeklyContribution,
   routePillarDistributions,
 } from '../src/lib/financial-calculations.mjs';
+
+test('calculates periodic and cumulative interest on constant margin debt', () => {
+  assert.deepEqual(
+    calculateMarginInterest({ marginDebt: 12_000, annualRate: 10, months: 12 }),
+    {
+      monthlyInterest: 100,
+      cumulativeInterest: 1_200,
+    },
+  );
+});
+
+test('rounds periodic and cumulative margin interest independently', () => {
+  assert.deepEqual(
+    calculateMarginInterest({ marginDebt: 100, annualRate: 10, months: 12 }),
+    {
+      monthlyInterest: 0.83,
+      cumulativeInterest: 10,
+    },
+  );
+});
 
 test('provides conservative projection starting assumptions', () => {
   assert.deepEqual(getProjectionScenario('conservative'), {
@@ -87,7 +108,7 @@ test('simulator exposes and applies accessible scenario starting points', async 
   assert.match(simulatorPage, /attachProjectionScenarioPresets/);
   assert.match(simulatorPage, /starting assumptions/i);
   assert.match(simulatorPage, /NAV\/price decline/i);
-  assert.match(simulatorPage, /margin interest and principal repayment/i);
+  assert.match(simulatorPage, /margin principal repayment/i);
 });
 
 test('simulator exposes a bounded margin debt input and separate equity ledgers', async () => {
@@ -112,7 +133,33 @@ test('simulator exposes a bounded margin debt input and separate equity ledgers'
   assert.match(simulatorPage, /marginDebt\.max = starting\.value/);
   assert.match(simulatorPage, /marginDebtNumber\.max = starting\.value/);
   assert.match(simulatorPage, /principal is held constant/i);
-  assert.match(simulatorPage, /interest and principal repayment are not modeled/i);
+  assert.match(simulatorPage, /principal repayment is not modeled/i);
+});
+
+test('simulator reports constant-principal margin interest from an accessible APR input', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /calculateMarginInterest/);
+  assert.match(
+    simulatorPage,
+    /<label id="marginAprLabel" for="marginAprNumber">Margin APR/,
+  );
+  assert.match(
+    simulatorPage,
+    /<input id="marginApr" type="range" aria-labelledby="marginAprLabel"/,
+  );
+  assert.match(simulatorPage, /id="cumulativeMarginInterest"/);
+  assert.match(simulatorPage, /annualRate: input\.marginApr/);
+  assert.match(simulatorPage, /months: periods \* input\.projectionYears/);
+  assert.match(
+    simulatorPage,
+    /cumulativeMarginInterest'\)\.textContent = fmtSmall\.format\(marginInterest\.cumulativeInterest\)/,
+  );
+  assert.match(simulatorPage, /interest is reported separately/i);
+  assert.match(simulatorPage, /not deducted from margin debt or gross market value/i);
 });
 
 test('parses a valid budget contribution for the simulator', () => {
