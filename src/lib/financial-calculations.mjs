@@ -224,6 +224,31 @@ export function calculatePillarAllocationSnapshot(balances) {
   };
 }
 
+export function preparePillarSnapshotForProjection(balances, { maxStartingValue }) {
+  if (
+    maxStartingValue !== Number.POSITIVE_INFINITY
+    && (!Number.isFinite(maxStartingValue) || maxStartingValue < 0)
+  ) {
+    throw new RangeError(
+      'Projection maximum must be non-negative and finite or positive infinity.',
+    );
+  }
+  const snapshot = calculatePillarAllocationSnapshot(balances);
+  if (!snapshot.weights) {
+    throw new RangeError('Enter at least one pillar balance before applying this snapshot.');
+  }
+  if (snapshot.totalValue > maxStartingValue) {
+    throw new RangeError(
+      `Snapshot total must not exceed the projection maximum of ${maxStartingValue}.`,
+    );
+  }
+
+  return {
+    startingValue: snapshot.totalValue,
+    allocations: snapshot.weights,
+  };
+}
+
 export function validatePillarAllocations(allocations) {
   const values = Object.values(allocations);
   return values.length === 4

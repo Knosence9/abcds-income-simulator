@@ -104,7 +104,7 @@ test('rejects blank snapshot inputs instead of coercing them to zero', () => {
   assert.equal(summary.textContent, 'Enter four non-negative pillar balances.');
 });
 
-test('applies a valid aggregate ABCD snapshot to paired projection controls', () => {
+test('applies a valid aggregate ABCD snapshot total and weights to paired projection controls', () => {
   let clickHandler;
   const input = (value) => ({ value, addEventListener() {} });
   const control = () => ({ value: '', removeAttribute() {} });
@@ -120,6 +120,7 @@ test('applies a valid aggregate ABCD snapshot to paired projection controls', ()
     closedEnd: [control(), control()],
     dynamo: [control(), control()],
   };
+  const startingControls = [control(), control()];
   const applyButton = {
     disabled: false,
     addEventListener(name, handler) {
@@ -135,10 +136,16 @@ test('applies a valid aggregate ABCD snapshot to paired projection controls', ()
     applyButton,
     summary,
     allocationControls,
+    startingControls,
     calculateSnapshot: () => ({
       totalValue: 10_000,
       weights: { anchor: 30, booster: 20, closedEnd: 30, dynamo: 20 },
     }),
+    prepareProjectionSnapshot: () => ({
+      startingValue: 10_000,
+      allocations: { anchor: 30, booster: 20, closedEnd: 30, dynamo: 20 },
+    }),
+    maxStartingValue: 250_000,
     formatCurrency: (value) => `$${value.toLocaleString('en-US')}`,
     render: () => { renderCount += 1; },
   });
@@ -149,6 +156,7 @@ test('applies a valid aggregate ABCD snapshot to paired projection controls', ()
   );
   clickHandler();
 
+  assert.deepEqual(startingControls.map(({ value }) => value), ['10000', '10000']);
   assert.deepEqual(
     Object.fromEntries(
       Object.entries(allocationControls).map(([name, controls]) => [
@@ -164,6 +172,42 @@ test('applies a valid aggregate ABCD snapshot to paired projection controls', ()
     },
   );
   assert.equal(renderCount, 1);
+  assert.equal(summary.textContent, 'Allocation snapshot and $10,000 starting value applied to the projection.');
+});
+
+test('disables an aggregate snapshot whose total exceeds the projection range', () => {
+  const balanceInputs = Object.fromEntries(
+    ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [
+      name,
+      { value: name === 'anchor' ? '250001' : '0', addEventListener() {}, removeAttribute() {} },
+    ]),
+  );
+  const applyButton = { disabled: false, addEventListener() {} };
+  const summary = { textContent: '' };
+
+  attachAllocationSnapshot({
+    balanceInputs,
+    applyButton,
+    summary,
+    allocationControls: {},
+    startingControls: [],
+    calculateSnapshot: () => ({
+      totalValue: 250_001,
+      weights: { anchor: 100, booster: 0, closedEnd: 0, dynamo: 0 },
+    }),
+    prepareProjectionSnapshot() {
+      throw new RangeError('Snapshot total must not exceed the projection maximum of 250000.');
+    },
+    maxStartingValue: 250_000,
+    formatCurrency: (value) => `$${value.toLocaleString('en-US')}`,
+    render() {},
+  });
+
+  assert.equal(applyButton.disabled, true);
+  assert.equal(
+    summary.textContent,
+    '$250,001 total exceeds the $250,000 projection maximum. Reduce the aggregate balances to apply it.',
+  );
 });
 
 function createFixture({ narrow = true, reducedMotion = false } = {}) {
