@@ -156,7 +156,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
             <input id="weeklyBudgetFile" type="file" accept="application/json,.json" hidden />
             <button id="resetWeeklyBudget" class="button secondary" type="button">Reset saved budget</button>
             <p id="weeklyBudgetStatus" role="status" aria-live="polite" aria-atomic="true"></p>
-            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Import and export stay on this device. Use “Reset saved budget” to remove stored values.</p>
+            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Import and export processing stays local; exported files can be moved manually between browsers or devices. Use “Reset saved budget” to remove stored values.</p>
           </div>
         </div>
       </section>
@@ -271,9 +271,10 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       import { calculateWeeklyBudget } from '../lib/financial-calculations.mjs';
       import {
         clearWeeklyBudget,
+        createWeeklyBudgetImportCoordinator,
         getWeeklyBudgetStorage,
         loadWeeklyBudget,
-        parseWeeklyBudgetImport,
+        readWeeklyBudgetImportFile,
         saveWeeklyBudget,
         serializeWeeklyBudgetExport,
         WEEKLY_BUDGET_DEFAULTS,
@@ -290,6 +291,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       type WeeklyBudgetSnapshot = Record<WeeklyBudgetInputId, number>;
       const weeklyBudgetIds = WEEKLY_BUDGET_FIELD_IDS as readonly WeeklyBudgetInputId[];
       const storage = getWeeklyBudgetStorage(window);
+      const weeklyBudgetImports = createWeeklyBudgetImportCoordinator();
       const weeklyCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       const weeklyValue = (id: WeeklyBudgetInputId) => {
         const input = document.getElementById(id);
@@ -313,6 +315,8 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         const simulatorLink = document.getElementById('sendBudgetToSimulator');
         const status = document.getElementById('weeklyBudgetStatus');
         if (!(form instanceof HTMLFormElement) || !marginRepairReserved || !outflow || !balance || !contribution || !(simulatorLink instanceof HTMLAnchorElement) || !status) return;
+        const isUserInput = event?.type === 'input';
+        if (isUserInput) weeklyBudgetImports.invalidate();
         weeklyBudgetIds.forEach((id) => {
           const input = document.getElementById(id);
           if (input instanceof HTMLInputElement) {
@@ -338,7 +342,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           breathingRoom: weeklyValue('weeklyBreathingRoom'),
           marginRepair: weeklyValue('weeklyMarginRepair'),
         });
-        if (event?.type === 'input') saveWeeklyBudget(storage, weeklySnapshot());
+        if (isUserInput) saveWeeklyBudget(storage, weeklySnapshot());
 
         marginRepairReserved.textContent = weeklyCurrency.format(result.marginRepair);
         outflow.textContent = weeklyCurrency.format(result.totalOutflow);
@@ -364,25 +368,38 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         URL.revokeObjectURL(downloadUrl);
         status.textContent = 'Weekly budget exported as JSON.';
       }
-      async function importWeeklyBudget(event: Event) {
+      async function importWeeklyBudget(event: Event, importSession: number) {
         const input = event.currentTarget;
         if (!(input instanceof HTMLInputElement)) return;
+        const request = weeklyBudgetImports.begin(importSession);
+        if (!request.isCurrent()) return;
         const file = input.files?.[0];
         const status = document.getElementById('weeklyBudgetStatus');
         if (!file || !status) return;
 
         try {
-          const importedBudget = parseWeeklyBudgetImport(await file.text());
-          if (!importedBudget) throw new Error('Invalid weekly budget export');
+          const importResult = await readWeeklyBudgetImportFile(file);
+          if (!request.isCurrent()) return;
+          if (importResult.status === 'too-large') {
+            status.textContent = 'Could not import that weekly budget JSON because the file is too large. Current values were not changed.';
+            return;
+          }
+          if (importResult.status !== 'loaded') throw new Error('Invalid weekly budget export');
+          const importedBudget = importResult.budget;
           applyWeeklyBudget(importedBudget as WeeklyBudgetSnapshot);
           saveWeeklyBudget(storage, importedBudget);
           renderWeeklyBudget();
           status.textContent = 'Imported weekly budget from JSON.';
         } catch {
-          status.textContent = 'Could not import that weekly budget JSON.';
+          if (request.isCurrent()) {
+            status.textContent = 'Could not import that weekly budget JSON. Current values were not changed.';
+          }
         } finally {
-          input.value = '';
+          if (request.isCurrent()) input.value = '';
         }
+      }
+      function cancelWeeklyBudgetImport() {
+        weeklyBudgetImports.deactivate();
       }
       function initializeWeeklyBudget() {
         const form = document.getElementById('weeklyBudgetForm');
@@ -398,15 +415,17 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
           || !resetButton
           || form.dataset.initialized === 'true'
         ) return;
+        const importSession = weeklyBudgetImports.activate();
         form.dataset.initialized = 'true';
         const storedBudget = loadWeeklyBudget(storage);
         if (storedBudget) applyWeeklyBudget(storedBudget as WeeklyBudgetSnapshot);
         weeklyBudgetIds.forEach((id) => document.getElementById(id)?.addEventListener('input', renderWeeklyBudget));
         form.addEventListener('submit', (event) => event.preventDefault());
         exportButton.addEventListener('click', exportWeeklyBudget);
-        importButton.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', importWeeklyBudget);
+        importButton.addEventListener('click', () => weeklyBudgetImports.openFilePicker(fileInput));
+        fileInput.addEventListener('change', (event) => importWeeklyBudget(event, importSession));
         resetButton.addEventListener('click', () => {
+          weeklyBudgetImports.invalidate();
           applyWeeklyBudget(WEEKLY_BUDGET_DEFAULTS);
           const storageCleared = clearWeeklyBudget(storage);
           renderWeeklyBudget();
@@ -421,6 +440,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       }
       initializeWeeklyBudget();
       document.addEventListener('astro:page-load', initializeWeeklyBudget);
+      document.addEventListener('astro:before-swap', cancelWeeklyBudgetImport);
     </script>
     <Analytics />
   </body>

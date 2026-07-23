@@ -4,13 +4,16 @@ import test from 'node:test';
 
 import {
   clearWeeklyBudget,
+  createWeeklyBudgetImportCoordinator,
   getWeeklyBudgetStorage,
   loadWeeklyBudget,
   normalizeWeeklyBudgetSnapshot,
   parseWeeklyBudgetImport,
   parseWeeklyBudgetSnapshot,
+  readWeeklyBudgetImportFile,
   saveWeeklyBudget,
   serializeWeeklyBudgetExport,
+  WEEKLY_BUDGET_MAX_IMPORT_BYTES,
   WEEKLY_BUDGET_MAX_AMOUNT,
   WEEKLY_BUDGET_STORAGE_KEY,
 } from '../src/lib/weekly-budget-storage.mjs';
@@ -89,6 +92,68 @@ test('round-trips a weekly budget through the versioned JSON export format', () 
   assert.deepEqual(parseWeeklyBudgetImport(exported), validSnapshot);
 });
 
+test('rejects oversized weekly budget imports before reading file contents', async () => {
+  let readCount = 0;
+  const oversizedFile = {
+    size: WEEKLY_BUDGET_MAX_IMPORT_BYTES + 1,
+    async text() {
+      readCount += 1;
+      return serializeWeeklyBudgetExport(validSnapshot);
+    },
+  };
+
+  assert.deepEqual(await readWeeklyBudgetImportFile(oversizedFile), { status: 'too-large' });
+  assert.equal(readCount, 0);
+});
+
+test('keeps only the latest weekly budget import request current', () => {
+  const imports = createWeeklyBudgetImportCoordinator();
+  const session = imports.activate();
+  const firstRequest = imports.begin(session);
+  const secondRequest = imports.begin(session);
+
+  assert.equal(firstRequest.isCurrent(), false);
+  assert.equal(secondRequest.isCurrent(), true);
+
+  imports.invalidate();
+  assert.equal(secondRequest.isCurrent(), false);
+});
+
+test('keeps import requests stale after teardown until the coordinator is reactivated', () => {
+  const imports = createWeeklyBudgetImportCoordinator();
+  const retiredSession = imports.activate();
+
+  imports.deactivate();
+  const postTeardownRequest = imports.begin(retiredSession);
+  assert.equal(postTeardownRequest.isCurrent(), false);
+
+  const activeSession = imports.activate();
+  const stalePageRequest = imports.begin(retiredSession);
+  assert.equal(stalePageRequest.isCurrent(), false);
+
+  const activePageRequest = imports.begin(activeSession);
+  assert.equal(activePageRequest.isCurrent(), true);
+});
+
+test('clears the previous weekly budget file before opening a replacement picker', () => {
+  const imports = createWeeklyBudgetImportCoordinator();
+  const session = imports.activate();
+  const request = imports.begin(session);
+  const clicks = [];
+  const fileInput = {
+    value: 'abcds-weekly-budget.json',
+    click() {
+      clicks.push(this.value);
+    },
+  };
+
+  imports.openFilePicker(fileInput);
+
+  assert.equal(request.isCurrent(), false);
+  assert.equal(fileInput.value, '');
+  assert.deepEqual(clicks, ['']);
+});
+
 test('migrates version 1 imports but rejects incomplete version 2 budgets', () => {
   const { weeklyMarginRepair, ...legacyBudget } = validSnapshot;
   const exportEnvelope = {
@@ -107,12 +172,23 @@ test('migrates version 1 imports but rejects incomplete version 2 budgets', () =
   })), null);
 });
 
-test('rejects malformed, unsupported, and invalid weekly budget imports', () => {
+test('rejects malformed, unsupported, extended, and invalid weekly budget imports', () => {
   assert.equal(parseWeeklyBudgetImport('{broken'), null);
   assert.equal(parseWeeklyBudgetImport(JSON.stringify({
     format: 'abcds-weekly-budget',
     version: 3,
     budget: validSnapshot,
+  })), null);
+  assert.equal(parseWeeklyBudgetImport(JSON.stringify({
+    format: 'abcds-weekly-budget',
+    version: 2,
+    budget: validSnapshot,
+    accountId: 'unexpected',
+  })), null);
+  assert.equal(parseWeeklyBudgetImport(JSON.stringify({
+    format: 'abcds-weekly-budget',
+    version: 2,
+    budget: { ...validSnapshot, accountId: 'unexpected' },
   })), null);
   assert.equal(parseWeeklyBudgetImport(JSON.stringify({
     format: 'abcds-weekly-budget',
@@ -157,9 +233,39 @@ test('budget planner provides local JSON import and export controls', async () =
     /id="weeklyBudgetFile"[^>]*type="file"[^>]*accept="application\/json,\.json"/,
   );
   assert.match(budgetPage, /serializeWeeklyBudgetExport\(weeklySnapshot\(\)\)/);
-  assert.match(budgetPage, /parseWeeklyBudgetImport\(await file\.text\(\)\)/);
+  assert.match(budgetPage, /readWeeklyBudgetImportFile\(file\)/);
+  assert.match(budgetPage, /createWeeklyBudgetImportCoordinator\(\)/);
+  assert.match(budgetPage, /weeklyBudgetImports\.openFilePicker\(fileInput\)/);
+  assert.match(budgetPage, /importWeeklyBudget\(event, importSession\)/);
+  assert.match(
+    budgetPage,
+    /const isUserInput = event\?\.type === 'input';\s*if \(isUserInput\) weeklyBudgetImports\.invalidate\(\);/,
+  );
+  assert.match(budgetPage, /if \(isUserInput\) saveWeeklyBudget\(storage, weeklySnapshot\(\)\)/);
+  assert.match(
+    budgetPage,
+    /function initializeWeeklyBudget\(\) \{[\s\S]*?if \([\s\S]*?!form[\s\S]*?\) return;\s*const importSession = weeklyBudgetImports\.activate\(\);/,
+  );
+  assert.match(
+    budgetPage,
+    /document\.addEventListener\('astro:before-swap', cancelWeeklyBudgetImport\)/,
+  );
+  assert.match(
+    budgetPage,
+    /function cancelWeeklyBudgetImport\(\) \{\s*weeklyBudgetImports\.deactivate\(\);\s*\}/,
+  );
+  assert.match(
+    budgetPage,
+    /resetButton\.addEventListener\('click', \(\) => \{\s*weeklyBudgetImports\.invalidate\(\);/,
+  );
+  assert.match(budgetPage, /if \(!request\.isCurrent\(\)\) return/);
+  assert.match(budgetPage, /if \(request\.isCurrent\(\)\) input\.value = ''/);
+  assert.match(budgetPage, /because the file is too large/);
   assert.match(budgetPage, /URL\.revokeObjectURL\(downloadUrl\)/);
   assert.match(budgetPage, /Imported weekly budget from JSON\./);
   assert.match(budgetPage, /Could not import that weekly budget JSON\./);
-  assert.match(budgetPage, /Import and export stay on this device/i);
+  assert.match(
+    budgetPage,
+    /Import and export processing stays local; exported files can be moved manually between browsers or devices/i,
+  );
 });

@@ -1,5 +1,6 @@
 export const WEEKLY_BUDGET_STORAGE_KEY = 'abcds-weekly-budget-v1';
 export const WEEKLY_BUDGET_MAX_AMOUNT = 1_000_000_000;
+export const WEEKLY_BUDGET_MAX_IMPORT_BYTES = 64 * 1024;
 
 export const WEEKLY_BUDGET_DEFAULTS = Object.freeze({
   weeklyIncome: 1000,
@@ -18,6 +19,17 @@ export const WEEKLY_BUDGET_FIELD_IDS = [
   'weeklyBreathingRoom',
   'weeklyMarginRepair',
 ];
+
+const weeklyBudgetEnvelopeFields = ['format', 'version', 'budget'];
+const weeklyBudgetVersion1Fields = WEEKLY_BUDGET_FIELD_IDS.filter(
+  (field) => field !== 'weeklyMarginRepair',
+);
+
+function hasExactFields(value, fields) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  return keys.length === fields.length && fields.every((field) => Object.hasOwn(value, field));
+}
 
 export function getWeeklyBudgetStorage(windowObject) {
   try {
@@ -65,18 +77,66 @@ export function parseWeeklyBudgetImport(serializedExport) {
   try {
     const parsed = JSON.parse(serializedExport);
     if (
-      !parsed
-      || typeof parsed !== 'object'
-      || Array.isArray(parsed)
+      !hasExactFields(parsed, weeklyBudgetEnvelopeFields)
       || parsed.format !== 'abcds-weekly-budget'
       || ![1, 2].includes(parsed.version)
-      || (parsed.version === 2 && parsed.budget?.weeklyMarginRepair === undefined)
+      || !hasExactFields(
+        parsed.budget,
+        parsed.version === 1 ? weeklyBudgetVersion1Fields : WEEKLY_BUDGET_FIELD_IDS,
+      )
     ) return null;
 
     return normalizeWeeklyBudgetSnapshot(parsed.budget);
   } catch {
     return null;
   }
+}
+
+export async function readWeeklyBudgetImportFile(file) {
+  if (!file || !Number.isFinite(file.size) || file.size < 0) return { status: 'invalid' };
+  if (file.size > WEEKLY_BUDGET_MAX_IMPORT_BYTES) return { status: 'too-large' };
+  try {
+    const budget = parseWeeklyBudgetImport(await file.text());
+    return budget ? { status: 'loaded', budget } : { status: 'invalid' };
+  } catch {
+    return { status: 'unavailable' };
+  }
+}
+
+export function createWeeklyBudgetImportCoordinator() {
+  let currentRequestId = 0;
+  let currentSessionId = 0;
+  let active = false;
+  return {
+    begin(sessionId) {
+      const requestId = ++currentRequestId;
+      return {
+        isCurrent: () => (
+          active
+          && sessionId === currentSessionId
+          && requestId === currentRequestId
+        ),
+      };
+    },
+    activate() {
+      currentRequestId += 1;
+      currentSessionId += 1;
+      active = true;
+      return currentSessionId;
+    },
+    deactivate() {
+      currentRequestId += 1;
+      active = false;
+    },
+    invalidate() {
+      currentRequestId += 1;
+    },
+    openFilePicker(fileInput) {
+      currentRequestId += 1;
+      fileInput.value = '';
+      fileInput.click();
+    },
+  };
 }
 
 export function saveWeeklyBudget(storage, snapshot) {
