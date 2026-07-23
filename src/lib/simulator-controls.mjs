@@ -72,8 +72,11 @@ export function attachAllocationSnapshot({
     applyButton.disabled = false;
     const { anchor, booster, closedEnd, dynamo } = currentSnapshot.weights;
     const allocationSummary = `A ${anchor.toFixed(1)}%, B ${booster.toFixed(1)}%, C ${closedEnd.toFixed(1)}%, D ${dynamo.toFixed(1)}%.`;
+    const repairTargetSummary = currentSnapshot.principalToResume > 0
+      ? `${formatCurrency(currentSnapshot.principalToResume)} principal repair needed to move above 70% at unchanged gross value. `
+      : 'No principal repair is needed to resume buying at unchanged gross value. ';
     summary.textContent = currentSnapshot.marginState
-      ? `${formatCurrency(currentSnapshot.totalValue)} gross — ${formatCurrency(currentSnapshot.marginDebt)} debt — ${formatCurrency(currentSnapshot.netEquity)} net equity — ${currentSnapshot.marginEquityPercent.toFixed(1)}% (${currentSnapshot.marginState.replaceAll('-', ' ')}). ${allocationSummary}`
+      ? `${formatCurrency(currentSnapshot.totalValue)} gross — ${formatCurrency(currentSnapshot.marginDebt)} debt — ${formatCurrency(currentSnapshot.netEquity)} net equity — ${currentSnapshot.marginEquityPercent.toFixed(1)}% (${currentSnapshot.marginState.replaceAll('-', ' ')}). ${repairTargetSummary}${allocationSummary}`
       : `${formatCurrency(currentSnapshot.totalValue)} total — ${allocationSummary}`;
   };
 

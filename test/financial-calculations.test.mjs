@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateMarginResumeTarget,
   calculatePillarAllocationSnapshot,
   calculatePillarMarginSnapshot,
   preparePillarMarginSnapshotForProjection,
@@ -25,6 +26,41 @@ import {
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
 
+test('calculates the minimum cent payment needed to resume buying above 70% equity', () => {
+  assert.deepEqual(
+    calculateMarginResumeTarget({ marketValue: 10_000, marginDebt: 3_500 }),
+    {
+      maximumDebtToResume: 2_999.99,
+      principalToResume: 500.01,
+    },
+  );
+});
+
+test('does not report a margin resume target for an empty snapshot', () => {
+  assert.deepEqual(
+    calculateMarginResumeTarget({ marketValue: 0, marginDebt: 0 }),
+    {
+      maximumDebtToResume: null,
+      principalToResume: null,
+    },
+  );
+});
+
+test('rejects invalid values when calculating a margin resume target', () => {
+  for (const input of [
+    { marketValue: Number.NaN, marginDebt: 0 },
+    { marketValue: -1, marginDebt: 0 },
+    { marketValue: 100, marginDebt: -1 },
+    { marketValue: 100, marginDebt: 100.01 },
+    { marketValue: Number.MAX_SAFE_INTEGER, marginDebt: 0 },
+  ]) {
+    assert.throws(
+      () => calculateMarginResumeTarget(input),
+      { name: 'RangeError' },
+    );
+  }
+});
+
 test('calculates margin state from a synthetic aggregate pillar snapshot', () => {
   const balances = {
     anchor: 3_000,
@@ -33,6 +69,10 @@ test('calculates margin state from a synthetic aggregate pillar snapshot', () =>
     dynamo: 2_000,
   };
 
+  assert.equal(
+    calculatePillarMarginSnapshot(balances, 3_500).principalToResume,
+    500.01,
+  );
   assert.deepEqual(calculatePillarMarginSnapshot(balances, 3_500), {
     totalValue: 10_000,
     weights: {
@@ -45,6 +85,8 @@ test('calculates margin state from a synthetic aggregate pillar snapshot', () =>
     netEquity: 6_500,
     marginEquityPercent: 65,
     marginState: 'repair-band',
+    maximumDebtToResume: 2_999.99,
+    principalToResume: 500.01,
   });
   assert.deepEqual(balances, {
     anchor: 3_000,
@@ -67,6 +109,8 @@ test('reports a non-empty zero-debt snapshot as full equity', () => {
       netEquity: 100,
       marginEquityPercent: 100,
       marginState: 'eligible-to-resume',
+      maximumDebtToResume: 29.99,
+      principalToResume: 0,
     },
   );
 });
@@ -89,6 +133,8 @@ test('accepts debt at the cent-normalized gross-value ceiling', () => {
       netEquity: 0,
       marginEquityPercent: 0,
       marginState: 'repair-immediately',
+      maximumDebtToResume: 0.26,
+      principalToResume: 0.61,
     },
   );
 });
@@ -114,6 +160,8 @@ test('rejects invalid aggregate margin debt and handles an empty snapshot explic
       netEquity: 0,
       marginEquityPercent: null,
       marginState: null,
+      maximumDebtToResume: null,
+      principalToResume: null,
     },
   );
 });

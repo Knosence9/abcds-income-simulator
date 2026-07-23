@@ -148,6 +148,7 @@ test('applies a valid aggregate ABCD snapshot value, debt, and weights to projec
       netEquity: 6_500,
       marginEquityPercent: 65,
       marginState: 'repair-band',
+      principalToResume: 500.01,
     }),
     prepareProjectionSnapshot: (balances, marginDebt) => {
       assert.deepEqual(balances, {
@@ -170,7 +171,7 @@ test('applies a valid aggregate ABCD snapshot value, debt, and weights to projec
 
   assert.equal(
     summary.textContent,
-    '$10,000 gross — $3,500 debt — $6,500 net equity — 65.0% (repair band). A 30.0%, B 20.0%, C 30.0%, D 20.0%.',
+    '$10,000 gross — $3,500 debt — $6,500 net equity — 65.0% (repair band). $500.01 principal repair needed to move above 70% at unchanged gross value. A 30.0%, B 20.0%, C 30.0%, D 20.0%.',
   );
   clickHandler();
 
