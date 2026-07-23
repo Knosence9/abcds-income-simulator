@@ -2,12 +2,19 @@ export const ALLOCATION_SNAPSHOT_STORAGE_KEY = 'abcds-allocation-snapshot-v1';
 export const ALLOCATION_SNAPSHOT_MAX_TOTAL = 250_000;
 
 const snapshotFields = ['anchor', 'booster', 'closedEnd', 'dynamo', 'marginDebt'];
-const envelopeFields = ['format', 'version', 'snapshot'];
+const versionOneEnvelopeFields = ['format', 'version', 'snapshot'];
+const versionTwoEnvelopeFields = ['format', 'version', 'savedAt', 'snapshot'];
 
 function hasExactFields(value, fields) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const keys = Object.keys(value);
   return keys.length === fields.length && fields.every((field) => Object.hasOwn(value, field));
+}
+
+function isValidSavedAt(value) {
+  return typeof value === 'string'
+    && !Number.isNaN(Date.parse(value))
+    && new Date(value).toISOString() === value;
 }
 
 export function getAllocationSnapshotStorage(windowObject) {
@@ -44,28 +51,37 @@ export function normalizeAllocationSnapshot(snapshot) {
 function parseAllocationSnapshot(serializedSnapshot) {
   try {
     const envelope = JSON.parse(serializedSnapshot);
-    if (
-      !hasExactFields(envelope, envelopeFields)
-      || envelope.format !== 'abcds-allocation-snapshot'
-      || envelope.version !== 1
-    ) return null;
-    return normalizeAllocationSnapshot(envelope.snapshot);
+    if (envelope?.format !== 'abcds-allocation-snapshot') return null;
+    if (envelope.version === 1 && hasExactFields(envelope, versionOneEnvelopeFields)) {
+      const snapshot = normalizeAllocationSnapshot(envelope.snapshot);
+      return snapshot ? { snapshot, savedAt: null } : null;
+    }
+    if (envelope.version === 2 && hasExactFields(envelope, versionTwoEnvelopeFields)) {
+      const snapshot = normalizeAllocationSnapshot(envelope.snapshot);
+      return snapshot && isValidSavedAt(envelope.savedAt)
+        ? { snapshot, savedAt: envelope.savedAt }
+        : null;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-export function saveAllocationSnapshot(storage, snapshot) {
+export function saveAllocationSnapshot(storage, snapshot, getSavedAt = () => new Date().toISOString()) {
   const normalized = normalizeAllocationSnapshot(snapshot);
   if (!normalized) return { status: 'invalid' };
+  const savedAt = getSavedAt();
+  if (!isValidSavedAt(savedAt)) return { status: 'invalid' };
 
   try {
     storage.setItem(ALLOCATION_SNAPSHOT_STORAGE_KEY, JSON.stringify({
       format: 'abcds-allocation-snapshot',
-      version: 1,
+      version: 2,
+      savedAt,
       snapshot: normalized,
     }));
-    return { status: 'saved' };
+    return { status: 'saved', savedAt };
   } catch {
     return { status: 'unavailable' };
   }
@@ -75,9 +91,9 @@ export function restoreAllocationSnapshot(storage) {
   try {
     const serializedSnapshot = storage.getItem(ALLOCATION_SNAPSHOT_STORAGE_KEY);
     if (serializedSnapshot === null) return { status: 'missing', snapshot: null };
-    const snapshot = parseAllocationSnapshot(serializedSnapshot);
-    return snapshot
-      ? { status: 'loaded', snapshot }
+    const parsed = parseAllocationSnapshot(serializedSnapshot);
+    return parsed
+      ? { status: 'loaded', ...parsed }
       : { status: 'invalid', snapshot: null };
   } catch {
     return { status: 'unavailable', snapshot: null };

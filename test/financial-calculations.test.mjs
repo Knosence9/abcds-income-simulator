@@ -322,7 +322,7 @@ test('simulator exposes a local-only aggregate ABCD allocation snapshot', async 
   }
   assert.match(simulatorPage, /id="allocationSnapshotSummary"[^>]*aria-live="polite"/);
   assert.match(simulatorPage, /id="applyAllocationSnapshot"/);
-  assert.match(simulatorPage, /only the four aggregate pillar balances and aggregate margin debt in this browser/);
+  assert.match(simulatorPage, /only the four aggregate pillar balances, aggregate margin debt, and save time in this browser/);
   assert.match(simulatorPage, /no holdings, transactions, or account identifiers are stored or sent/);
   assert.match(simulatorPage, /attachAllocationSnapshot/);
   assert.match(simulatorPage, /calculatePillarMarginSnapshot/);
