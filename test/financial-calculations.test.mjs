@@ -152,6 +152,10 @@ test('simulator offers a local-only accessible anonymous duplicate-underlying ch
   );
   assert.match(
     simulatorPage,
+    /<textarea id="anonymousUnderlyingGroups"[^>]*spellcheck="false"/,
+  );
+  assert.match(
+    simulatorPage,
     /id="duplicateUnderlyingStatus"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/,
   );
   assert.match(simulatorPage, /calculateDuplicateUnderlyingExposure/);
