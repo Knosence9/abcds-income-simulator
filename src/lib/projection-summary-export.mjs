@@ -13,6 +13,7 @@ const ASSUMPTION_FIELDS = [
   ['closedEndYieldPercent', 'closed_end_yield', 'percent'],
   ['dynamoAllocationPercent', 'dynamo_allocation', 'percent'],
   ['dynamoYieldPercent', 'dynamo_yield', 'percent'],
+  ['distributionCutPercent', 'distribution_cut', 'percent'],
   ['dividendGrowthPercent', 'dividend_growth', 'percent'],
   ['navReturnPercent', 'nav_price_return', 'percent'],
   ['inflationPercent', 'inflation', 'percent'],
