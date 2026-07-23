@@ -387,6 +387,31 @@ test('reports an unavailable save date when restoring a version-1 snapshot', () 
   );
 });
 
+test('keeps save confirmation usable when an injected saver returns an invalid save date', () => {
+  let clickHandler;
+  const status = { textContent: '' };
+  attachAllocationSnapshotStorage({
+    balanceInputs: Object.fromEntries(
+      ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '0' }]),
+    ),
+    marginDebtInput: { value: '0' },
+    saveButton: {
+      disabled: false,
+      addEventListener(_event, handler) { clickHandler = handler; },
+    },
+    resetButton: { disabled: false, addEventListener() {} },
+    status,
+    storage: {},
+    restoreSnapshot: () => ({ status: 'missing', snapshot: null }),
+    saveSnapshot: () => ({ status: 'saved', savedAt: 'not-a-date' }),
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  assert.doesNotThrow(() => clickHandler());
+  assert.equal(status.textContent, 'Aggregate allocation snapshot saved in this browser.');
+});
+
 test('does not coerce blank aggregate fields to zero when saving', () => {
   let clickHandler;
   let savedSnapshot;
