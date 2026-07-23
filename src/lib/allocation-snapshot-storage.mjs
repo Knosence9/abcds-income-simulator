@@ -69,6 +69,45 @@ function parseAllocationSnapshot(serializedSnapshot) {
   }
 }
 
+export function serializeAllocationSnapshotCsv(snapshot, savedAt) {
+  const normalized = normalizeAllocationSnapshot(snapshot);
+  if (!normalized || !isValidSavedAt(savedAt)) return null;
+
+  return [
+    'Category,Amount or timestamp',
+    `Anchor balance,${normalized.anchor.toFixed(2)}`,
+    `Booster balance,${normalized.booster.toFixed(2)}`,
+    `Closed-end balance,${normalized.closedEnd.toFixed(2)}`,
+    `Dynamo balance,${normalized.dynamo.toFixed(2)}`,
+    `Margin debt,${normalized.marginDebt.toFixed(2)}`,
+    `Exported at,${savedAt}`,
+  ].join('\r\n');
+}
+
+export function downloadAllocationSnapshotCsv(snapshot, exportedAt, {
+  BlobClass = globalThis.Blob,
+  createObjectUrl = globalThis.URL.createObjectURL.bind(globalThis.URL),
+  revokeObjectUrl = globalThis.URL.revokeObjectURL.bind(globalThis.URL),
+  createLink = () => globalThis.document.createElement('a'),
+} = {}) {
+  const serialized = serializeAllocationSnapshotCsv(snapshot, exportedAt);
+  if (!serialized) return false;
+
+  const downloadUrl = createObjectUrl(new BlobClass(
+    [serialized],
+    { type: 'text/csv;charset=utf-8' },
+  ));
+  try {
+    const link = createLink();
+    link.href = downloadUrl;
+    link.download = 'abcds-allocation-snapshot.csv';
+    link.click();
+  } finally {
+    revokeObjectUrl(downloadUrl);
+  }
+  return true;
+}
+
 export function serializeAllocationSnapshotExport(snapshot, savedAt) {
   const normalized = normalizeAllocationSnapshot(snapshot);
   if (!normalized || !isValidSavedAt(savedAt)) return null;

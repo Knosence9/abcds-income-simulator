@@ -141,7 +141,7 @@ const defaultInputs = {
             </fieldset>
             <fieldset class="allocation-snapshot">
               <legend>Current ABCD allocation snapshot</legend>
-              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate values only. Save stores only the four aggregate pillar balances, aggregate margin debt, and save time in this browser; no holdings, transactions, or account identifiers are stored or sent. Import and export processing stays local; exported files can be moved manually between browsers or devices.</p>
+              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate values only. Save stores only the four aggregate pillar balances, aggregate margin debt, and save time in this browser; no holdings, transactions, or account identifiers are stored or sent. Import and export processing stays local; exported files can be moved manually between browsers or devices. CSV is export-only; use JSON to import a snapshot.</p>
               <div class="allocation-snapshot-grid">
                 <div class="snapshot-field"><label for="anchorBalance">Anchor balance</label><input id="anchorBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
                 <div class="snapshot-field"><label for="boosterBalance">Booster balance</label><input id="boosterBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
@@ -155,6 +155,7 @@ const defaultInputs = {
                 <button id="saveAllocationSnapshot" class="button secondary" type="button">Save in browser</button>
                 <button id="resetAllocationSnapshot" class="button secondary" type="button">Reset saved snapshot</button>
                 <button id="exportAllocationSnapshot" class="button secondary" type="button">Export snapshot JSON</button>
+                <button id="exportAllocationSnapshotCsv" class="button secondary" type="button">Export snapshot CSV</button>
                 <button id="importAllocationSnapshot" class="button secondary" type="button">Import snapshot JSON</button>
               </div>
               <input id="allocationSnapshotFile" type="file" accept="application/json,.json" hidden />
@@ -242,7 +243,7 @@ const defaultInputs = {
 
     <script>
       import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculatePillarMarginSnapshot, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
-      import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
+      import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, downloadAllocationSnapshotCsv, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
@@ -628,6 +629,15 @@ const defaultInputs = {
           link.click();
           URL.revokeObjectURL(downloadUrl);
           snapshotStatus.textContent = 'Aggregate allocation snapshot exported as JSON.';
+        });
+        $('exportAllocationSnapshotCsv').addEventListener('click', () => {
+          const downloaded = downloadAllocationSnapshotCsv(
+            currentSnapshot(),
+            new Date().toISOString(),
+          );
+          snapshotStatus.textContent = downloaded
+            ? 'Aggregate allocation snapshot exported as CSV.'
+            : 'Enter a valid aggregate snapshot before exporting.';
         });
         const snapshotImports = createAllocationSnapshotImportCoordinator();
         $('importAllocationSnapshot').addEventListener('click', () => {
