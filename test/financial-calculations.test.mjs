@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  applyMarketShock,
   applyDistributionCut,
   calculateDuplicateUnderlyingExposure,
   calculateDynamoPositionCap,
@@ -30,6 +31,33 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('applies a one-time market shock without changing margin debt', () => {
+  const shockedMarket = applyMarketShock({ marketValue: 10_000, shockPercent: 20 });
+  const marginAccount = calculateMarginAccount({
+    marketValue: shockedMarket.endingMarketValue,
+    marginDebt: 3_000,
+  });
+
+  assert.deepEqual(shockedMarket, {
+    marketLoss: 2_000,
+    endingMarketValue: 8_000,
+  });
+  assert.equal(marginAccount.marginDebt, 3_000);
+  assert.equal(marginAccount.marginEquityPercent, 62.5);
+});
+
+test('rejects invalid market values and one-time shock percentages', () => {
+  for (const input of [
+    { marketValue: -1, shockPercent: 0 },
+    { marketValue: Number.NaN, shockPercent: 0 },
+    { marketValue: 10_000, shockPercent: -1 },
+    { marketValue: 10_000, shockPercent: 100.01 },
+    { marketValue: 10_000, shockPercent: Number.POSITIVE_INFINITY },
+  ]) {
+    assert.throws(() => applyMarketShock(input), { name: 'RangeError' });
+  }
+});
 
 test('applies an immediate percentage cut to an annual distribution yield', () => {
   assert.equal(applyDistributionCut({ annualYield: 12, cutPercent: 25 }), 9);
@@ -751,6 +779,7 @@ test('provides conservative projection starting assumptions', () => {
     closedEndYield: 8,
     dynamoAllocation: 10,
     dynamoYield: 10,
+    marketShock: 0,
     distributionCut: 0,
     dividendGrowth: 1,
     inflation: 3,
@@ -768,6 +797,7 @@ test('provides base projection starting assumptions', () => {
     closedEndYield: 12,
     dynamoAllocation: 20,
     dynamoYield: 18,
+    marketShock: 0,
     distributionCut: 0,
     dividendGrowth: 2,
     inflation: 3,
@@ -785,6 +815,7 @@ test('provides distribution stress starting assumptions', () => {
     closedEndYield: 7,
     dynamoAllocation: 10,
     dynamoYield: 8,
+    marketShock: 20,
     distributionCut: 25,
     dividendGrowth: -10,
     inflation: 7,
@@ -845,6 +876,35 @@ test('simulator exposes an immediate distribution cut before ongoing growth', as
   );
   assert.match(simulatorPage, /stress preset applies an immediate 25% distribution cut/i);
   assert.match(simulatorPage, /the immediate distribution cut is applied before ongoing annual dividend growth/i);
+});
+
+test('simulator applies one immediate market shock before projection activity', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /applyMarketShock/);
+  assert.match(
+    simulatorPage,
+    /<label id="marketShockLabel" for="marketShockNumber">Immediate NAV\/price shock %/,
+  );
+  assert.match(
+    simulatorPage,
+    /<input id="marketShock" type="range" aria-labelledby="marketShockLabel"[^>]*min="0"[^>]*max="100"/,
+  );
+  assert.match(simulatorPage, /marketShock: Number\(\$\('marketShock'\)\.value\)/);
+  assert.match(
+    simulatorPage,
+    /const marketShock = applyMarketShock\(\{ marketValue: input\.starting, shockPercent: input\.marketShock \}\);[\s\S]*let portfolio = marketShock\.endingMarketValue;[\s\S]*for \(let t = 0;/,
+  );
+  assert.match(simulatorPage, /id="cumulativeMarketShock"/);
+  assert.match(simulatorPage, /marketShock: \[\$\('marketShock'\), \$\('marketShockNumber'\)\]/);
+  assert.match(simulatorPage, /stress preset applies an immediate synthetic 20% NAV\/price shock/i);
+  assert.match(
+    simulatorPage,
+    /one-time shock is applied before the first period's return, distributions, and contribution routing/i,
+  );
 });
 
 test('simulator models annual NAV price return as an accessible preset assumption', async () => {

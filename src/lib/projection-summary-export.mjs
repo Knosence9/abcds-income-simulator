@@ -13,6 +13,7 @@ const ASSUMPTION_FIELDS = [
   ['closedEndYieldPercent', 'closed_end_yield', 'percent'],
   ['dynamoAllocationPercent', 'dynamo_allocation', 'percent'],
   ['dynamoYieldPercent', 'dynamo_yield', 'percent'],
+  ['marketShockPercent', 'market_shock', 'percent'],
   ['distributionCutPercent', 'distribution_cut', 'percent'],
   ['dividendGrowthPercent', 'dividend_growth', 'percent'],
   ['navReturnPercent', 'nav_price_return', 'percent'],
@@ -34,6 +35,7 @@ const RESULT_FIELDS = [
   ['cumulativePrincipalPaid', 'cumulative_principal_paid', 'USD'],
   ['pausedContributions', 'paused_contributions', 'USD'],
   ['cumulativeMarginInterest', 'cumulative_margin_interest', 'USD'],
+  ['cumulativeMarketShock', 'cumulative_market_shock', 'USD'],
 ];
 
 function csvCell(value) {

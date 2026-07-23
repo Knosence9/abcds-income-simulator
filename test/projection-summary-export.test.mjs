@@ -23,6 +23,7 @@ const syntheticSummary = {
     closedEndYieldPercent: 12,
     dynamoAllocationPercent: 20,
     dynamoYieldPercent: 18,
+    marketShockPercent: 20,
     distributionCutPercent: 25,
     dividendGrowthPercent: 4,
     navReturnPercent: 3,
@@ -43,6 +44,7 @@ const syntheticSummary = {
     cumulativePrincipalPaid: 2000,
     pausedContributions: 300,
     cumulativeMarginInterest: 400,
+    cumulativeMarketShock: 2000,
   },
 };
 
@@ -66,6 +68,7 @@ test('serializes a deterministic sanitized projection summary CSV', () => {
       'assumption,closed_end_yield,12,percent',
       'assumption,dynamo_allocation,20,percent',
       'assumption,dynamo_yield,18,percent',
+      'assumption,market_shock,20,percent',
       'assumption,distribution_cut,25,percent',
       'assumption,dividend_growth,4,percent',
       'assumption,nav_price_return,3,percent',
@@ -84,6 +87,7 @@ test('serializes a deterministic sanitized projection summary CSV', () => {
       'result,cumulative_principal_paid,2000,USD',
       'result,paused_contributions,300,USD',
       'result,cumulative_margin_interest,400,USD',
+      'result,cumulative_market_shock,2000,USD',
     ].join('\r\n'),
   );
 });
@@ -142,6 +146,8 @@ test('simulator exports only the current valid projection summary in the browser
   assert.match(page, /id="projectionExportStatus"[^>]*role="status"[^>]*aria-live="polite"/);
   assert.match(page, /serializeProjectionSummaryCsv/);
   assert.match(page, /downloadProjectionSummaryCsv\(currentProjectionSummary\)/);
+  assert.match(page, /marketShockPercent: input\.marketShock/);
+  assert.match(page, /cumulativeMarketShock: last\.cumulativeMarketShock/);
   assert.match(page, /Projection summary exported as CSV\./);
   assert.match(page, /No holdings, transactions, or account identifiers/);
 });

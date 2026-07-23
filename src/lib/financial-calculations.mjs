@@ -8,6 +8,7 @@ const projectionScenarios = {
     closedEndYield: 8,
     dynamoAllocation: 10,
     dynamoYield: 10,
+    marketShock: 0,
     distributionCut: 0,
     dividendGrowth: 1,
     inflation: 3,
@@ -22,6 +23,7 @@ const projectionScenarios = {
     closedEndYield: 12,
     dynamoAllocation: 20,
     dynamoYield: 18,
+    marketShock: 0,
     distributionCut: 0,
     dividendGrowth: 2,
     inflation: 3,
@@ -36,12 +38,33 @@ const projectionScenarios = {
     closedEndYield: 7,
     dynamoAllocation: 10,
     dynamoYield: 8,
+    marketShock: 20,
     distributionCut: 25,
     dividendGrowth: -10,
     inflation: 7,
     annualNavReturn: -12,
   },
 };
+
+export function applyMarketShock({ marketValue, shockPercent }) {
+  if (
+    !Number.isFinite(marketValue)
+    || marketValue < 0
+    || !Number.isFinite(shockPercent)
+    || shockPercent < 0
+    || shockPercent > 100
+  ) {
+    throw new RangeError(
+      'Market value must be non-negative and market shock must be from 0% to 100%.',
+    );
+  }
+
+  const marketLoss = marketValue * (shockPercent / 100);
+  return {
+    marketLoss,
+    endingMarketValue: marketValue - marketLoss,
+  };
+}
 
 export function applyDistributionCut({ annualYield, cutPercent }) {
   if (

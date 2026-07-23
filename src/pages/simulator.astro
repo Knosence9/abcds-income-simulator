@@ -24,6 +24,7 @@ const defaultInputs = {
   closedEndYield: 12,
   dynamoAllocation: 20,
   dynamoYield: 18,
+  marketShock: 0,
   distributionCut: 0,
   dividendGrowth: 4,
   annualNavReturn: 3,
@@ -140,7 +141,7 @@ const defaultInputs = {
                 <button class="scenario-button" type="button" data-scenario="base" aria-pressed="false">Base</button>
                 <button class="scenario-button" type="button" data-scenario="stress" aria-pressed="false">Stress</button>
               </div>
-              <p class="footer-note">These presets fill transparent starting assumptions below. The stress preset includes a synthetic NAV/price decline. The stress preset applies an immediate 25% distribution cut.</p>
+              <p class="footer-note">These presets fill transparent starting assumptions below. The stress preset applies an immediate synthetic 20% NAV/price shock. The stress preset includes a synthetic NAV/price decline. The stress preset applies an immediate 25% distribution cut.</p>
             </fieldset>
             <fieldset class="allocation-snapshot">
               <legend>Current ABCD allocation snapshot</legend>
@@ -198,6 +199,8 @@ const defaultInputs = {
             <div class="field"><label id="closedEndYieldLabel" for="closedEndYieldNumber">Closed-end annual yield % <input id="closedEndYieldNumber" type="number" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></label><input id="closedEndYield" type="range" aria-labelledby="closedEndYieldLabel" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></div>
             <div class="field"><label id="dynamoAllocationLabel" for="dynamoAllocationNumber">Dynamo allocation % <input id="dynamoAllocationNumber" type="number" value={defaultInputs.dynamoAllocation} min="0" max="100" step="any" /></label><input id="dynamoAllocation" type="range" aria-labelledby="dynamoAllocationLabel" value={defaultInputs.dynamoAllocation} min="0" max="100" step="any" /></div>
             <div class="field"><label id="dynamoYieldLabel" for="dynamoYieldNumber">Dynamo annual yield % <input id="dynamoYieldNumber" type="number" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></label><input id="dynamoYield" type="range" aria-labelledby="dynamoYieldLabel" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label id="marketShockLabel" for="marketShockNumber">Immediate NAV/price shock % <input id="marketShockNumber" type="number" value={defaultInputs.marketShock} min="0" max="100" step="0.1" /></label><input id="marketShock" type="range" aria-labelledby="marketShockLabel" value={defaultInputs.marketShock} min="0" max="100" step="0.1" /></div>
+            <div class="callout compact"><b>Market-shock assumption:</b> this synthetic one-time loss is applied to gross market value immediately. Margin debt does not fall with it.</div>
             <div class="field"><label id="distributionCutLabel" for="distributionCutNumber">Immediate distribution cut % <input id="distributionCutNumber" type="number" value={defaultInputs.distributionCut} min="0" max="100" step="0.1" /></label><input id="distributionCut" type="range" aria-labelledby="distributionCutLabel" value={defaultInputs.distributionCut} min="0" max="100" step="0.1" /></div>
             <div class="callout compact"><b>Distribution-cut assumption:</b> this immediate proportional cut reduces every pillar yield before ongoing annual dividend growth. It affects both reinvested A/C and spendable B/D distributions.</div>
             <p id="allocationStatus" class="footer-note" aria-live="polite">Pillar allocations total 100%.</p>
@@ -212,6 +215,7 @@ const defaultInputs = {
           <div class="chart-wrap">
             <div class="stats">
               <div class="stat"><span>Ending gross market value</span><strong id="grossMarketValue">—</strong></div>
+              <div class="stat"><span>One-time market shock</span><strong id="cumulativeMarketShock">—</strong></div>
               <div class="stat"><span>Margin debt</span><strong id="marginDebtResult">—</strong></div>
               <div class="stat"><span>Cumulative principal paid</span><strong id="cumulativePrincipalPaid">—</strong></div>
               <div class="stat"><span>Contributions paused by 60/70 rule</span><strong id="pausedContributions">—</strong></div>
@@ -244,11 +248,11 @@ const defaultInputs = {
           <div class="methodology-grid">
             <div class="methodology-card">
               <h3>Monthly calculation order</h3>
-              <p>Each month starts with beginning gross market value. Pillar distributions are calculated first, then the selected NAV/price return is applied. A/C distributions are reinvested and any eligible external contribution is added to market value. B/D cash pays the inflated expense target, margin principal repair reduces debt, and interest is estimated separately from beginning debt.</p>
+              <p>The synthetic one-time shock is applied before the first period's return, distributions, and contribution routing. Each month then starts with beginning gross market value. Pillar distributions are calculated, the selected smooth NAV/price return is applied, A/C distributions are reinvested, and any eligible external contribution is added to market value. B/D cash pays the inflated expense target, margin principal repair reduces debt, and interest is estimated separately from beginning debt.</p>
             </div>
             <div class="methodology-card">
               <h3>Assumptions, not predictions</h3>
-              <p>Returns, yields, dividend growth, inflation, and distribution behavior are smooth user-selected assumptions, not forecasts. The immediate distribution cut is applied before ongoing annual dividend growth. Actual markets and fund distributions can change unevenly or abruptly.</p>
+              <p>Returns, yields, dividend growth, inflation, and distribution behavior are smooth user-selected assumptions, not forecasts. The immediate synthetic market shock is a separate one-time assumption rather than part of the smooth annual NAV/price return. The immediate distribution cut is applied before ongoing annual dividend growth. Actual markets and fund distributions can change unevenly or abruptly.</p>
             </div>
             <div class="methodology-card">
               <h3>What is outside this model</h3>
@@ -268,12 +272,12 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { applyDistributionCut, calculateDuplicateUnderlyingExposure, calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { applyDistributionCut, applyMarketShock, calculateDuplicateUnderlyingExposure, calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, downloadAllocationSnapshotCsv, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { downloadProjectionSummaryCsv, serializeProjectionSummaryCsv } from '../lib/projection-summary-export.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
-      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['distributionCut', 'distributionCutNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
+      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['marketShock', 'marketShockNumber'], ['distributionCut', 'distributionCutNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
       type InputId = (typeof pairs)[number][number];
       const inputIds = new Set<string>(pairs.flat());
       function $(id: InputId): HTMLInputElement;
@@ -307,7 +311,7 @@ const defaultInputs = {
         currentProjectionSummary = null;
         $('projectionExportStatus').textContent = '';
         ($('exportProjectionCsv') as HTMLButtonElement).disabled = true;
-        const resultIds = ['grossMarketValue', 'marginDebtResult', 'cumulativePrincipalPaid', 'pausedContributions', 'cumulativeMarginInterest', 'netEquity', 'marginEquityPercent', 'periodIncome', 'annualIncome', 'realIncome', 'grossDistributions', 'reinvestedDistributions', 'spendableDistributions', 'expensesPaid', 'uncoveredExpenses', 'remainingCash', 'expenseCrossover'];
+        const resultIds = ['grossMarketValue', 'cumulativeMarketShock', 'marginDebtResult', 'cumulativePrincipalPaid', 'pausedContributions', 'cumulativeMarginInterest', 'netEquity', 'marginEquityPercent', 'periodIncome', 'annualIncome', 'realIncome', 'grossDistributions', 'reinvestedDistributions', 'spendableDistributions', 'expensesPaid', 'uncoveredExpenses', 'remainingCash', 'expenseCrossover'];
         resultIds.forEach((id) => { $(id).textContent = '—'; });
         const chart = $('chart');
         chart.replaceChildren();
@@ -395,7 +399,7 @@ const defaultInputs = {
           ? 'Margin debt was adjusted because it cannot exceed starting gross market value.'
           : '';
       }
-      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), weeklyMarginRepair: Number($('weeklyMarginRepair').value), paycheck: Number($('paycheck').value), pillars: { anchor: { allocation: Number($('anchorAllocation').value), annualYield: Number($('anchorYield').value) }, booster: { allocation: Number($('boosterAllocation').value), annualYield: Number($('boosterYield').value) }, closedEnd: { allocation: Number($('closedEndAllocation').value), annualYield: Number($('closedEndYield').value) }, dynamo: { allocation: Number($('dynamoAllocation').value), annualYield: Number($('dynamoYield').value) } }, distributionCut: Number($('distributionCut').value), g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
+      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), weeklyMarginRepair: Number($('weeklyMarginRepair').value), paycheck: Number($('paycheck').value), pillars: { anchor: { allocation: Number($('anchorAllocation').value), annualYield: Number($('anchorYield').value) }, booster: { allocation: Number($('boosterAllocation').value), annualYield: Number($('boosterYield').value) }, closedEnd: { allocation: Number($('closedEndAllocation').value), annualYield: Number($('closedEndYield').value) }, dynamo: { allocation: Number($('dynamoAllocation').value), annualYield: Number($('dynamoYield').value) } }, marketShock: Number($('marketShock').value), distributionCut: Number($('distributionCut').value), g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
       function announceResults() {
@@ -460,6 +464,7 @@ const defaultInputs = {
         cumulativePrincipalPaid: number;
         pausedContributions: number;
         cumulativeMarginInterest: number;
+        cumulativeMarketShock: number;
       };
       function simulate(): ProjectionRow[] {
         const input = getInputs();
@@ -467,7 +472,8 @@ const defaultInputs = {
         const totalPeriods = periods * input.projectionYears;
         const contribution = (input.paycheck * 52) / periods;
         const marginRepairPerPeriod = (input.weeklyMarginRepair * 52) / periods;
-        let portfolio = input.starting;
+        const marketShock = applyMarketShock({ marketValue: input.starting, shockPercent: input.marketShock });
+        let portfolio = marketShock.endingMarketValue;
         let marginDebt = input.marginDebt;
         let cumulativePrincipalPaid = 0;
         let pausedContributions = 0;
@@ -523,6 +529,7 @@ const defaultInputs = {
             cumulativePrincipalPaid,
             pausedContributions,
             cumulativeMarginInterest,
+            cumulativeMarketShock: marketShock.marketLoss,
           });
           if (t === totalPeriods) break;
           const marketReturn = calculatePeriodicMarketReturn({ marketValue: portfolio, annualReturn: input.navReturn, periodsPerYear: periods });
@@ -594,6 +601,7 @@ const defaultInputs = {
             closedEndYieldPercent: input.pillars.closedEnd.annualYield,
             dynamoAllocationPercent: input.pillars.dynamo.allocation,
             dynamoYieldPercent: input.pillars.dynamo.annualYield,
+            marketShockPercent: input.marketShock,
             distributionCutPercent: input.distributionCut,
             dividendGrowthPercent: input.g * 100,
             navReturnPercent: input.navReturn,
@@ -614,11 +622,12 @@ const defaultInputs = {
             cumulativePrincipalPaid: last.cumulativePrincipalPaid,
             pausedContributions: last.pausedContributions,
             cumulativeMarginInterest: last.cumulativeMarginInterest,
+            cumulativeMarketShock: last.cumulativeMarketShock,
           },
         };
         $('projectionExportStatus').textContent = '';
         ($('exportProjectionCsv') as HTMLButtonElement).disabled = false;
-        $('grossMarketValue').textContent = fmt.format(marginAccount.grossMarketValue); $('marginDebtResult').textContent = fmt.format(marginAccount.marginDebt); $('cumulativePrincipalPaid').textContent = fmtSmall.format(last.cumulativePrincipalPaid); $('pausedContributions').textContent = fmtSmall.format(last.pausedContributions); $('cumulativeMarginInterest').textContent = fmtSmall.format(last.cumulativeMarginInterest); $('netEquity').textContent = fmt.format(marginAccount.netEquity); $('marginEquityPercent').textContent = `${marginAccount.marginEquityPercent.toFixed(1)}%`; $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel(); $('annualIncome').textContent = fmt.format(last.annualIncome); $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears)); $('grossDistributions').textContent = fmt.format(last.grossDistributions); $('reinvestedDistributions').textContent = fmt.format(last.reinvestedDistributions); $('spendableDistributions').textContent = fmt.format(last.spendableDistributions); $('expensesPaid').textContent = fmt.format(last.expensesPaid); $('uncoveredExpenses').textContent = fmt.format(last.uncoveredExpenses); $('remainingCash').textContent = fmt.format(last.remainingCash); $('expenseCrossover').textContent = expenseCrossoverText;
+        $('grossMarketValue').textContent = fmt.format(marginAccount.grossMarketValue); $('cumulativeMarketShock').textContent = fmtSmall.format(last.cumulativeMarketShock); $('marginDebtResult').textContent = fmt.format(marginAccount.marginDebt); $('cumulativePrincipalPaid').textContent = fmtSmall.format(last.cumulativePrincipalPaid); $('pausedContributions').textContent = fmtSmall.format(last.pausedContributions); $('cumulativeMarginInterest').textContent = fmtSmall.format(last.cumulativeMarginInterest); $('netEquity').textContent = fmt.format(marginAccount.netEquity); $('marginEquityPercent').textContent = `${marginAccount.marginEquityPercent.toFixed(1)}%`; $('periodIncome').textContent = (last.periodIncome < 1000 ? fmtSmall : fmt).format(last.periodIncome) + '/' + periodLabel(); $('annualIncome').textContent = fmt.format(last.annualIncome); $('realIncome').textContent = fmt.format(last.annualIncome / Math.pow(1 + input.i, input.projectionYears)); $('grossDistributions').textContent = fmt.format(last.grossDistributions); $('reinvestedDistributions').textContent = fmt.format(last.reinvestedDistributions); $('spendableDistributions').textContent = fmt.format(last.spendableDistributions); $('expensesPaid').textContent = fmt.format(last.expensesPaid); $('uncoveredExpenses').textContent = fmt.format(last.uncoveredExpenses); $('remainingCash').textContent = fmt.format(last.remainingCash); $('expenseCrossover').textContent = expenseCrossoverText;
         const chart = $('chart'); chart.setAttribute('aria-label', 'Line plot of projected dividend income'); const svg = chart; const W = 900, H = 440, p = { l: 72, r: 26, t: 30, b: 56 }; const years = Array.from({ length: input.projectionYears }, (_, index) => index + 1); const points = years.map((year) => rows[Math.min(rows.length - 1, Math.round(year * periods))]); const incomeValue = (r: ProjectionRow) => r.annualIncome / periods; const realIncomeValue = (r: ProjectionRow) => (r.annualIncome / Math.pow(1 + input.i, r.year)) / periods; const expenseValue = (r: ProjectionRow) => r.inflationNeed / periods; const maxY = Math.max(...points.map(incomeValue), ...points.map(realIncomeValue), ...points.map(expenseValue)) * 1.12 || 1; const x = (r: ProjectionRow) => p.l + (input.projectionYears === 1 ? 0.5 : ((r.year - 1) / (input.projectionYears - 1))) * (W - p.l - p.r); const y = (value: number) => p.t + (1 - value / maxY) * (H - p.t - p.b); const pointPath = (valueFor: (row: ProjectionRow) => number) => points.map((r, idx) => `${idx ? 'L' : 'M'} ${x(r)} ${y(valueFor(r))}`).join(' ');
         let grid = `<rect x="${p.l}" y="${p.t}" width="${W-p.l-p.r}" height="${H-p.t-p.b}" rx="10" fill="rgba(255,253,247,.72)" stroke="rgba(32,63,105,.18)" stroke-width="1" />`;
         for (let i = 0; i <= 16; i++) { const gy = p.t + i * (H - p.t - p.b) / 16; grid += `<line x1="${p.l}" y1="${gy}" x2="${W-p.r}" y2="${gy}" stroke="rgba(32,63,105,.075)" stroke-width="1" />`; }
@@ -828,6 +837,7 @@ const defaultInputs = {
             closedEndYield: [$('closedEndYield'), $('closedEndYieldNumber')],
             dynamoAllocation: [$('dynamoAllocation'), $('dynamoAllocationNumber')],
             dynamoYield: [$('dynamoYield'), $('dynamoYieldNumber')],
+            marketShock: [$('marketShock'), $('marketShockNumber')],
             distributionCut: [$('distributionCut'), $('distributionCutNumber')],
             dividendGrowth: [$('growth'), $('growthNumber')],
             annualNavReturn: [$('navReturn'), $('navReturnNumber')],
