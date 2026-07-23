@@ -85,7 +85,9 @@ const defaultInputs = {
       .allocation-snapshot legend { padding:0 5px; font-weight:900; color:var(--a); }
       .allocation-snapshot-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
       .snapshot-field { display:grid; gap:5px; color:var(--a); font-size:13px; font-weight:850; }
-      .snapshot-field input { width:100%; min-width:0; border:1px solid var(--line); border-radius:12px; padding:9px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
+      .snapshot-field input, .snapshot-field textarea { width:100%; min-width:0; border:1px solid var(--line); border-radius:12px; padding:9px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
+      .snapshot-field textarea { min-height:96px; resize:vertical; }
+      .snapshot-field textarea[aria-invalid='true'] { border-color:var(--d); outline:2px solid color-mix(in srgb, var(--d) 28%, transparent); }
       .allocation-snapshot .button { width:100%; margin-top:10px; }
       .allocation-snapshot .button:disabled { cursor:not-allowed; opacity:.55; }
       .snapshot-actions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
@@ -150,6 +152,12 @@ const defaultInputs = {
                 <div class="snapshot-field"><label for="snapshotMarginDebt">Starting margin debt</label><input id="snapshotMarginDebt" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
               </div>
               <p id="allocationSnapshotSummary" class="footer-note" aria-live="polite">Enter at least one pillar balance to calculate weights.</p>
+              <div class="snapshot-field">
+                <label for="anonymousPositionValues">Anonymous position market values</label>
+                <textarea id="anonymousPositionValues" inputmode="decimal" maxlength="5000" aria-describedby="positionConcentrationPrivacy" placeholder={'500\n700.01'}></textarea>
+              </div>
+              <p id="positionConcentrationPrivacy" class="footer-note">Enter one market value per line without names, symbols, account identifiers, or transactions. Anonymous position values are not stored, exported, or sent.</p>
+              <p id="positionConcentrationStatus" class="footer-note" role="status" aria-live="polite" aria-atomic="true">Enter anonymous position values to check the 5% and 7% concentration limits.</p>
               <button id="applyAllocationSnapshot" class="button secondary" type="button" disabled>Use in projection</button>
               <div class="snapshot-actions">
                 <button id="saveAllocationSnapshot" class="button secondary" type="button">Save in browser</button>
@@ -245,7 +253,7 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculatePillarMarginSnapshot, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, downloadAllocationSnapshotCsv, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { downloadProjectionSummaryCsv, serializeProjectionSummaryCsv } from '../lib/projection-summary-export.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
@@ -626,6 +634,38 @@ const defaultInputs = {
           dynamo: $('dynamoBalance') as HTMLInputElement,
         };
         const snapshotMarginDebtInput = $('snapshotMarginDebt') as HTMLInputElement;
+        const currentSnapshot = () => readAllocationSnapshotInputs(
+          snapshotBalanceInputs,
+          snapshotMarginDebtInput,
+        );
+        const anonymousPositionValues = $('anonymousPositionValues') as HTMLTextAreaElement;
+        const positionConcentrationStatus = $('positionConcentrationStatus');
+        const renderPositionConcentration = () => {
+          if (anonymousPositionValues.value.trim() === '') {
+            anonymousPositionValues.removeAttribute('aria-invalid');
+            positionConcentrationStatus.textContent = 'Enter anonymous position values to check the 5% and 7% concentration limits.';
+            return;
+          }
+          try {
+            const positionValues = parseAnonymousPositionValues(anonymousPositionValues.value);
+            const portfolioValue = calculatePillarAllocationSnapshot({
+              anchor: snapshotBalanceInputs.anchor.valueAsNumber,
+              booster: snapshotBalanceInputs.booster.valueAsNumber,
+              closedEnd: snapshotBalanceInputs.closedEnd.valueAsNumber,
+              dynamo: snapshotBalanceInputs.dynamo.valueAsNumber,
+            }).totalValue;
+            const concentration = calculatePositionConcentration({ portfolioValue, positionValues });
+            anonymousPositionValues.removeAttribute('aria-invalid');
+            positionConcentrationStatus.textContent = `Across ${concentration.positionCount} anonymous positions, the largest is ${concentration.largestPositionPercent.toFixed(2)}%. ${concentration.aboveFivePercentCount} above 5% attention threshold; ${concentration.aboveSevenPercentCount} above 7% hard limit.`;
+          } catch {
+            anonymousPositionValues.setAttribute('aria-invalid', 'true');
+            positionConcentrationStatus.textContent = 'Enter one valid non-negative market value per line. Each value and their combined total must not exceed the current gross allocation total.';
+          }
+        };
+        anonymousPositionValues.addEventListener('input', renderPositionConcentration);
+        Object.values(snapshotBalanceInputs).forEach((input) => {
+          input.addEventListener('input', renderPositionConcentration);
+        });
         const allocationSnapshotController = attachAllocationSnapshot({
           balanceInputs: snapshotBalanceInputs,
           marginDebtInput: snapshotMarginDebtInput,
@@ -658,14 +698,13 @@ const defaultInputs = {
           restoreSnapshot: restoreAllocationSnapshot,
           saveSnapshot: saveAllocationSnapshot,
           clearSnapshot: clearAllocationSnapshot,
-          refreshSummary: allocationSnapshotController.refreshSummary,
+          refreshSummary: () => {
+            allocationSnapshotController.refreshSummary();
+            renderPositionConcentration();
+          },
         });
         const snapshotStatus = $('allocationSnapshotStorageStatus');
         const snapshotFile = $('allocationSnapshotFile') as HTMLInputElement;
-        const currentSnapshot = () => readAllocationSnapshotInputs(
-          snapshotBalanceInputs,
-          snapshotMarginDebtInput,
-        );
         $('exportAllocationSnapshot').addEventListener('click', () => {
           const serialized = serializeAllocationSnapshotExport(
             currentSnapshot(),
@@ -716,6 +755,7 @@ const defaultInputs = {
             snapshotMarginDebtInput.value = String(imported.snapshot.marginDebt);
             snapshotMarginDebtInput.removeAttribute('aria-invalid');
             allocationSnapshotController.refreshSummary();
+            renderPositionConcentration();
             snapshotStatus.textContent = 'Imported aggregate snapshot from JSON. Choose Save in browser to persist it.';
           } catch {
             if (request.isCurrent()) {
