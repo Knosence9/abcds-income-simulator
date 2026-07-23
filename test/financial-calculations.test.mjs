@@ -66,7 +66,7 @@ test('parses one anonymous position market value per line', () => {
 });
 
 test('rejects empty or invalid anonymous position lines', () => {
-  for (const value of ['', '500\n\n700', '-1', 'not-a-number', 'Infinity']) {
+  for (const value of ['', '\n500', '500\n', '500\n\n700', '-1', 'not-a-number', 'Infinity']) {
     assert.throws(
       () => parseAnonymousPositionValues(value),
       { name: 'RangeError' },

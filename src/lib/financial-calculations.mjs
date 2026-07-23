@@ -308,7 +308,7 @@ export function parseAnonymousPositionValues(value) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new RangeError('Enter at least one anonymous position value.');
   }
-  const lines = value.trim().split(/\r?\n/).map((line) => line.trim());
+  const lines = value.split(/\r?\n/).map((line) => line.trim());
   const positionValues = lines.map((line) => Number(line));
   if (
     lines.some((line) => line === '')
