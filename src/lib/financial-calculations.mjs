@@ -81,6 +81,38 @@ export function calculateExpenseCrossoverPeriod(periods) {
     : { status: 'reached', period: crossoverIndex + 1 };
 }
 
+export function calculateMarginResumeTarget({ marketValue, marginDebt }) {
+  if (
+    !Number.isFinite(marketValue)
+    || !Number.isFinite(marginDebt)
+    || marketValue < 0
+    || marginDebt < 0
+  ) {
+    throw new RangeError('Market value and margin debt must be finite and non-negative.');
+  }
+  const marketValueCents = Math.round(marketValue * 100);
+  const marginDebtCents = Math.round(marginDebt * 100);
+  if (!Number.isSafeInteger(marketValueCents) || !Number.isSafeInteger(marginDebtCents)) {
+    throw new RangeError('Market value and margin debt must be safe cent-denominated values.');
+  }
+  if (marginDebtCents > marketValueCents) {
+    throw new RangeError('Margin debt must not exceed gross market value.');
+  }
+  if (marketValueCents === 0) {
+    return { maximumDebtToResume: null, principalToResume: null };
+  }
+  const marketValueWholeTens = Math.floor(marketValueCents / 10);
+  const marketValueRemainder = marketValueCents % 10;
+  const maximumDebtToResumeCents = marketValueWholeTens * 3
+    + Math.ceil((marketValueRemainder * 3) / 10)
+    - 1;
+
+  return {
+    maximumDebtToResume: maximumDebtToResumeCents / 100,
+    principalToResume: Math.max(0, marginDebtCents - maximumDebtToResumeCents) / 100,
+  };
+}
+
 export function calculateMarginAccount({ marketValue, marginDebt }) {
   const netEquity = marketValue - marginDebt;
 
@@ -220,9 +252,15 @@ export function calculatePillarMarginSnapshot(balances, marginDebt) {
       netEquity: 0,
       marginEquityPercent: null,
       marginState: null,
+      maximumDebtToResume: null,
+      principalToResume: null,
     };
   }
   const marginAccount = calculateMarginAccount({
+    marketValue: allocationSnapshot.totalValue,
+    marginDebt: normalizedMarginDebt,
+  });
+  const resumeTarget = calculateMarginResumeTarget({
     marketValue: allocationSnapshot.totalValue,
     marginDebt: normalizedMarginDebt,
   });
@@ -233,6 +271,7 @@ export function calculatePillarMarginSnapshot(balances, marginDebt) {
     netEquity: marginAccount.netEquity,
     marginEquityPercent: marginAccount.marginEquityPercent,
     marginState: classifyMarginRepairState(marginAccount.marginEquityPercent),
+    ...resumeTarget,
   };
 }
 
