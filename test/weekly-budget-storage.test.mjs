@@ -12,6 +12,7 @@ import {
   parseWeeklyBudgetSnapshot,
   readWeeklyBudgetImportFile,
   saveWeeklyBudget,
+  serializeWeeklyBudgetCsv,
   serializeWeeklyBudgetExport,
   WEEKLY_BUDGET_MAX_IMPORT_BYTES,
   WEEKLY_BUDGET_MAX_AMOUNT,
@@ -90,6 +91,19 @@ test('round-trips a weekly budget through the versioned JSON export format', () 
     budget: validSnapshot,
   });
   assert.deepEqual(parseWeeklyBudgetImport(exported), validSnapshot);
+});
+
+test('serializes a synthetic aggregate weekly budget as a stable spreadsheet CSV', () => {
+  assert.equal(serializeWeeklyBudgetCsv(validSnapshot), [
+    'Category,Weekly amount',
+    'Take-home income,1000.00',
+    'Essentials,500.00',
+    'Flexible spending,150.00',
+    'Sinking funds,100.00',
+    'Breathing-room buffer,50.00',
+    'Margin repair,100.00',
+  ].join('\r\n'));
+  assert.equal(serializeWeeklyBudgetCsv({ ...validSnapshot, weeklyIncome: -1 }), null);
 });
 
 test('rejects oversized weekly budget imports before reading file contents', async () => {
@@ -218,6 +232,19 @@ test('budget planner restores valid browser-local values and provides an explici
   assert.match(budgetPage, /stored only in this browser/i);
   assert.match(budgetPage, /not submitted by this planner/i);
   assert.doesNotMatch(budgetPage, /analytics[^.]*weekly(?:Income|Essentials|Flexible|SinkingFunds|BreathingRoom|MarginRepair)/i);
+});
+
+test('budget planner provides a local aggregate CSV export', async () => {
+  const budgetPage = await readFile(
+    new URL('../src/pages/budget.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(budgetPage, /id="exportWeeklyBudgetCsv"[^>]*type="button"/);
+  assert.match(budgetPage, /serializeWeeklyBudgetCsv\(weeklySnapshot\(\)\)/);
+  assert.match(budgetPage, /abcds-weekly-budget\.csv/);
+  assert.match(budgetPage, /Weekly budget exported as CSV\./);
+  assert.match(budgetPage, /CSV is export-only; use JSON to import a budget/i);
 });
 
 test('budget planner provides local JSON import and export controls', async () => {

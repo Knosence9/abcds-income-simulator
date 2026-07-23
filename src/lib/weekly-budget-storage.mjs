@@ -73,6 +73,24 @@ export function serializeWeeklyBudgetExport(snapshot) {
   }, null, 2);
 }
 
+export function serializeWeeklyBudgetCsv(snapshot) {
+  const normalized = normalizeWeeklyBudgetSnapshot(snapshot);
+  if (!normalized) return null;
+
+  const rows = [
+    ['Take-home income', normalized.weeklyIncome],
+    ['Essentials', normalized.weeklyEssentials],
+    ['Flexible spending', normalized.weeklyFlexible],
+    ['Sinking funds', normalized.weeklySinkingFunds],
+    ['Breathing-room buffer', normalized.weeklyBreathingRoom],
+    ['Margin repair', normalized.weeklyMarginRepair],
+  ];
+  return [
+    'Category,Weekly amount',
+    ...rows.map(([label, amount]) => `${label},${amount.toFixed(2)}`),
+  ].join('\r\n');
+}
+
 export function parseWeeklyBudgetImport(serializedExport) {
   try {
     const parsed = JSON.parse(serializedExport);
