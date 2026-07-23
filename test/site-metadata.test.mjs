@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
   PAGE_METADATA,
   SITE_ORIGIN,
   buildPageMetadata,
+  serializeStructuredData,
 } from '../src/lib/site-metadata.mjs';
 
 const expectedPages = {
@@ -61,5 +63,44 @@ test('unknown routes cannot silently inherit incorrect canonical metadata', () =
   assert.throws(
     () => buildPageMetadata('/missing/'),
     /Unknown reader page metadata path/,
+  );
+});
+
+test('structured metadata serialization escapes script-closing input', () => {
+  const hostileMetadata = {
+    description: '</script><script>alert("unsafe")</script>',
+  };
+  const serialized = serializeStructuredData(hostileMetadata);
+
+  assert.doesNotMatch(serialized, /</);
+  assert.deepEqual(JSON.parse(serialized), hostileMetadata);
+});
+
+test('every reader page receives safe parseable WebSite structured metadata', async () => {
+  const expectedStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'ABCDs Income Simulator',
+    url: `${SITE_ORIGIN}/`,
+    description:
+      'An educational weekly-budget and ABCD income-projection tool with transparent assumptions.',
+    educationalUse: 'Personal finance education',
+  };
+
+  for (const path of readerPaths) {
+    const metadata = buildPageMetadata(path);
+
+    assert.deepEqual(metadata.structuredData, expectedStructuredData);
+    assert.deepEqual(JSON.parse(metadata.structuredDataJson), expectedStructuredData);
+    assert.doesNotMatch(metadata.structuredDataJson, /</);
+  }
+
+  const component = await readFile(
+    new URL('../src/components/SiteMetadata.astro', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    component,
+    /<script type="application\/ld\+json" is:inline set:html=\{metadata\.structuredDataJson\}><\/script>/,
   );
 });

@@ -1,5 +1,19 @@
 export const SITE_ORIGIN = 'https://abcds-income-simulator.vercel.app';
 
+const WEBSITE_STRUCTURED_DATA = Object.freeze({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'ABCDs Income Simulator',
+  url: `${SITE_ORIGIN}/`,
+  description:
+    'An educational weekly-budget and ABCD income-projection tool with transparent assumptions.',
+  educationalUse: 'Personal finance education',
+});
+
+export function serializeStructuredData(value) {
+  return JSON.stringify(value).replaceAll('<', '\\u003c');
+}
+
 export const PAGE_METADATA = Object.freeze({
   '/': Object.freeze({
     title: 'ABCD Strategy Guide',
@@ -40,6 +54,8 @@ export function buildPageMetadata(path) {
   return {
     ...page,
     canonicalUrl,
+    structuredData: WEBSITE_STRUCTURED_DATA,
+    structuredDataJson: serializeStructuredData(WEBSITE_STRUCTURED_DATA),
     openGraph: {
       type: 'website',
       title: page.title,

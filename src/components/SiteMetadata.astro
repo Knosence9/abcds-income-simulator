@@ -15,3 +15,4 @@ const { metadata } = Astro.props;
 <meta name="twitter:card" content={metadata.twitter.card} />
 <meta name="twitter:title" content={metadata.twitter.title} />
 <meta name="twitter:description" content={metadata.twitter.description} />
+<script type="application/ld+json" is:inline set:html={metadata.structuredDataJson}></script>

@@ -9,6 +9,7 @@
     "test": "node --test",
     "test:built-start-here": "node --test scripts/verify-built-start-here.mjs",
     "test:built-icons": "node --test scripts/verify-built-site-icons.mjs",
+    "test:built-metadata": "node scripts/verify-built-site-metadata.mjs dist",
     "test:built-links": "node scripts/verify-built-internal-links.mjs dist",
     "test:built-accessibility": "node scripts/verify-built-accessibility.mjs dist",
     "build": "astro build",
