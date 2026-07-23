@@ -152,11 +152,12 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
             <div class="planner-result"><span>Safe weekly contribution</span><strong id="weeklySafeContribution">—</strong></div>
             <a id="sendBudgetToSimulator" class="button primary" role="link" aria-disabled="true" tabindex="-1">Send this budget to simulator</a>
             <button id="exportWeeklyBudget" class="button secondary" type="button">Export budget JSON</button>
+            <button id="exportWeeklyBudgetCsv" class="button secondary" type="button">Export budget CSV</button>
             <button id="importWeeklyBudget" class="button secondary" type="button">Import budget JSON</button>
             <input id="weeklyBudgetFile" type="file" accept="application/json,.json" hidden />
             <button id="resetWeeklyBudget" class="button secondary" type="button">Reset saved budget</button>
             <p id="weeklyBudgetStatus" role="status" aria-live="polite" aria-atomic="true"></p>
-            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Import and export processing stays local; exported files can be moved manually between browsers or devices. Use “Reset saved budget” to remove stored values.</p>
+            <p id="weeklyBudgetPrivacy" class="footer-note"><b>Browser-local storage:</b> Calculations run locally in this page. Valid amounts may be stored only in this browser so you can resume later. They are not submitted by this planner. Import and export processing stays local; exported files can be moved manually between browsers or devices. CSV is export-only; use JSON to import a budget. Use “Reset saved budget” to remove stored values.</p>
           </div>
         </div>
       </section>
@@ -274,8 +275,10 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         createWeeklyBudgetImportCoordinator,
         getWeeklyBudgetStorage,
         loadWeeklyBudget,
+        parseWeeklyBudgetInputValue,
         readWeeklyBudgetImportFile,
         saveWeeklyBudget,
+        serializeWeeklyBudgetCsv,
         serializeWeeklyBudgetExport,
         WEEKLY_BUDGET_DEFAULTS,
         WEEKLY_BUDGET_FIELD_IDS,
@@ -295,7 +298,8 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       const weeklyCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       const weeklyValue = (id: WeeklyBudgetInputId) => {
         const input = document.getElementById(id);
-        return Number(input instanceof HTMLInputElement ? input.value : undefined);
+        if (!(input instanceof HTMLInputElement)) return Number.NaN;
+        return parseWeeklyBudgetInputValue(input.value);
       };
       const weeklySnapshot = () => Object.fromEntries(
         weeklyBudgetIds.map((id) => [id, weeklyValue(id)]),
@@ -368,6 +372,19 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         URL.revokeObjectURL(downloadUrl);
         status.textContent = 'Weekly budget exported as JSON.';
       }
+      function exportWeeklyBudgetCsv() {
+        const status = document.getElementById('weeklyBudgetStatus');
+        const serialized = serializeWeeklyBudgetCsv(weeklySnapshot());
+        if (!serialized || !status) return;
+
+        const downloadUrl = URL.createObjectURL(new Blob([serialized], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = 'abcds-weekly-budget.csv';
+        link.click();
+        URL.revokeObjectURL(downloadUrl);
+        status.textContent = 'Weekly budget exported as CSV.';
+      }
       async function importWeeklyBudget(event: Event, importSession: number) {
         const input = event.currentTarget;
         if (!(input instanceof HTMLInputElement)) return;
@@ -404,12 +421,14 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       function initializeWeeklyBudget() {
         const form = document.getElementById('weeklyBudgetForm');
         const exportButton = document.getElementById('exportWeeklyBudget');
+        const exportCsvButton = document.getElementById('exportWeeklyBudgetCsv');
         const importButton = document.getElementById('importWeeklyBudget');
         const fileInput = document.getElementById('weeklyBudgetFile');
         const resetButton = document.getElementById('resetWeeklyBudget');
         if (
           !form
           || !exportButton
+          || !exportCsvButton
           || !importButton
           || !fileInput
           || !resetButton
@@ -422,6 +441,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         weeklyBudgetIds.forEach((id) => document.getElementById(id)?.addEventListener('input', renderWeeklyBudget));
         form.addEventListener('submit', (event) => event.preventDefault());
         exportButton.addEventListener('click', exportWeeklyBudget);
+        exportCsvButton.addEventListener('click', exportWeeklyBudgetCsv);
         importButton.addEventListener('click', () => weeklyBudgetImports.openFilePicker(fileInput));
         fileInput.addEventListener('change', (event) => importWeeklyBudget(event, importSession));
         resetButton.addEventListener('click', () => {
