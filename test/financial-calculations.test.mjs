@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateDynamoPositionCap,
   calculatePositionConcentration,
   calculateMarginResumeTarget,
   calculatePillarAllocationSnapshot,
@@ -27,6 +28,28 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('flags active Dynamo counts above the four-position cap', () => {
+  assert.deepEqual(calculateDynamoPositionCap(4), {
+    activeCount: 4,
+    limit: 4,
+    exceedsLimit: false,
+  });
+  assert.deepEqual(calculateDynamoPositionCap(5), {
+    activeCount: 5,
+    limit: 4,
+    exceedsLimit: true,
+  });
+});
+
+test('rejects invalid active Dynamo counts', () => {
+  for (const count of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.throws(
+      () => calculateDynamoPositionCap(count),
+      { name: 'RangeError' },
+    );
+  }
+});
 
 test('classifies anonymous position values at the 5% and 7% boundaries', () => {
   assert.deepEqual(
@@ -72,6 +95,31 @@ test('rejects empty or invalid anonymous position lines', () => {
       { name: 'RangeError' },
     );
   }
+});
+
+test('simulator offers a local-only accessible active Dynamo cap check', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /<label for="activeDynamoCount">Active Dynamo positions<\/label>/);
+  assert.match(
+    simulatorPage,
+    /<input id="activeDynamoCount"[^>]*type="number"[^>]*min="0"[^>]*step="1"[^>]*aria-describedby="dynamoCountPrivacy"/,
+  );
+  assert.match(
+    simulatorPage,
+    /id="dynamoCountStatus"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/,
+  );
+  assert.match(simulatorPage, /calculateDynamoPositionCap/);
+  assert.match(simulatorPage, /Maximum four active Dynamos/);
+  assert.match(simulatorPage, /active Dynamo count is calculated locally in this browser/i);
+  assert.match(simulatorPage, /active Dynamo count is not stored, exported, or sent/i);
+  assert.match(
+    simulatorPage,
+    /activeDynamoCount\.addEventListener\('input', renderDynamoCount\);[\s\S]*renderDynamoCount\(\);/,
+  );
 });
 
 test('simulator offers a local-only accessible anonymous concentration check', async () => {
