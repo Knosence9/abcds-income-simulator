@@ -304,6 +304,18 @@ export function calculatePillarAllocationSnapshot(balances) {
   };
 }
 
+export function calculateDynamoPositionCap(activeCount) {
+  if (!Number.isInteger(activeCount) || activeCount < 0) {
+    throw new RangeError('Active Dynamo count must be a non-negative integer.');
+  }
+
+  return {
+    activeCount,
+    limit: 4,
+    exceedsLimit: activeCount > 4,
+  };
+}
+
 export function parseAnonymousPositionValues(value) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new RangeError('Enter at least one anonymous position value.');

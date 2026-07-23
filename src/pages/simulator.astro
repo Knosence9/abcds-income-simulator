@@ -153,6 +153,12 @@ const defaultInputs = {
               </div>
               <p id="allocationSnapshotSummary" class="footer-note" aria-live="polite">Enter at least one pillar balance to calculate weights.</p>
               <div class="snapshot-field">
+                <label for="activeDynamoCount">Active Dynamo positions</label>
+                <input id="activeDynamoCount" type="number" min="0" step="1" value="0" inputmode="numeric" aria-describedby="dynamoCountPrivacy" />
+              </div>
+              <p id="dynamoCountPrivacy" class="footer-note">Maximum four active Dynamos. This active Dynamo count is not stored, exported, or sent.</p>
+              <p id="dynamoCountStatus" class="footer-note" role="status" aria-live="polite" aria-atomic="true">0 active Dynamos is within the four-position cap.</p>
+              <div class="snapshot-field">
                 <label for="anonymousPositionValues">Anonymous position market values</label>
                 <textarea id="anonymousPositionValues" inputmode="decimal" maxlength="5000" aria-describedby="positionConcentrationPrivacy" placeholder={'500\n700.01'}></textarea>
               </div>
@@ -253,7 +259,7 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, downloadAllocationSnapshotCsv, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { downloadProjectionSummaryCsv, serializeProjectionSummaryCsv } from '../lib/projection-summary-export.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
@@ -638,6 +644,21 @@ const defaultInputs = {
           snapshotBalanceInputs,
           snapshotMarginDebtInput,
         );
+        const activeDynamoCount = $('activeDynamoCount') as HTMLInputElement;
+        const dynamoCountStatus = $('dynamoCountStatus');
+        const renderDynamoCount = () => {
+          try {
+            const result = calculateDynamoPositionCap(activeDynamoCount.valueAsNumber);
+            activeDynamoCount.removeAttribute('aria-invalid');
+            dynamoCountStatus.textContent = result.exceedsLimit
+              ? `${result.activeCount} active Dynamos exceeds the ${result.limit}-position cap.`
+              : `${result.activeCount} active Dynamos is within the ${result.limit}-position cap.`;
+          } catch {
+            activeDynamoCount.setAttribute('aria-invalid', 'true');
+            dynamoCountStatus.textContent = 'Enter a whole number of active Dynamos, zero or greater.';
+          }
+        };
+        activeDynamoCount.addEventListener('input', renderDynamoCount);
         const anonymousPositionValues = $('anonymousPositionValues') as HTMLTextAreaElement;
         const positionConcentrationStatus = $('positionConcentrationStatus');
         const renderPositionConcentration = () => {
