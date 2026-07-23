@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculatePositionConcentration,
   calculateMarginResumeTarget,
   calculatePillarAllocationSnapshot,
   calculatePillarMarginSnapshot,
@@ -20,11 +21,93 @@ import {
   classifyMarginRepairState,
   getProjectionScenario,
   monthlyToWeekly,
+  parseAnonymousPositionValues,
   parseWeeklyContribution,
   routeInvestmentContribution,
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('classifies anonymous position values at the 5% and 7% boundaries', () => {
+  assert.deepEqual(
+    calculatePositionConcentration({
+      portfolioValue: 10_000,
+      positionValues: [500, 500.01, 700, 700.01],
+    }),
+    {
+      positionCount: 4,
+      largestPositionPercent: 7.0001,
+      aboveFivePercentCount: 3,
+      aboveSevenPercentCount: 1,
+    },
+  );
+});
+
+test('rejects invalid anonymous position concentration inputs', () => {
+  for (const input of [
+    { portfolioValue: 0, positionValues: [1] },
+    { portfolioValue: Number.NaN, positionValues: [1] },
+    { portfolioValue: 100, positionValues: [] },
+    { portfolioValue: 100, positionValues: [-1] },
+    { portfolioValue: 100, positionValues: [Number.POSITIVE_INFINITY] },
+    { portfolioValue: 100, positionValues: [100.01] },
+    { portfolioValue: 100, positionValues: [60, 50] },
+    { portfolioValue: 0.001, positionValues: [0] },
+  ]) {
+    assert.throws(
+      () => calculatePositionConcentration(input),
+      { name: 'RangeError' },
+    );
+  }
+});
+
+test('parses one anonymous position market value per line', () => {
+  assert.deepEqual(parseAnonymousPositionValues('500\r\n700.01\n 0 '), [500, 700.01, 0]);
+});
+
+test('rejects empty or invalid anonymous position lines', () => {
+  for (const value of ['', '500\n\n700', '-1', 'not-a-number', 'Infinity']) {
+    assert.throws(
+      () => parseAnonymousPositionValues(value),
+      { name: 'RangeError' },
+    );
+  }
+});
+
+test('simulator offers a local-only accessible anonymous concentration check', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /<label for="anonymousPositionValues">Anonymous position market values<\/label>/);
+  assert.match(simulatorPage, /<textarea id="anonymousPositionValues"[^>]*aria-describedby="positionConcentrationPrivacy"/);
+  assert.match(
+    simulatorPage,
+    /id="positionConcentrationStatus"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/,
+  );
+  assert.match(simulatorPage, /calculatePositionConcentration/);
+  assert.match(simulatorPage, /parseAnonymousPositionValues/);
+  assert.match(
+    simulatorPage,
+    /const portfolioValue = calculatePillarAllocationSnapshot\(\{[\s\S]*snapshotBalanceInputs\.anchor\.valueAsNumber[\s\S]*snapshotBalanceInputs\.dynamo\.valueAsNumber[\s\S]*\}\)\.totalValue/,
+  );
+  assert.doesNotMatch(
+    simulatorPage,
+    /renderPositionConcentration[\s\S]*readAllocationSnapshotInputs\(/,
+  );
+  assert.match(simulatorPage, /position values are not stored, exported, or sent/i);
+  assert.match(simulatorPage, /above 5% attention threshold/i);
+  assert.match(simulatorPage, /above 7% hard limit/i);
+  assert.match(
+    simulatorPage,
+    /refreshSummary: \(\) => \{[\s\S]*allocationSnapshotController\.refreshSummary\(\);[\s\S]*renderPositionConcentration\(\);[\s\S]*\}/,
+  );
+  assert.match(
+    simulatorPage,
+    /snapshotMarginDebtInput\.removeAttribute\('aria-invalid'\);[\s\S]*allocationSnapshotController\.refreshSummary\(\);[\s\S]*renderPositionConcentration\(\);/,
+  );
+});
 
 test('calculates the minimum cent payment needed to resume buying above 70% equity', () => {
   assert.deepEqual(

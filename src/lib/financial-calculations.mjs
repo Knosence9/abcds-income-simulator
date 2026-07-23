@@ -304,6 +304,67 @@ export function calculatePillarAllocationSnapshot(balances) {
   };
 }
 
+export function parseAnonymousPositionValues(value) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new RangeError('Enter at least one anonymous position value.');
+  }
+  const lines = value.trim().split(/\r?\n/).map((line) => line.trim());
+  const positionValues = lines.map((line) => Number(line));
+  if (
+    lines.some((line) => line === '')
+    || !positionValues.every((positionValue) => Number.isFinite(positionValue) && positionValue >= 0)
+  ) {
+    throw new RangeError('Every position line must contain one finite, non-negative value.');
+  }
+  return positionValues;
+}
+
+export function calculatePositionConcentration({ portfolioValue, positionValues }) {
+  if (
+    !Number.isFinite(portfolioValue)
+    || portfolioValue <= 0
+    || !Array.isArray(positionValues)
+    || positionValues.length === 0
+    || !positionValues.every(
+      (positionValue) => Number.isFinite(positionValue)
+        && positionValue >= 0
+        && positionValue <= portfolioValue,
+    )
+  ) {
+    throw new RangeError(
+      'Portfolio value must be positive and every position value must be finite and within it.',
+    );
+  }
+  const portfolioValueCents = Math.round(portfolioValue * 100);
+  const positionValueCents = positionValues.map((positionValue) => Math.round(positionValue * 100));
+  const totalPositionValueCents = positionValueCents.reduce(
+    (total, positionValue) => total + positionValue,
+    0,
+  );
+  if (
+    portfolioValueCents <= 0
+    || totalPositionValueCents > portfolioValueCents
+    || !Number.isSafeInteger(portfolioValueCents * 100)
+    || !positionValueCents.every((positionValue) => Number.isSafeInteger(positionValue * 100))
+  ) {
+    throw new RangeError('Portfolio and position values must be safe cent-denominated values.');
+  }
+  const percentages = positionValueCents.map((positionValue) => (
+    positionValue / portfolioValueCents * 100
+  ));
+
+  return {
+    positionCount: positionValues.length,
+    largestPositionPercent: Math.max(...percentages),
+    aboveFivePercentCount: positionValueCents.filter(
+      (positionValue) => positionValue * 100 > portfolioValueCents * 5,
+    ).length,
+    aboveSevenPercentCount: positionValueCents.filter(
+      (positionValue) => positionValue * 100 > portfolioValueCents * 7,
+    ).length,
+  };
+}
+
 export function preparePillarMarginSnapshotForProjection(
   balances,
   marginDebt,
