@@ -199,6 +199,43 @@ export function calculateProjectionContributionPeriod({
   };
 }
 
+export function calculatePillarMarginSnapshot(balances, marginDebt) {
+  const allocationSnapshot = calculatePillarAllocationSnapshot(balances);
+  const normalizedMarginDebt = Number.isFinite(marginDebt)
+    ? Math.round((marginDebt + Number.EPSILON) * 100) / 100
+    : marginDebt;
+  if (
+    !Number.isFinite(marginDebt)
+    || marginDebt < 0
+    || normalizedMarginDebt > allocationSnapshot.totalValue
+  ) {
+    throw new RangeError(
+      'Margin debt must be finite, non-negative, and no greater than gross market value.',
+    );
+  }
+  if (!allocationSnapshot.weights) {
+    return {
+      ...allocationSnapshot,
+      marginDebt: normalizedMarginDebt,
+      netEquity: 0,
+      marginEquityPercent: null,
+      marginState: null,
+    };
+  }
+  const marginAccount = calculateMarginAccount({
+    marketValue: allocationSnapshot.totalValue,
+    marginDebt: normalizedMarginDebt,
+  });
+
+  return {
+    ...allocationSnapshot,
+    marginDebt: normalizedMarginDebt,
+    netEquity: marginAccount.netEquity,
+    marginEquityPercent: marginAccount.marginEquityPercent,
+    marginState: classifyMarginRepairState(marginAccount.marginEquityPercent),
+  };
+}
+
 export function calculatePillarAllocationSnapshot(balances) {
   const pillarNames = ['anchor', 'booster', 'closedEnd', 'dynamo'];
   const balanceKeys = Object.keys(balances);
@@ -210,7 +247,11 @@ export function calculatePillarAllocationSnapshot(balances) {
   ) {
     throw new RangeError('Pillar balances must contain four finite, non-negative values.');
   }
-  const totalValue = values.reduce((total, balance) => total + balance, 0);
+  const rawTotalValue = values.reduce((total, balance) => total + balance, 0);
+  if (!Number.isFinite(rawTotalValue)) {
+    throw new RangeError('Pillar balance total must be finite.');
+  }
+  const totalValue = Math.round((rawTotalValue + Number.EPSILON) * 100) / 100;
   if (!Number.isFinite(totalValue)) {
     throw new RangeError('Pillar balance total must be finite.');
   }
@@ -221,6 +262,23 @@ export function calculatePillarAllocationSnapshot(balances) {
     weights: Object.fromEntries(
       pillarNames.map((name) => [name, (balances[name] / totalValue) * 100]),
     ),
+  };
+}
+
+export function preparePillarMarginSnapshotForProjection(
+  balances,
+  marginDebt,
+  { maxStartingValue },
+) {
+  const marginSnapshot = calculatePillarMarginSnapshot(balances, marginDebt);
+  const projectionSnapshot = preparePillarSnapshotForProjection(
+    balances,
+    { maxStartingValue },
+  );
+
+  return {
+    ...projectionSnapshot,
+    startingMarginDebt: marginSnapshot.marginDebt,
   };
 }
 

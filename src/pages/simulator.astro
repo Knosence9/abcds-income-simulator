@@ -146,12 +146,13 @@ const defaultInputs = {
                 <div class="snapshot-field"><label for="boosterBalance">Booster balance</label><input id="boosterBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
                 <div class="snapshot-field"><label for="closedEndBalance">Closed-end balance</label><input id="closedEndBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
                 <div class="snapshot-field"><label for="dynamoBalance">Dynamo balance</label><input id="dynamoBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
+                <div class="snapshot-field"><label for="snapshotMarginDebt">Starting margin debt</label><input id="snapshotMarginDebt" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
               </div>
               <p id="allocationSnapshotSummary" class="footer-note" aria-live="polite">Enter at least one pillar balance to calculate weights.</p>
               <button id="applyAllocationSnapshot" class="button secondary" type="button" disabled>Use in projection</button>
             </fieldset>
             <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="0.01" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="0.01" /></div>
-            <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="100" /></div>
+            <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="0.01" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="0.01" /></div>
             <div class="field"><label id="marginAprLabel" for="marginAprNumber">Margin APR <input id="marginAprNumber" type="number" value={defaultInputs.marginApr} min="0" max="30" step="0.1" /></label><input id="marginApr" type="range" aria-labelledby="marginAprLabel" value={defaultInputs.marginApr} min="0" max="30" step="0.1" /></div>
             <div class="field"><label id="weeklyMarginRepairLabel" for="weeklyMarginRepairNumber">Weekly margin repair <input id="weeklyMarginRepairNumber" type="number" value={defaultInputs.weeklyMarginRepair} min="0" max="5000" step="0.01" /></label><input id="weeklyMarginRepair" type="range" aria-labelledby="weeklyMarginRepairLabel" value={defaultInputs.weeklyMarginRepair} min="0" max="5000" step="0.01" /></div>
             <div class="callout compact"><b>Margin repair assumption:</b> the weekly amount becomes a smooth principal-only planning assumption. Interest is not capitalized or paid; it is estimated from beginning debt for each month. Real brokerage timing may differ.</div>
@@ -231,7 +232,7 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, preparePillarSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculatePillarMarginSnapshot, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { attachAllocationSnapshot, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
@@ -561,6 +562,7 @@ const defaultInputs = {
             closedEnd: $('closedEndBalance') as HTMLInputElement,
             dynamo: $('dynamoBalance') as HTMLInputElement,
           },
+          marginDebtInput: $('snapshotMarginDebt') as HTMLInputElement,
           applyButton: $('applyAllocationSnapshot') as HTMLButtonElement,
           summary: $('allocationSnapshotSummary'),
           allocationControls: {
@@ -570,8 +572,9 @@ const defaultInputs = {
             dynamo: [$('dynamoAllocation'), $('dynamoAllocationNumber')],
           },
           startingControls: [$('starting'), $('startingNumber')],
-          calculateSnapshot: calculatePillarAllocationSnapshot,
-          prepareProjectionSnapshot: preparePillarSnapshotForProjection,
+          startingMarginControls: [$('marginDebt'), $('marginDebtNumber')],
+          calculateSnapshot: calculatePillarMarginSnapshot,
+          prepareProjectionSnapshot: preparePillarMarginSnapshotForProjection,
           maxStartingValue: Number($('starting').max),
           formatCurrency: (value: number) => fmtSmall.format(value),
           render: () => {

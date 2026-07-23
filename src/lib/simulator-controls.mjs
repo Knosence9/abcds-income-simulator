@@ -1,9 +1,11 @@
 export function attachAllocationSnapshot({
   balanceInputs,
+  marginDebtInput = null,
   applyButton,
   summary,
   allocationControls,
   startingControls = null,
+  startingMarginControls = null,
   calculateSnapshot,
   prepareProjectionSnapshot = null,
   maxStartingValue = Number.POSITIVE_INFINITY,
@@ -28,7 +30,18 @@ export function attachAllocationSnapshot({
     }
     return balances;
   };
-  const getSnapshot = () => calculateSnapshot(getBalances());
+  const getMarginDebt = () => {
+    if (!marginDebtInput) return 0;
+    const rawValue = String(marginDebtInput.value).trim();
+    const value = Number(rawValue);
+    if (rawValue === '' || !Number.isFinite(value) || value < 0) {
+      marginDebtInput.setAttribute?.('aria-invalid', 'true');
+      throw new RangeError('Margin debt must be a finite, non-negative value.');
+    }
+    marginDebtInput.removeAttribute?.('aria-invalid');
+    return value;
+  };
+  const getSnapshot = () => calculateSnapshot(getBalances(), getMarginDebt());
 
   let currentSnapshot = null;
   const updateSummary = () => {
@@ -37,7 +50,9 @@ export function attachAllocationSnapshot({
     } catch {
       currentSnapshot = null;
       applyButton.disabled = true;
-      summary.textContent = 'Enter four non-negative pillar balances.';
+      summary.textContent = marginDebtInput
+        ? 'Enter valid non-negative pillar balances and margin debt no greater than gross value.'
+        : 'Enter four non-negative pillar balances.';
       return;
     }
     if (!currentSnapshot.weights) {
@@ -47,7 +62,7 @@ export function attachAllocationSnapshot({
     }
     if (prepareProjectionSnapshot) {
       try {
-        prepareProjectionSnapshot(getBalances(), { maxStartingValue });
+        prepareProjectionSnapshot(getBalances(), getMarginDebt(), { maxStartingValue });
       } catch {
         applyButton.disabled = true;
         summary.textContent = `${formatCurrency(currentSnapshot.totalValue)} total exceeds the ${formatCurrency(maxStartingValue)} projection maximum. Reduce the aggregate balances to apply it.`;
@@ -56,23 +71,35 @@ export function attachAllocationSnapshot({
     }
     applyButton.disabled = false;
     const { anchor, booster, closedEnd, dynamo } = currentSnapshot.weights;
-    summary.textContent = `${formatCurrency(currentSnapshot.totalValue)} total — A ${anchor.toFixed(1)}%, B ${booster.toFixed(1)}%, C ${closedEnd.toFixed(1)}%, D ${dynamo.toFixed(1)}%.`;
+    const allocationSummary = `A ${anchor.toFixed(1)}%, B ${booster.toFixed(1)}%, C ${closedEnd.toFixed(1)}%, D ${dynamo.toFixed(1)}%.`;
+    summary.textContent = currentSnapshot.marginState
+      ? `${formatCurrency(currentSnapshot.totalValue)} gross — ${formatCurrency(currentSnapshot.marginDebt)} debt — ${formatCurrency(currentSnapshot.netEquity)} net equity — ${currentSnapshot.marginEquityPercent.toFixed(1)}% (${currentSnapshot.marginState.replaceAll('-', ' ')}). ${allocationSummary}`
+      : `${formatCurrency(currentSnapshot.totalValue)} total — ${allocationSummary}`;
   };
 
   for (const input of Object.values(balanceInputs)) {
     input.addEventListener('input', updateSummary);
   }
+  marginDebtInput?.addEventListener('input', updateSummary);
   updateSummary();
 
   applyButton.addEventListener('click', () => {
     const snapshot = getSnapshot();
     if (!snapshot.weights) return;
     const projectionSnapshot = prepareProjectionSnapshot
-      ? prepareProjectionSnapshot(getBalances(), { maxStartingValue })
+      ? prepareProjectionSnapshot(getBalances(), getMarginDebt(), { maxStartingValue })
       : { startingValue: null, allocations: snapshot.weights };
     if (startingControls && projectionSnapshot.startingValue !== null) {
       const [range, number] = startingControls;
       range.value = String(projectionSnapshot.startingValue);
+      number.value = range.value;
+      number.removeAttribute('aria-invalid');
+    }
+    if (startingMarginControls && projectionSnapshot.startingMarginDebt !== undefined) {
+      const [range, number] = startingMarginControls;
+      range.max = String(projectionSnapshot.startingValue);
+      number.max = range.max;
+      range.value = String(projectionSnapshot.startingMarginDebt);
       number.value = range.value;
       number.removeAttribute('aria-invalid');
     }
@@ -85,7 +112,9 @@ export function attachAllocationSnapshot({
     render();
     summary.textContent = projectionSnapshot.startingValue === null
       ? 'Allocation snapshot applied to the projection.'
-      : `Allocation snapshot and ${formatCurrency(projectionSnapshot.startingValue)} starting value applied to the projection.`;
+      : projectionSnapshot.startingMarginDebt === undefined
+        ? `Allocation snapshot and ${formatCurrency(projectionSnapshot.startingValue)} starting value applied to the projection.`
+        : `Allocation snapshot, ${formatCurrency(projectionSnapshot.startingValue)} starting value, and ${formatCurrency(projectionSnapshot.startingMarginDebt)} margin debt applied to the projection.`;
   });
 }
 
