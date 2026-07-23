@@ -269,7 +269,7 @@ test('simulator offers local aggregate snapshot JSON transfer without implicit s
   assert.match(simulatorPage, /serializeAllocationSnapshotExport/);
   assert.match(simulatorPage, /readAllocationSnapshotImportFile/);
   assert.match(simulatorPage, /Imported aggregate snapshot from JSON\. Choose Save in browser to persist it\./);
-  assert.match(simulatorPage, /Import and export stay on this device/i);
+  assert.match(simulatorPage, /Import and export processing stays local; exported files can be moved manually between browsers or devices\./i);
 });
 
 test('storage operation failures return safe outcomes', () => {
