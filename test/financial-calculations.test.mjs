@@ -4,6 +4,8 @@ import test from 'node:test';
 
 import {
   calculatePillarAllocationSnapshot,
+  calculatePillarMarginSnapshot,
+  preparePillarMarginSnapshotForProjection,
   preparePillarSnapshotForProjection,
   calculateExpenseCrossoverPeriod,
   calculateProjectionContributionPeriod,
@@ -22,6 +24,75 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('calculates margin state from a synthetic aggregate pillar snapshot', () => {
+  const balances = {
+    anchor: 3_000,
+    booster: 2_000,
+    closedEnd: 3_000,
+    dynamo: 2_000,
+  };
+
+  assert.deepEqual(calculatePillarMarginSnapshot(balances, 3_500), {
+    totalValue: 10_000,
+    weights: {
+      anchor: 30,
+      booster: 20,
+      closedEnd: 30,
+      dynamo: 20,
+    },
+    marginDebt: 3_500,
+    netEquity: 6_500,
+    marginEquityPercent: 65,
+    marginState: 'repair-band',
+  });
+  assert.deepEqual(balances, {
+    anchor: 3_000,
+    booster: 2_000,
+    closedEnd: 3_000,
+    dynamo: 2_000,
+  });
+});
+
+test('rejects invalid aggregate margin debt and handles an empty snapshot explicitly', () => {
+  const balances = { anchor: 3_000, booster: 2_000, closedEnd: 3_000, dynamo: 2_000 };
+
+  for (const marginDebt of [-1, Number.NaN, Number.POSITIVE_INFINITY, 10_001]) {
+    assert.throws(
+      () => calculatePillarMarginSnapshot(balances, marginDebt),
+      new RangeError('Margin debt must be finite, non-negative, and no greater than gross market value.'),
+    );
+  }
+  assert.deepEqual(
+    calculatePillarMarginSnapshot(
+      { anchor: 0, booster: 0, closedEnd: 0, dynamo: 0 },
+      0,
+    ),
+    {
+      totalValue: 0,
+      weights: null,
+      marginDebt: 0,
+      netEquity: 0,
+      marginEquityPercent: null,
+      marginState: null,
+    },
+  );
+});
+
+test('prepares aggregate value, debt, and weights as exact projection inputs', () => {
+  assert.deepEqual(
+    preparePillarMarginSnapshotForProjection(
+      { anchor: 3_000, booster: 2_000, closedEnd: 3_000, dynamo: 2_000 },
+      3_500,
+      { maxStartingValue: 250_000 },
+    ),
+    {
+      startingValue: 10_000,
+      startingMarginDebt: 3_500,
+      allocations: { anchor: 30, booster: 20, closedEnd: 30, dynamo: 20 },
+    },
+  );
+});
 
 test('prepares a synthetic aggregate snapshot as exact projection starting values', () => {
   const balances = {
@@ -157,6 +228,7 @@ test('simulator exposes a local-only aggregate ABCD allocation snapshot', async 
     ['boosterBalance', 'Booster balance'],
     ['closedEndBalance', 'Closed-end balance'],
     ['dynamoBalance', 'Dynamo balance'],
+    ['snapshotMarginDebt', 'Starting margin debt'],
   ]) {
     assert.match(simulatorPage, new RegExp(`<label for="${id}">${label}<\\/label>`));
     assert.match(simulatorPage, new RegExp(`<input id="${id}" type="number"`));
@@ -165,12 +237,16 @@ test('simulator exposes a local-only aggregate ABCD allocation snapshot', async 
   assert.match(simulatorPage, /id="applyAllocationSnapshot"/);
   assert.match(simulatorPage, /This tool does not save or export these values\./);
   assert.match(simulatorPage, /attachAllocationSnapshot/);
-  assert.match(simulatorPage, /preparePillarSnapshotForProjection/);
+  assert.match(simulatorPage, /calculatePillarMarginSnapshot/);
+  assert.match(simulatorPage, /preparePillarMarginSnapshotForProjection/);
+  assert.match(simulatorPage, /marginDebtInput: \$\('snapshotMarginDebt'\)/);
   assert.match(simulatorPage, /startingControls: \[\$\('starting'\), \$\('startingNumber'\)\]/);
+  assert.match(simulatorPage, /startingMarginControls: \[\$\('marginDebt'\), \$\('marginDebtNumber'\)\]/);
   assert.match(simulatorPage, /<input id="startingNumber"[^>]*step="0\.01"/);
   assert.match(simulatorPage, /<input id="starting"[^>]*step="0\.01"/);
+  assert.match(simulatorPage, /<input id="marginDebtNumber"[^>]*step="0\.01"/);
+  assert.match(simulatorPage, /<input id="marginDebt"[^>]*step="0\.01"/);
   assert.match(simulatorPage, /maxStartingValue: Number\(\$\('starting'\)\.max\)/);
-  assert.match(simulatorPage, /calculatePillarAllocationSnapshot/);
 });
 
 test('reports the first period when spendable distributions cover expenses', () => {

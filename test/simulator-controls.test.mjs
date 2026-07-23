@@ -104,7 +104,7 @@ test('rejects blank snapshot inputs instead of coercing them to zero', () => {
   assert.equal(summary.textContent, 'Enter four non-negative pillar balances.');
 });
 
-test('applies a valid aggregate ABCD snapshot total and weights to paired projection controls', () => {
+test('applies a valid aggregate ABCD snapshot value, debt, and weights to projection controls', () => {
   let clickHandler;
   const input = (value) => ({ value, addEventListener() {} });
   const control = () => ({ value: '', removeAttribute() {} });
@@ -114,6 +114,7 @@ test('applies a valid aggregate ABCD snapshot total and weights to paired projec
     closedEnd: input('3000'),
     dynamo: input('2000'),
   };
+  const marginDebtInput = input('3500');
   const allocationControls = {
     anchor: [control(), control()],
     booster: [control(), control()],
@@ -121,6 +122,7 @@ test('applies a valid aggregate ABCD snapshot total and weights to paired projec
     dynamo: [control(), control()],
   };
   const startingControls = [control(), control()];
+  const startingMarginControls = [control(), control()];
   const applyButton = {
     disabled: false,
     addEventListener(name, handler) {
@@ -133,18 +135,34 @@ test('applies a valid aggregate ABCD snapshot total and weights to paired projec
 
   attachAllocationSnapshot({
     balanceInputs,
+    marginDebtInput,
     applyButton,
     summary,
     allocationControls,
     startingControls,
+    startingMarginControls,
     calculateSnapshot: () => ({
       totalValue: 10_000,
       weights: { anchor: 30, booster: 20, closedEnd: 30, dynamo: 20 },
+      marginDebt: 3_500,
+      netEquity: 6_500,
+      marginEquityPercent: 65,
+      marginState: 'repair-band',
     }),
-    prepareProjectionSnapshot: () => ({
-      startingValue: 10_000,
-      allocations: { anchor: 30, booster: 20, closedEnd: 30, dynamo: 20 },
-    }),
+    prepareProjectionSnapshot: (balances, marginDebt) => {
+      assert.deepEqual(balances, {
+        anchor: 3_000,
+        booster: 2_000,
+        closedEnd: 3_000,
+        dynamo: 2_000,
+      });
+      assert.equal(marginDebt, 3_500);
+      return {
+        startingValue: 10_000,
+        startingMarginDebt: 3_500,
+        allocations: { anchor: 30, booster: 20, closedEnd: 30, dynamo: 20 },
+      };
+    },
     maxStartingValue: 250_000,
     formatCurrency: (value) => `$${value.toLocaleString('en-US')}`,
     render: () => { renderCount += 1; },
@@ -152,11 +170,12 @@ test('applies a valid aggregate ABCD snapshot total and weights to paired projec
 
   assert.equal(
     summary.textContent,
-    '$10,000 total — A 30.0%, B 20.0%, C 30.0%, D 20.0%.',
+    '$10,000 gross — $3,500 debt — $6,500 net equity — 65.0% (repair band). A 30.0%, B 20.0%, C 30.0%, D 20.0%.',
   );
   clickHandler();
 
   assert.deepEqual(startingControls.map(({ value }) => value), ['10000', '10000']);
+  assert.deepEqual(startingMarginControls.map(({ value }) => value), ['3500', '3500']);
   assert.deepEqual(
     Object.fromEntries(
       Object.entries(allocationControls).map(([name, controls]) => [
@@ -172,7 +191,10 @@ test('applies a valid aggregate ABCD snapshot total and weights to paired projec
     },
   );
   assert.equal(renderCount, 1);
-  assert.equal(summary.textContent, 'Allocation snapshot and $10,000 starting value applied to the projection.');
+  assert.equal(
+    summary.textContent,
+    'Allocation snapshot, $10,000 starting value, and $3,500 margin debt applied to the projection.',
+  );
 });
 
 test('disables an aggregate snapshot whose total exceeds the projection range', () => {

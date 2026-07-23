@@ -199,6 +199,40 @@ export function calculateProjectionContributionPeriod({
   };
 }
 
+export function calculatePillarMarginSnapshot(balances, marginDebt) {
+  const allocationSnapshot = calculatePillarAllocationSnapshot(balances);
+  if (
+    !Number.isFinite(marginDebt)
+    || marginDebt < 0
+    || marginDebt > allocationSnapshot.totalValue
+  ) {
+    throw new RangeError(
+      'Margin debt must be finite, non-negative, and no greater than gross market value.',
+    );
+  }
+  if (!allocationSnapshot.weights) {
+    return {
+      ...allocationSnapshot,
+      marginDebt,
+      netEquity: 0,
+      marginEquityPercent: null,
+      marginState: null,
+    };
+  }
+  const marginAccount = calculateMarginAccount({
+    marketValue: allocationSnapshot.totalValue,
+    marginDebt,
+  });
+
+  return {
+    ...allocationSnapshot,
+    marginDebt,
+    netEquity: marginAccount.netEquity,
+    marginEquityPercent: marginAccount.marginEquityPercent,
+    marginState: classifyMarginRepairState(marginAccount.marginEquityPercent),
+  };
+}
+
 export function calculatePillarAllocationSnapshot(balances) {
   const pillarNames = ['anchor', 'booster', 'closedEnd', 'dynamo'];
   const balanceKeys = Object.keys(balances);
@@ -221,6 +255,23 @@ export function calculatePillarAllocationSnapshot(balances) {
     weights: Object.fromEntries(
       pillarNames.map((name) => [name, (balances[name] / totalValue) * 100]),
     ),
+  };
+}
+
+export function preparePillarMarginSnapshotForProjection(
+  balances,
+  marginDebt,
+  { maxStartingValue },
+) {
+  const marginSnapshot = calculatePillarMarginSnapshot(balances, marginDebt);
+  const projectionSnapshot = preparePillarSnapshotForProjection(
+    balances,
+    { maxStartingValue },
+  );
+
+  return {
+    ...projectionSnapshot,
+    startingMarginDebt: marginSnapshot.marginDebt,
   };
 }
 
