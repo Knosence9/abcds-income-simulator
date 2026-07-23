@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   attachAllocationSnapshot,
+  attachAllocationSnapshotStorage,
   attachProjectionScenarioPresets,
   attachSimulatorControlsToggle,
 } from '../src/lib/simulator-controls.mjs';
@@ -231,6 +232,176 @@ test('disables an aggregate snapshot whose total exceeds the projection range', 
     summary.textContent,
     '$250,001 total exceeds the $250,000 projection maximum. Reduce the aggregate balances to apply it.',
   );
+});
+
+test('restores, saves, and resets aggregate snapshot fields through explicit controls', () => {
+  const handlers = {};
+  const balanceInputs = Object.fromEntries(
+    ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [
+      name,
+      { value: '0', removeAttribute() {} },
+    ]),
+  );
+  const marginDebtInput = { value: '0', removeAttribute() {} };
+  const saveButton = {
+    disabled: false,
+    addEventListener(name, handler) { handlers[`save:${name}`] = handler; },
+  };
+  const resetButton = {
+    disabled: false,
+    addEventListener(name, handler) { handlers[`reset:${name}`] = handler; },
+  };
+  const status = { textContent: '' };
+  const restored = {
+    anchor: 3_000,
+    booster: 2_000,
+    closedEnd: 3_000,
+    dynamo: 2_000,
+    marginDebt: 3_500,
+  };
+  const saved = [];
+  let clearCalls = 0;
+  let refreshCalls = 0;
+
+  attachAllocationSnapshotStorage({
+    balanceInputs,
+    marginDebtInput,
+    saveButton,
+    resetButton,
+    status,
+    storage: {},
+    restoreSnapshot: () => ({ status: 'loaded', snapshot: restored }),
+    saveSnapshot: (_storage, snapshot) => {
+      saved.push(snapshot);
+      return { status: 'saved' };
+    },
+    clearSnapshot: () => { clearCalls += 1; return true; },
+    refreshSummary: () => { refreshCalls += 1; },
+  });
+
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(balanceInputs).map(([name, input]) => [name, input.value])),
+    { anchor: '3000', booster: '2000', closedEnd: '3000', dynamo: '2000' },
+  );
+  assert.equal(marginDebtInput.value, '3500');
+  assert.equal(status.textContent, 'Saved aggregate allocation snapshot restored from this browser.');
+  assert.equal(refreshCalls, 1);
+
+  handlers['save:click']();
+  assert.deepEqual(saved, [restored]);
+  assert.equal(status.textContent, 'Aggregate allocation snapshot saved in this browser.');
+
+  handlers['reset:click']();
+  assert.deepEqual(
+    Object.values(balanceInputs).map((input) => input.value),
+    ['0', '0', '0', '0'],
+  );
+  assert.equal(marginDebtInput.value, '0');
+  assert.equal(clearCalls, 1);
+  assert.equal(refreshCalls, 2);
+  assert.equal(status.textContent, 'Saved aggregate allocation snapshot cleared and fields reset.');
+});
+
+test('does not coerce blank aggregate fields to zero when saving', () => {
+  let clickHandler;
+  let savedSnapshot;
+  const balanceInputs = {
+    anchor: { value: '' },
+    booster: { value: '0' },
+    closedEnd: { value: '0' },
+    dynamo: { value: '0' },
+  };
+  const status = { textContent: '' };
+
+  attachAllocationSnapshotStorage({
+    balanceInputs,
+    marginDebtInput: { value: '0' },
+    saveButton: {
+      disabled: false,
+      addEventListener(_name, handler) { clickHandler = handler; },
+    },
+    resetButton: { disabled: false, addEventListener() {} },
+    status,
+    storage: {},
+    restoreSnapshot: () => ({ status: 'missing', snapshot: null }),
+    saveSnapshot: (_storage, snapshot) => {
+      savedSnapshot = snapshot;
+      return { status: 'invalid' };
+    },
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  clickHandler();
+
+  assert.equal(Number.isNaN(savedSnapshot.anchor), true);
+  assert.equal(status.textContent, 'Enter a valid aggregate snapshot before saving.');
+});
+
+test('announces browser storage failure without blaming valid snapshot input', () => {
+  let clickHandler;
+  const status = { textContent: '' };
+  attachAllocationSnapshotStorage({
+    balanceInputs: Object.fromEntries(
+      ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '100' }]),
+    ),
+    marginDebtInput: { value: '0' },
+    saveButton: { disabled: false, addEventListener(_name, handler) { clickHandler = handler; } },
+    resetButton: { disabled: false, addEventListener() {} },
+    status,
+    storage: {},
+    restoreSnapshot: () => ({ status: 'missing', snapshot: null }),
+    saveSnapshot: () => ({ status: 'unavailable' }),
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  clickHandler();
+  assert.equal(status.textContent, 'Browser-local snapshot storage failed. Values were not saved.');
+});
+
+test('rejects an invalid stored aggregate snapshot without partially applying it', () => {
+  const balanceInputs = Object.fromEntries(
+    ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '0' }]),
+  );
+  const marginDebtInput = { value: '0' };
+
+  attachAllocationSnapshotStorage({
+    balanceInputs,
+    marginDebtInput,
+    saveButton: { disabled: false, addEventListener() {} },
+    resetButton: { disabled: false, addEventListener() {} },
+    status: { set textContent(value) { this.value = value; }, get textContent() { return this.value; } },
+    storage: {},
+    restoreSnapshot: () => ({ status: 'invalid', snapshot: null }),
+    saveSnapshot: () => true,
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  assert.deepEqual(Object.values(balanceInputs).map((input) => input.value), ['0', '0', '0', '0']);
+  assert.equal(marginDebtInput.value, '0');
+});
+
+test('announces when browser storage becomes unavailable during restore', () => {
+  const status = { textContent: '' };
+
+  attachAllocationSnapshotStorage({
+    balanceInputs: Object.fromEntries(
+      ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '0' }]),
+    ),
+    marginDebtInput: { value: '0' },
+    saveButton: { disabled: false, addEventListener() {} },
+    resetButton: { disabled: false, addEventListener() {} },
+    status,
+    storage: {},
+    restoreSnapshot: () => ({ status: 'unavailable', snapshot: null }),
+    saveSnapshot: () => ({ status: 'saved' }),
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  assert.equal(status.textContent, 'Browser-local snapshot storage is unavailable.');
 });
 
 function createFixture({ narrow = true, reducedMotion = false } = {}) {

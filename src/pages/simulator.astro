@@ -88,6 +88,7 @@ const defaultInputs = {
       .snapshot-field input { width:100%; min-width:0; border:1px solid var(--line); border-radius:12px; padding:9px 10px; background:var(--paper); color:var(--ink); font:800 14px var(--mono); }
       .allocation-snapshot .button { width:100%; margin-top:10px; }
       .allocation-snapshot .button:disabled { cursor:not-allowed; opacity:.55; }
+      .snapshot-actions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
       .chart-wrap { border:1px solid var(--line); border-radius:26px; background:linear-gradient(180deg, rgba(32,63,105,.05), rgba(255,253,247,.7)); padding:18px; min-height:560px; }
       .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:10px; margin-bottom:14px; }
       .stat { border:1px solid var(--line); border-radius:18px; padding:12px; background:rgba(255,255,255,.62); }
@@ -140,7 +141,7 @@ const defaultInputs = {
             </fieldset>
             <fieldset class="allocation-snapshot">
               <legend>Current ABCD allocation snapshot</legend>
-              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate pillar balances only—not holdings or account details. This tool does not save or export these values.</p>
+              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate values only. Save stores only the four aggregate pillar balances and aggregate margin debt in this browser; no holdings, transactions, or account identifiers are stored or sent.</p>
               <div class="allocation-snapshot-grid">
                 <div class="snapshot-field"><label for="anchorBalance">Anchor balance</label><input id="anchorBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
                 <div class="snapshot-field"><label for="boosterBalance">Booster balance</label><input id="boosterBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
@@ -150,6 +151,11 @@ const defaultInputs = {
               </div>
               <p id="allocationSnapshotSummary" class="footer-note" aria-live="polite">Enter at least one pillar balance to calculate weights.</p>
               <button id="applyAllocationSnapshot" class="button secondary" type="button" disabled>Use in projection</button>
+              <div class="snapshot-actions">
+                <button id="saveAllocationSnapshot" class="button secondary" type="button">Save in browser</button>
+                <button id="resetAllocationSnapshot" class="button secondary" type="button">Reset saved snapshot</button>
+              </div>
+              <p id="allocationSnapshotStorageStatus" class="footer-note" aria-live="polite"></p>
             </fieldset>
             <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="0.01" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="0.01" /></div>
             <div class="field"><label id="marginDebtLabel" for="marginDebtNumber">Starting margin debt <input id="marginDebtNumber" type="number" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="0.01" /></label><input id="marginDebt" type="range" aria-labelledby="marginDebtLabel" value={defaultInputs.marginDebt} min="0" max={defaultInputs.starting} step="0.01" /></div>
@@ -233,7 +239,8 @@ const defaultInputs = {
 
     <script>
       import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculatePillarMarginSnapshot, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
-      import { attachAllocationSnapshot, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
+      import { clearAllocationSnapshot, getAllocationSnapshotStorage, restoreAllocationSnapshot, saveAllocationSnapshot } from '../lib/allocation-snapshot-storage.mjs';
+      import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
       type InputId = (typeof pairs)[number][number];
@@ -555,14 +562,16 @@ const defaultInputs = {
         }
         const transferredBudget = applyTransferredContribution();
         pairs.forEach(([a,b]) => sync(a,b));
-        attachAllocationSnapshot({
-          balanceInputs: {
-            anchor: $('anchorBalance') as HTMLInputElement,
-            booster: $('boosterBalance') as HTMLInputElement,
-            closedEnd: $('closedEndBalance') as HTMLInputElement,
-            dynamo: $('dynamoBalance') as HTMLInputElement,
-          },
-          marginDebtInput: $('snapshotMarginDebt') as HTMLInputElement,
+        const snapshotBalanceInputs = {
+          anchor: $('anchorBalance') as HTMLInputElement,
+          booster: $('boosterBalance') as HTMLInputElement,
+          closedEnd: $('closedEndBalance') as HTMLInputElement,
+          dynamo: $('dynamoBalance') as HTMLInputElement,
+        };
+        const snapshotMarginDebtInput = $('snapshotMarginDebt') as HTMLInputElement;
+        const allocationSnapshotController = attachAllocationSnapshot({
+          balanceInputs: snapshotBalanceInputs,
+          marginDebtInput: snapshotMarginDebtInput,
           applyButton: $('applyAllocationSnapshot') as HTMLButtonElement,
           summary: $('allocationSnapshotSummary'),
           allocationControls: {
@@ -581,6 +590,18 @@ const defaultInputs = {
             document.querySelectorAll('[data-scenario]').forEach((button) => button.setAttribute('aria-pressed', 'false'));
             render();
           },
+        });
+        attachAllocationSnapshotStorage({
+          balanceInputs: snapshotBalanceInputs,
+          marginDebtInput: snapshotMarginDebtInput,
+          saveButton: $('saveAllocationSnapshot') as HTMLButtonElement,
+          resetButton: $('resetAllocationSnapshot') as HTMLButtonElement,
+          status: $('allocationSnapshotStorageStatus'),
+          storage: getAllocationSnapshotStorage(window),
+          restoreSnapshot: restoreAllocationSnapshot,
+          saveSnapshot: saveAllocationSnapshot,
+          clearSnapshot: clearAllocationSnapshot,
+          refreshSummary: allocationSnapshotController.refreshSummary,
         });
         attachProjectionScenarioPresets({
           buttons: [...document.querySelectorAll('[data-scenario]')],

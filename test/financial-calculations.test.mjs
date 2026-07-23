@@ -322,11 +322,12 @@ test('simulator exposes a local-only aggregate ABCD allocation snapshot', async 
   }
   assert.match(simulatorPage, /id="allocationSnapshotSummary"[^>]*aria-live="polite"/);
   assert.match(simulatorPage, /id="applyAllocationSnapshot"/);
-  assert.match(simulatorPage, /This tool does not save or export these values\./);
+  assert.match(simulatorPage, /only the four aggregate pillar balances and aggregate margin debt in this browser/);
+  assert.match(simulatorPage, /no holdings, transactions, or account identifiers are stored or sent/);
   assert.match(simulatorPage, /attachAllocationSnapshot/);
   assert.match(simulatorPage, /calculatePillarMarginSnapshot/);
   assert.match(simulatorPage, /preparePillarMarginSnapshotForProjection/);
-  assert.match(simulatorPage, /marginDebtInput: \$\('snapshotMarginDebt'\)/);
+  assert.match(simulatorPage, /marginDebtInput: snapshotMarginDebtInput/);
   assert.match(simulatorPage, /startingControls: \[\$\('starting'\), \$\('startingNumber'\)\]/);
   assert.match(simulatorPage, /startingMarginControls: \[\$\('marginDebt'\), \$\('marginDebtNumber'\)\]/);
   assert.match(simulatorPage, /<input id="startingNumber"[^>]*step="0\.01"/);
