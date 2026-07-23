@@ -143,3 +143,19 @@ test('simulator exports only the current valid projection summary in the browser
   assert.match(page, /Projection summary exported as CSV\./);
   assert.match(page, /No holdings, transactions, or account identifiers/);
 });
+
+test('simulator clears stale projection export status when results change', async () => {
+  const page = await readFile(new URL('../src/pages/simulator.astro', import.meta.url), 'utf8');
+  const invalidation = page.slice(
+    page.indexOf('function invalidateResults()'),
+    page.indexOf('function announceResultsIfValid()'),
+  );
+  const summaryStart = page.indexOf('currentProjectionSummary = {');
+  const renderedSummary = page.slice(
+    summaryStart,
+    page.indexOf("$('grossMarketValue').textContent", summaryStart),
+  );
+
+  assert.match(invalidation, /\$\('projectionExportStatus'\)\.textContent = '';/);
+  assert.match(renderedSummary, /\$\('projectionExportStatus'\)\.textContent = '';/);
+});
