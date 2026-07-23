@@ -3,13 +3,19 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  ALLOCATION_SNAPSHOT_MAX_IMPORT_BYTES,
   ALLOCATION_SNAPSHOT_STORAGE_KEY,
   clearAllocationSnapshot,
+  createAllocationSnapshotImportCoordinator,
   getAllocationSnapshotStorage,
   loadAllocationSnapshot,
   normalizeAllocationSnapshot,
+  parseAllocationSnapshotImport,
+  readAllocationSnapshotImportFile,
+  readAllocationSnapshotInputs,
   restoreAllocationSnapshot,
   saveAllocationSnapshot,
+  serializeAllocationSnapshotExport,
 } from '../src/lib/allocation-snapshot-storage.mjs';
 
 const validSnapshot = {
@@ -68,6 +74,104 @@ test('saves and restores a version-2 aggregate record with an injected save time
     snapshot: validSnapshot,
   });
   assert.deepEqual(loadAllocationSnapshot(storage), validSnapshot);
+});
+
+test('round-trips an aggregate snapshot through the versioned JSON transfer format', () => {
+  const savedAt = '2026-07-23T03:15:00.000Z';
+  const serialized = serializeAllocationSnapshotExport(validSnapshot, savedAt);
+
+  assert.deepEqual(JSON.parse(serialized), {
+    format: 'abcds-allocation-snapshot',
+    version: 2,
+    savedAt,
+    snapshot: validSnapshot,
+  });
+  assert.deepEqual(parseAllocationSnapshotImport(serialized), {
+    savedAt,
+    snapshot: validSnapshot,
+  });
+});
+
+test('allocation snapshot transfer rejects legacy, extended, and invalid records', () => {
+  const savedAt = '2026-07-23T03:15:00.000Z';
+  for (const serialized of [
+    '{broken',
+    JSON.stringify({ format: 'abcds-allocation-snapshot', version: 1, snapshot: validSnapshot }),
+    JSON.stringify({
+      format: 'abcds-allocation-snapshot',
+      version: 2,
+      savedAt,
+      snapshot: validSnapshot,
+      accountId: 'unexpected',
+    }),
+    JSON.stringify({
+      format: 'abcds-allocation-snapshot',
+      version: 2,
+      savedAt,
+      snapshot: { ...validSnapshot, marginDebt: 10_001 },
+    }),
+  ]) {
+    assert.equal(parseAllocationSnapshotImport(serialized), null);
+  }
+  assert.equal(serializeAllocationSnapshotExport({ ...validSnapshot, anchor: -1 }, savedAt), null);
+  assert.equal(serializeAllocationSnapshotExport(validSnapshot, 'July 23'), null);
+});
+
+test('reads transfer inputs without coercing blank aggregate values to zero', () => {
+  const balanceInputs = Object.fromEntries(
+    Object.entries(validSnapshot)
+      .filter(([name]) => name !== 'marginDebt')
+      .map(([name, value]) => [name, { value: String(value) }]),
+  );
+  assert.deepEqual(readAllocationSnapshotInputs(balanceInputs, { value: '3500' }), validSnapshot);
+
+  balanceInputs.anchor.value = '';
+  assert.equal(Number.isNaN(readAllocationSnapshotInputs(balanceInputs, { value: '3500' }).anchor), true);
+  assert.equal(Number.isNaN(readAllocationSnapshotInputs(balanceInputs, { value: ' ' }).marginDebt), true);
+});
+
+test('rejects oversized allocation snapshot imports before reading file contents', async () => {
+  let readCount = 0;
+  const oversizedFile = {
+    size: ALLOCATION_SNAPSHOT_MAX_IMPORT_BYTES + 1,
+    async text() {
+      readCount += 1;
+      return serializeAllocationSnapshotExport(validSnapshot, '2026-07-23T03:15:00.000Z');
+    },
+  };
+
+  assert.deepEqual(await readAllocationSnapshotImportFile(oversizedFile), { status: 'too-large' });
+  assert.equal(readCount, 0);
+});
+
+test('keeps only the latest allocation snapshot import request current', () => {
+  const imports = createAllocationSnapshotImportCoordinator();
+  const firstRequest = imports.begin();
+  const secondRequest = imports.begin();
+
+  assert.equal(firstRequest.isCurrent(), false);
+  assert.equal(secondRequest.isCurrent(), true);
+
+  imports.invalidate();
+  assert.equal(secondRequest.isCurrent(), false);
+});
+
+test('clears the previous snapshot file before opening a replacement picker', () => {
+  const imports = createAllocationSnapshotImportCoordinator();
+  const request = imports.begin();
+  const clicks = [];
+  const fileInput = {
+    value: 'abcds-allocation-snapshot.json',
+    click() {
+      clicks.push(this.value);
+    },
+  };
+
+  imports.openFilePicker(fileInput);
+
+  assert.equal(request.isCurrent(), false);
+  assert.equal(fileInput.value, '');
+  assert.deepEqual(clicks, ['']);
 });
 
 test('rejects an invalid injected save time without writing a record', () => {
@@ -151,6 +255,21 @@ test('simulator exposes explicit local snapshot persistence controls and privacy
   assert.match(simulatorPage, /clearAllocationSnapshot/);
   assert.match(simulatorPage, /four aggregate pillar balances, aggregate margin debt, and save time/i);
   assert.match(simulatorPage, /no holdings, transactions, or account identifiers/i);
+});
+
+test('simulator offers local aggregate snapshot JSON transfer without implicit storage', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /id="exportAllocationSnapshot"[^>]*type="button"/);
+  assert.match(simulatorPage, /id="importAllocationSnapshot"[^>]*type="button"/);
+  assert.match(simulatorPage, /id="allocationSnapshotFile"[^>]*type="file"[^>]*accept="application\/json,.json"[^>]*hidden/);
+  assert.match(simulatorPage, /serializeAllocationSnapshotExport/);
+  assert.match(simulatorPage, /readAllocationSnapshotImportFile/);
+  assert.match(simulatorPage, /Imported aggregate snapshot from JSON\. Choose Save in browser to persist it\./);
+  assert.match(simulatorPage, /Import and export processing stays local; exported files can be moved manually between browsers or devices\./i);
 });
 
 test('storage operation failures return safe outcomes', () => {

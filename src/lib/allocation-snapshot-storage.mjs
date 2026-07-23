@@ -1,5 +1,6 @@
 export const ALLOCATION_SNAPSHOT_STORAGE_KEY = 'abcds-allocation-snapshot-v1';
 export const ALLOCATION_SNAPSHOT_MAX_TOTAL = 250_000;
+export const ALLOCATION_SNAPSHOT_MAX_IMPORT_BYTES = 64 * 1024;
 
 const snapshotFields = ['anchor', 'booster', 'closedEnd', 'dynamo', 'marginDebt'];
 const versionOneEnvelopeFields = ['format', 'version', 'snapshot'];
@@ -66,6 +67,64 @@ function parseAllocationSnapshot(serializedSnapshot) {
   } catch {
     return null;
   }
+}
+
+export function serializeAllocationSnapshotExport(snapshot, savedAt) {
+  const normalized = normalizeAllocationSnapshot(snapshot);
+  if (!normalized || !isValidSavedAt(savedAt)) return null;
+  return JSON.stringify({
+    format: 'abcds-allocation-snapshot',
+    version: 2,
+    savedAt,
+    snapshot: normalized,
+  }, null, 2);
+}
+
+export function parseAllocationSnapshotImport(serializedSnapshot) {
+  const parsed = parseAllocationSnapshot(serializedSnapshot);
+  return parsed?.savedAt ? parsed : null;
+}
+
+export async function readAllocationSnapshotImportFile(file) {
+  if (!file || !Number.isFinite(file.size) || file.size < 0) return { status: 'invalid' };
+  if (file.size > ALLOCATION_SNAPSHOT_MAX_IMPORT_BYTES) return { status: 'too-large' };
+  try {
+    const imported = parseAllocationSnapshotImport(await file.text());
+    return imported ? { status: 'loaded', imported } : { status: 'invalid' };
+  } catch {
+    return { status: 'unavailable' };
+  }
+}
+
+export function createAllocationSnapshotImportCoordinator() {
+  let currentRequestId = 0;
+  return {
+    begin() {
+      const requestId = ++currentRequestId;
+      return { isCurrent: () => requestId === currentRequestId };
+    },
+    invalidate() {
+      currentRequestId += 1;
+    },
+    openFilePicker(fileInput) {
+      currentRequestId += 1;
+      fileInput.value = '';
+      fileInput.click();
+    },
+  };
+}
+
+export function readAllocationSnapshotInputs(balanceInputs, marginDebtInput) {
+  const inputValue = (input) => {
+    const rawValue = String(input.value).trim();
+    return rawValue === '' ? Number.NaN : Number(rawValue);
+  };
+  return {
+    ...Object.fromEntries(
+      Object.entries(balanceInputs).map(([name, input]) => [name, inputValue(input)]),
+    ),
+    marginDebt: inputValue(marginDebtInput),
+  };
 }
 
 export function saveAllocationSnapshot(storage, snapshot, getSavedAt = () => new Date().toISOString()) {

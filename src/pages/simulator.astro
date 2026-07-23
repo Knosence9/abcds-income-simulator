@@ -141,7 +141,7 @@ const defaultInputs = {
             </fieldset>
             <fieldset class="allocation-snapshot">
               <legend>Current ABCD allocation snapshot</legend>
-              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate values only. Save stores only the four aggregate pillar balances, aggregate margin debt, and save time in this browser; no holdings, transactions, or account identifiers are stored or sent.</p>
+              <p class="footer-note" id="allocationSnapshotPrivacy">Enter aggregate values only. Save stores only the four aggregate pillar balances, aggregate margin debt, and save time in this browser; no holdings, transactions, or account identifiers are stored or sent. Import and export processing stays local; exported files can be moved manually between browsers or devices.</p>
               <div class="allocation-snapshot-grid">
                 <div class="snapshot-field"><label for="anchorBalance">Anchor balance</label><input id="anchorBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
                 <div class="snapshot-field"><label for="boosterBalance">Booster balance</label><input id="boosterBalance" type="number" min="0" step="0.01" value="0" inputmode="decimal" aria-describedby="allocationSnapshotPrivacy" /></div>
@@ -154,7 +154,10 @@ const defaultInputs = {
               <div class="snapshot-actions">
                 <button id="saveAllocationSnapshot" class="button secondary" type="button">Save in browser</button>
                 <button id="resetAllocationSnapshot" class="button secondary" type="button">Reset saved snapshot</button>
+                <button id="exportAllocationSnapshot" class="button secondary" type="button">Export snapshot JSON</button>
+                <button id="importAllocationSnapshot" class="button secondary" type="button">Import snapshot JSON</button>
               </div>
+              <input id="allocationSnapshotFile" type="file" accept="application/json,.json" hidden />
               <p id="allocationSnapshotStorageStatus" class="footer-note" aria-live="polite"></p>
             </fieldset>
             <div class="field"><label id="startingLabel" for="startingNumber">Starting gross market value <input id="startingNumber" type="number" value={defaultInputs.starting} min="0" step="0.01" /></label><input id="starting" type="range" aria-labelledby="startingLabel" value={defaultInputs.starting} min="0" max="250000" step="0.01" /></div>
@@ -239,7 +242,7 @@ const defaultInputs = {
 
     <script>
       import { calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarDistributions, calculatePillarMarginSnapshot, calculateProjectionContributionPeriod, getProjectionScenario, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
-      import { clearAllocationSnapshot, getAllocationSnapshotStorage, restoreAllocationSnapshot, saveAllocationSnapshot } from '../lib/allocation-snapshot-storage.mjs';
+      import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
       const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
@@ -602,6 +605,62 @@ const defaultInputs = {
           saveSnapshot: saveAllocationSnapshot,
           clearSnapshot: clearAllocationSnapshot,
           refreshSummary: allocationSnapshotController.refreshSummary,
+        });
+        const snapshotStatus = $('allocationSnapshotStorageStatus');
+        const snapshotFile = $('allocationSnapshotFile') as HTMLInputElement;
+        const currentSnapshot = () => readAllocationSnapshotInputs(
+          snapshotBalanceInputs,
+          snapshotMarginDebtInput,
+        );
+        $('exportAllocationSnapshot').addEventListener('click', () => {
+          const serialized = serializeAllocationSnapshotExport(
+            currentSnapshot(),
+            new Date().toISOString(),
+          );
+          if (!serialized) {
+            snapshotStatus.textContent = 'Enter a valid aggregate snapshot before exporting.';
+            return;
+          }
+          const downloadUrl = URL.createObjectURL(new Blob([serialized], { type: 'application/json' }));
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = 'abcds-allocation-snapshot.json';
+          link.click();
+          URL.revokeObjectURL(downloadUrl);
+          snapshotStatus.textContent = 'Aggregate allocation snapshot exported as JSON.';
+        });
+        const snapshotImports = createAllocationSnapshotImportCoordinator();
+        $('importAllocationSnapshot').addEventListener('click', () => {
+          snapshotImports.openFilePicker(snapshotFile);
+        });
+        snapshotFile.addEventListener('change', async () => {
+          const request = snapshotImports.begin();
+          const file = snapshotFile.files?.[0];
+          if (!file) return;
+          try {
+            const importResult = await readAllocationSnapshotImportFile(file);
+            if (!request.isCurrent()) return;
+            if (importResult.status === 'too-large') {
+              snapshotStatus.textContent = 'Could not import that aggregate snapshot JSON because the file is too large. Current inputs were not changed.';
+              return;
+            }
+            if (importResult.status !== 'loaded') throw new Error('Invalid allocation snapshot export');
+            const { imported } = importResult;
+            for (const [name, input] of Object.entries(snapshotBalanceInputs)) {
+              input.value = String(imported.snapshot[name]);
+              input.removeAttribute('aria-invalid');
+            }
+            snapshotMarginDebtInput.value = String(imported.snapshot.marginDebt);
+            snapshotMarginDebtInput.removeAttribute('aria-invalid');
+            allocationSnapshotController.refreshSummary();
+            snapshotStatus.textContent = 'Imported aggregate snapshot from JSON. Choose Save in browser to persist it.';
+          } catch {
+            if (request.isCurrent()) {
+              snapshotStatus.textContent = 'Could not import that aggregate snapshot JSON. Current inputs were not changed.';
+            }
+          } finally {
+            if (request.isCurrent()) snapshotFile.value = '';
+          }
         });
         attachProjectionScenarioPresets({
           buttons: [...document.querySelectorAll('[data-scenario]')],
