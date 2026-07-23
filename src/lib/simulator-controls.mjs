@@ -1,3 +1,71 @@
+export function attachAllocationSnapshotStorage({
+  balanceInputs,
+  marginDebtInput,
+  saveButton,
+  resetButton,
+  status,
+  storage,
+  restoreSnapshot,
+  saveSnapshot,
+  clearSnapshot,
+  refreshSummary,
+}) {
+  if (!storage) {
+    saveButton.disabled = true;
+    resetButton.disabled = true;
+    status.textContent = 'Browser-local snapshot storage is unavailable.';
+    return;
+  }
+
+  const setFields = (snapshot) => {
+    for (const [name, input] of Object.entries(balanceInputs)) {
+      input.value = String(snapshot[name]);
+      input.removeAttribute?.('aria-invalid');
+    }
+    marginDebtInput.value = String(snapshot.marginDebt);
+    marginDebtInput.removeAttribute?.('aria-invalid');
+  };
+  const inputValue = (input) => {
+    const rawValue = String(input.value).trim();
+    return rawValue === '' ? Number.NaN : Number(rawValue);
+  };
+  const currentSnapshot = () => ({
+    ...Object.fromEntries(
+      Object.entries(balanceInputs).map(([name, input]) => [name, inputValue(input)]),
+    ),
+    marginDebt: inputValue(marginDebtInput),
+  });
+
+  const restored = restoreSnapshot(storage);
+  if (restored.status === 'loaded') {
+    setFields(restored.snapshot);
+    refreshSummary();
+    status.textContent = 'Saved aggregate allocation snapshot restored from this browser.';
+  } else if (restored.status === 'invalid') {
+    status.textContent = 'Saved aggregate allocation snapshot was rejected and was not applied.';
+  } else if (restored.status === 'unavailable') {
+    status.textContent = 'Browser-local snapshot storage is unavailable.';
+  }
+
+  saveButton.addEventListener('click', () => {
+    const saveResult = saveSnapshot(storage, currentSnapshot());
+    status.textContent = saveResult.status === 'saved'
+      ? 'Aggregate allocation snapshot saved in this browser.'
+      : saveResult.status === 'invalid'
+        ? 'Enter a valid aggregate snapshot before saving.'
+        : 'Browser-local snapshot storage failed. Values were not saved.';
+  });
+  resetButton.addEventListener('click', () => {
+    if (!clearSnapshot(storage)) {
+      status.textContent = 'Saved aggregate allocation snapshot could not be cleared.';
+      return;
+    }
+    setFields({ anchor: 0, booster: 0, closedEnd: 0, dynamo: 0, marginDebt: 0 });
+    refreshSummary();
+    status.textContent = 'Saved aggregate allocation snapshot cleared and fields reset.';
+  });
+}
+
 export function attachAllocationSnapshot({
   balanceInputs,
   marginDebtInput = null,
@@ -119,6 +187,8 @@ export function attachAllocationSnapshot({
         ? `Allocation snapshot and ${formatCurrency(projectionSnapshot.startingValue)} starting value applied to the projection.`
         : `Allocation snapshot, ${formatCurrency(projectionSnapshot.startingValue)} starting value, and ${formatCurrency(projectionSnapshot.startingMarginDebt)} margin debt applied to the projection.`;
   });
+
+  return { refreshSummary: updateSummary };
 }
 
 export function attachProjectionScenarioPresets({
