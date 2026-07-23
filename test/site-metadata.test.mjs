@@ -6,6 +6,7 @@ import {
   PAGE_METADATA,
   SITE_ORIGIN,
   buildPageMetadata,
+  serializeStructuredData,
 } from '../src/lib/site-metadata.mjs';
 
 const expectedPages = {
@@ -63,6 +64,16 @@ test('unknown routes cannot silently inherit incorrect canonical metadata', () =
     () => buildPageMetadata('/missing/'),
     /Unknown reader page metadata path/,
   );
+});
+
+test('structured metadata serialization escapes script-closing input', () => {
+  const hostileMetadata = {
+    description: '</script><script>alert("unsafe")</script>',
+  };
+  const serialized = serializeStructuredData(hostileMetadata);
+
+  assert.doesNotMatch(serialized, /</);
+  assert.deepEqual(JSON.parse(serialized), hostileMetadata);
 });
 
 test('every reader page receives safe parseable WebSite structured metadata', async () => {

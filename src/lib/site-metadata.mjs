@@ -10,7 +10,7 @@ const WEBSITE_STRUCTURED_DATA = Object.freeze({
   educationalUse: 'Personal finance education',
 });
 
-function serializeStructuredData(value) {
+export function serializeStructuredData(value) {
   return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
