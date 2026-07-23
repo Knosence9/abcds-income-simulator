@@ -270,13 +270,21 @@ test('restores, saves, and resets aggregate snapshot fields through explicit con
     resetButton,
     status,
     storage: {},
-    restoreSnapshot: () => ({ status: 'loaded', snapshot: restored }),
+    restoreSnapshot: () => ({
+      status: 'loaded',
+      snapshot: restored,
+      savedAt: '2026-07-23T03:15:00.000Z',
+    }),
     saveSnapshot: (_storage, snapshot) => {
       saved.push(snapshot);
-      return { status: 'saved' };
+      return { status: 'saved', savedAt: '2026-07-23T04:30:00.000Z' };
     },
     clearSnapshot: () => { clearCalls += 1; return true; },
     refreshSummary: () => { refreshCalls += 1; },
+    formatSavedAt: (savedAt) => ({
+      '2026-07-23T03:15:00.000Z': 'July 22, 2026 at 11:15 PM',
+      '2026-07-23T04:30:00.000Z': 'July 23, 2026 at 12:30 AM',
+    })[savedAt],
   });
 
   assert.deepEqual(
@@ -284,12 +292,18 @@ test('restores, saves, and resets aggregate snapshot fields through explicit con
     { anchor: '3000', booster: '2000', closedEnd: '3000', dynamo: '2000' },
   );
   assert.equal(marginDebtInput.value, '3500');
-  assert.equal(status.textContent, 'Saved aggregate allocation snapshot restored from this browser.');
+  assert.equal(
+    status.textContent,
+    'Aggregate allocation snapshot from July 22, 2026 at 11:15 PM restored from this browser.',
+  );
   assert.equal(refreshCalls, 1);
 
   handlers['save:click']();
   assert.deepEqual(saved, [restored]);
-  assert.equal(status.textContent, 'Aggregate allocation snapshot saved in this browser.');
+  assert.equal(
+    status.textContent,
+    'Aggregate allocation snapshot saved in this browser on July 23, 2026 at 12:30 AM.',
+  );
 
   handlers['reset:click']();
   assert.deepEqual(
@@ -300,6 +314,102 @@ test('restores, saves, and resets aggregate snapshot fields through explicit con
   assert.equal(clearCalls, 1);
   assert.equal(refreshCalls, 2);
   assert.equal(status.textContent, 'Saved aggregate allocation snapshot cleared and fields reset.');
+});
+
+test('formats saved snapshot dates with the browser default locale', () => {
+  const originalDateTimeFormat = Intl.DateTimeFormat;
+  const requestedLocales = [];
+  Intl.DateTimeFormat = class {
+    constructor(locales) {
+      requestedLocales.push(locales);
+    }
+
+    format() {
+      return 'browser-local date';
+    }
+  };
+
+  try {
+    const status = { textContent: '' };
+    attachAllocationSnapshotStorage({
+      balanceInputs: Object.fromEntries(
+        ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '0' }]),
+      ),
+      marginDebtInput: { value: '0' },
+      saveButton: { disabled: false, addEventListener() {} },
+      resetButton: { disabled: false, addEventListener() {} },
+      status,
+      storage: {},
+      restoreSnapshot: () => ({
+        status: 'loaded',
+        snapshot: { anchor: 1, booster: 2, closedEnd: 3, dynamo: 4, marginDebt: 0 },
+        savedAt: '2026-07-23T03:15:00.000Z',
+      }),
+      saveSnapshot: () => ({ status: 'saved', savedAt: '2026-07-23T03:15:00.000Z' }),
+      clearSnapshot: () => true,
+      refreshSummary() {},
+    });
+
+    assert.deepEqual(requestedLocales, [undefined]);
+    assert.equal(
+      status.textContent,
+      'Aggregate allocation snapshot from browser-local date restored from this browser.',
+    );
+  } finally {
+    Intl.DateTimeFormat = originalDateTimeFormat;
+  }
+});
+
+test('reports an unavailable save date when restoring a version-1 snapshot', () => {
+  const status = { textContent: '' };
+  attachAllocationSnapshotStorage({
+    balanceInputs: Object.fromEntries(
+      ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '0' }]),
+    ),
+    marginDebtInput: { value: '0' },
+    saveButton: { disabled: false, addEventListener() {} },
+    resetButton: { disabled: false, addEventListener() {} },
+    status,
+    storage: {},
+    restoreSnapshot: () => ({
+      status: 'loaded',
+      snapshot: { anchor: 1, booster: 2, closedEnd: 3, dynamo: 4, marginDebt: 0 },
+      savedAt: null,
+    }),
+    saveSnapshot: () => ({ status: 'saved', savedAt: '2026-07-23T03:15:00.000Z' }),
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  assert.equal(
+    status.textContent,
+    'Aggregate allocation snapshot restored from this browser; its save date is unavailable.',
+  );
+});
+
+test('keeps save confirmation usable when an injected saver returns an invalid save date', () => {
+  let clickHandler;
+  const status = { textContent: '' };
+  attachAllocationSnapshotStorage({
+    balanceInputs: Object.fromEntries(
+      ['anchor', 'booster', 'closedEnd', 'dynamo'].map((name) => [name, { value: '0' }]),
+    ),
+    marginDebtInput: { value: '0' },
+    saveButton: {
+      disabled: false,
+      addEventListener(_event, handler) { clickHandler = handler; },
+    },
+    resetButton: { disabled: false, addEventListener() {} },
+    status,
+    storage: {},
+    restoreSnapshot: () => ({ status: 'missing', snapshot: null }),
+    saveSnapshot: () => ({ status: 'saved', savedAt: 'not-a-date' }),
+    clearSnapshot: () => true,
+    refreshSummary() {},
+  });
+
+  assert.doesNotThrow(() => clickHandler());
+  assert.equal(status.textContent, 'Aggregate allocation snapshot saved in this browser.');
 });
 
 test('does not coerce blank aggregate fields to zero when saving', () => {

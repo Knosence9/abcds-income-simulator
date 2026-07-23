@@ -48,22 +48,54 @@ test('rejects invalid aggregate allocation snapshot values and debt above gross 
   }
 });
 
-test('saves and restores a versioned aggregate-only record', () => {
+test('saves and restores a version-2 aggregate record with an injected save time', () => {
   const storage = createStorage();
+  const savedAt = '2026-07-23T03:15:00.000Z';
 
-  assert.deepEqual(saveAllocationSnapshot(storage, validSnapshot), { status: 'saved' });
+  assert.deepEqual(saveAllocationSnapshot(storage, validSnapshot, () => savedAt), {
+    status: 'saved',
+    savedAt,
+  });
   assert.deepEqual(JSON.parse(storage.values.get(ALLOCATION_SNAPSHOT_STORAGE_KEY)), {
     format: 'abcds-allocation-snapshot',
-    version: 1,
+    version: 2,
+    savedAt,
+    snapshot: validSnapshot,
+  });
+  assert.deepEqual(restoreAllocationSnapshot(storage), {
+    status: 'loaded',
+    savedAt,
     snapshot: validSnapshot,
   });
   assert.deepEqual(loadAllocationSnapshot(storage), validSnapshot);
 });
 
+test('rejects an invalid injected save time without writing a record', () => {
+  const storage = createStorage();
+
+  assert.deepEqual(saveAllocationSnapshot(storage, validSnapshot, () => 'July 23'), {
+    status: 'invalid',
+  });
+  assert.equal(storage.values.has(ALLOCATION_SNAPSHOT_STORAGE_KEY), false);
+});
+
 test('rejects malformed, unsupported, incomplete, and extended stored records', () => {
   for (const storedValue of [
     '{broken',
-    JSON.stringify({ format: 'abcds-allocation-snapshot', version: 2, snapshot: validSnapshot }),
+    JSON.stringify({ format: 'abcds-allocation-snapshot', version: 3, snapshot: validSnapshot }),
+    JSON.stringify({
+      format: 'abcds-allocation-snapshot',
+      version: 2,
+      savedAt: 'July 23',
+      snapshot: validSnapshot,
+    }),
+    JSON.stringify({
+      format: 'abcds-allocation-snapshot',
+      version: 2,
+      savedAt: '2026-07-23T03:15:00.000Z',
+      snapshot: validSnapshot,
+      accountId: 'unexpected',
+    }),
     JSON.stringify({ format: 'other', version: 1, snapshot: validSnapshot }),
     JSON.stringify({ format: 'abcds-allocation-snapshot', version: 1, snapshot: { anchor: 1 } }),
     JSON.stringify({
@@ -87,7 +119,7 @@ test('distinguishes missing, invalid, and valid stored snapshots', () => {
     format: 'abcds-allocation-snapshot',
     version: 1,
     snapshot: validSnapshot,
-  }))), { status: 'loaded', snapshot: validSnapshot });
+  }))), { status: 'loaded', snapshot: validSnapshot, savedAt: null });
 });
 
 test('clears stored snapshots and tolerates unavailable browser storage', () => {
@@ -117,7 +149,7 @@ test('simulator exposes explicit local snapshot persistence controls and privacy
   assert.match(simulatorPage, /restoreAllocationSnapshot/);
   assert.match(simulatorPage, /saveAllocationSnapshot/);
   assert.match(simulatorPage, /clearAllocationSnapshot/);
-  assert.match(simulatorPage, /four aggregate pillar balances and aggregate margin debt/i);
+  assert.match(simulatorPage, /four aggregate pillar balances, aggregate margin debt, and save time/i);
   assert.match(simulatorPage, /no holdings, transactions, or account identifiers/i);
 });
 

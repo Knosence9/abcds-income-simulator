@@ -9,6 +9,10 @@ export function attachAllocationSnapshotStorage({
   saveSnapshot,
   clearSnapshot,
   refreshSummary,
+  formatSavedAt = (savedAt) => new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  }).format(new Date(savedAt)),
 }) {
   if (!storage) {
     saveButton.disabled = true;
@@ -40,7 +44,9 @@ export function attachAllocationSnapshotStorage({
   if (restored.status === 'loaded') {
     setFields(restored.snapshot);
     refreshSummary();
-    status.textContent = 'Saved aggregate allocation snapshot restored from this browser.';
+    status.textContent = restored.savedAt
+      ? `Aggregate allocation snapshot from ${formatSavedAt(restored.savedAt)} restored from this browser.`
+      : 'Aggregate allocation snapshot restored from this browser; its save date is unavailable.';
   } else if (restored.status === 'invalid') {
     status.textContent = 'Saved aggregate allocation snapshot was rejected and was not applied.';
   } else if (restored.status === 'unavailable') {
@@ -49,8 +55,12 @@ export function attachAllocationSnapshotStorage({
 
   saveButton.addEventListener('click', () => {
     const saveResult = saveSnapshot(storage, currentSnapshot());
+    const savedAtIsValid = typeof saveResult.savedAt === 'string'
+      && !Number.isNaN(Date.parse(saveResult.savedAt));
     status.textContent = saveResult.status === 'saved'
-      ? 'Aggregate allocation snapshot saved in this browser.'
+      ? (savedAtIsValid
+        ? `Aggregate allocation snapshot saved in this browser on ${formatSavedAt(saveResult.savedAt)}.`
+        : 'Aggregate allocation snapshot saved in this browser.')
       : saveResult.status === 'invalid'
         ? 'Enter a valid aggregate snapshot before saving.'
         : 'Browser-local snapshot storage failed. Values were not saved.';
