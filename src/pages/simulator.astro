@@ -156,7 +156,7 @@ const defaultInputs = {
                 <label for="activeDynamoCount">Active Dynamo positions</label>
                 <input id="activeDynamoCount" type="number" min="0" step="1" value="0" inputmode="numeric" aria-describedby="dynamoCountPrivacy" />
               </div>
-              <p id="dynamoCountPrivacy" class="footer-note">Maximum four active Dynamos. This active Dynamo count is not stored, exported, or sent.</p>
+              <p id="dynamoCountPrivacy" class="footer-note">Maximum four active Dynamos. This active Dynamo count is calculated locally in this browser. The active Dynamo count is not stored, exported, or sent.</p>
               <p id="dynamoCountStatus" class="footer-note" role="status" aria-live="polite" aria-atomic="true">0 active Dynamos is within the four-position cap.</p>
               <div class="snapshot-field">
                 <label for="anonymousPositionValues">Anonymous position market values</label>
@@ -659,6 +659,7 @@ const defaultInputs = {
           }
         };
         activeDynamoCount.addEventListener('input', renderDynamoCount);
+        renderDynamoCount();
         const anonymousPositionValues = $('anonymousPositionValues') as HTMLTextAreaElement;
         const positionConcentrationStatus = $('positionConcentrationStatus');
         const renderPositionConcentration = () => {

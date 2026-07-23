@@ -114,8 +114,12 @@ test('simulator offers a local-only accessible active Dynamo cap check', async (
   );
   assert.match(simulatorPage, /calculateDynamoPositionCap/);
   assert.match(simulatorPage, /Maximum four active Dynamos/);
+  assert.match(simulatorPage, /active Dynamo count is calculated locally in this browser/i);
   assert.match(simulatorPage, /active Dynamo count is not stored, exported, or sent/i);
-  assert.match(simulatorPage, /activeDynamoCount\.addEventListener\('input', renderDynamoCount\)/);
+  assert.match(
+    simulatorPage,
+    /activeDynamoCount\.addEventListener\('input', renderDynamoCount\);[\s\S]*renderDynamoCount\(\);/,
+  );
 });
 
 test('simulator offers a local-only accessible anonymous concentration check', async () => {
