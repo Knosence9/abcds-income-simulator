@@ -316,6 +316,28 @@ export function calculateDynamoPositionCap(activeCount) {
   };
 }
 
+export function calculateDuplicateUnderlyingExposure(value) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new RangeError('Enter at least one anonymous underlying group tag.');
+  }
+  const tags = value.split(/\r?\n/).map((tag) => tag.trim().toLowerCase());
+  if (
+    tags.some((tag) => tag === '' || tag.length > 32 || !/^group-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tag))
+  ) {
+    throw new RangeError('Use one synthetic group- tag with letters, numbers, or hyphens per line.');
+  }
+  const groupCounts = new Map();
+  for (const tag of tags) groupCounts.set(tag, (groupCounts.get(tag) ?? 0) + 1);
+  const duplicateCounts = [...groupCounts.values()].filter((count) => count > 1);
+
+  return {
+    positionCount: tags.length,
+    duplicateGroupCount: duplicateCounts.length,
+    duplicatePositionCount: duplicateCounts.reduce((total, count) => total + count, 0),
+    hasDuplicateExposure: duplicateCounts.length > 0,
+  };
+}
+
 export function parseAnonymousPositionValues(value) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new RangeError('Enter at least one anonymous position value.');
