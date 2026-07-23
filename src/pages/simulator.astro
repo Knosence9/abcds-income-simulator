@@ -153,6 +153,12 @@ const defaultInputs = {
               </div>
               <p id="allocationSnapshotSummary" class="footer-note" aria-live="polite">Enter at least one pillar balance to calculate weights.</p>
               <div class="snapshot-field">
+                <label for="anonymousUnderlyingGroups">Anonymous underlying group tags</label>
+                <textarea id="anonymousUnderlyingGroups" maxlength="5000" aria-describedby="duplicateUnderlyingPrivacy" placeholder={'group-1\ngroup-1\ngroup-2'}></textarea>
+              </div>
+              <p id="duplicateUnderlyingPrivacy" class="footer-note">Enter one synthetic group tag per position without fund names, symbols, account identifiers, or transactions. Group tags are not stored, exported, or sent.</p>
+              <p id="duplicateUnderlyingStatus" class="footer-note" role="status" aria-live="polite" aria-atomic="true">Enter anonymous group tags to check duplicate underlying exposure.</p>
+              <div class="snapshot-field">
                 <label for="activeDynamoCount">Active Dynamo positions</label>
                 <input id="activeDynamoCount" type="number" min="0" step="1" value="0" inputmode="numeric" aria-describedby="dynamoCountPrivacy" />
               </div>
@@ -259,7 +265,7 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { calculateDuplicateUnderlyingExposure, calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, downloadAllocationSnapshotCsv, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { downloadProjectionSummaryCsv, serializeProjectionSummaryCsv } from '../lib/projection-summary-export.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
@@ -660,6 +666,26 @@ const defaultInputs = {
         };
         activeDynamoCount.addEventListener('input', renderDynamoCount);
         renderDynamoCount();
+        const anonymousUnderlyingGroups = $('anonymousUnderlyingGroups') as HTMLTextAreaElement;
+        const duplicateUnderlyingStatus = $('duplicateUnderlyingStatus');
+        const renderDuplicateUnderlyingExposure = () => {
+          if (anonymousUnderlyingGroups.value.trim() === '') {
+            anonymousUnderlyingGroups.removeAttribute('aria-invalid');
+            duplicateUnderlyingStatus.textContent = 'Enter anonymous group tags to check duplicate underlying exposure.';
+            return;
+          }
+          try {
+            const result = calculateDuplicateUnderlyingExposure(anonymousUnderlyingGroups.value);
+            anonymousUnderlyingGroups.removeAttribute('aria-invalid');
+            duplicateUnderlyingStatus.textContent = result.hasDuplicateExposure
+              ? `${result.duplicateGroupCount} duplicate underlying group affects ${result.duplicatePositionCount} of ${result.positionCount} positions.`
+              : `No duplicate underlying groups across ${result.positionCount} positions.`;
+          } catch {
+            anonymousUnderlyingGroups.setAttribute('aria-invalid', 'true');
+            duplicateUnderlyingStatus.textContent = 'Enter one synthetic tag per line, starting with group-, using up to 32 letters, numbers, or hyphen-separated parts.';
+          }
+        };
+        anonymousUnderlyingGroups.addEventListener('input', renderDuplicateUnderlyingExposure);
         const anonymousPositionValues = $('anonymousPositionValues') as HTMLTextAreaElement;
         const positionConcentrationStatus = $('positionConcentrationStatus');
         const renderPositionConcentration = () => {

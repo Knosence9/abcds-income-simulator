@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  calculateDuplicateUnderlyingExposure,
   calculateDynamoPositionCap,
   calculatePositionConcentration,
   calculateMarginResumeTarget,
@@ -28,6 +29,47 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('flags case-insensitive anonymous duplicate-underlying groups', () => {
+  assert.deepEqual(
+    calculateDuplicateUnderlyingExposure('group-1\nGROUP-1\ngroup-2\ngroup-1'),
+    {
+      positionCount: 4,
+      duplicateGroupCount: 1,
+      duplicatePositionCount: 3,
+      hasDuplicateExposure: true,
+    },
+  );
+});
+
+test('rejects empty or identifying anonymous underlying group tags', () => {
+  for (const value of [
+    '',
+    'group-1\n',
+    'group-1\n\ngroup-2',
+    'synthetic holding',
+    '$synthetic-symbol',
+    'holding-alpha',
+    'a'.repeat(33),
+  ]) {
+    assert.throws(
+      () => calculateDuplicateUnderlyingExposure(value),
+      { name: 'RangeError' },
+    );
+  }
+});
+
+test('reports no duplicate exposure for unique anonymous groups', () => {
+  assert.deepEqual(
+    calculateDuplicateUnderlyingExposure('group-1\ngroup-2\ngroup-3'),
+    {
+      positionCount: 3,
+      duplicateGroupCount: 0,
+      duplicatePositionCount: 0,
+      hasDuplicateExposure: false,
+    },
+  );
+});
 
 test('flags active Dynamo counts above the four-position cap', () => {
   assert.deepEqual(calculateDynamoPositionCap(4), {
@@ -95,6 +137,31 @@ test('rejects empty or invalid anonymous position lines', () => {
       { name: 'RangeError' },
     );
   }
+});
+
+test('simulator offers a local-only accessible anonymous duplicate-underlying check', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(simulatorPage, /<label for="anonymousUnderlyingGroups">Anonymous underlying group tags<\/label>/);
+  assert.match(
+    simulatorPage,
+    /<textarea id="anonymousUnderlyingGroups"[^>]*maxlength="5000"[^>]*aria-describedby="duplicateUnderlyingPrivacy"/,
+  );
+  assert.match(
+    simulatorPage,
+    /id="duplicateUnderlyingStatus"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/,
+  );
+  assert.match(simulatorPage, /calculateDuplicateUnderlyingExposure/);
+  assert.match(simulatorPage, /without fund names, symbols, account identifiers, or transactions/i);
+  assert.match(simulatorPage, /group tags are not stored, exported, or sent/i);
+  assert.match(simulatorPage, /duplicate underlying group/);
+  assert.match(
+    simulatorPage,
+    /anonymousUnderlyingGroups\.addEventListener\('input', renderDuplicateUnderlyingExposure\);/,
+  );
 });
 
 test('simulator offers a local-only accessible active Dynamo cap check', async () => {
