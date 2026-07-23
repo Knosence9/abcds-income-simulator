@@ -7,6 +7,7 @@ import {
   ALLOCATION_SNAPSHOT_STORAGE_KEY,
   clearAllocationSnapshot,
   createAllocationSnapshotImportCoordinator,
+  downloadAllocationSnapshotCsv,
   getAllocationSnapshotStorage,
   loadAllocationSnapshot,
   normalizeAllocationSnapshot,
@@ -103,10 +104,49 @@ test('serializes a synthetic aggregate allocation snapshot as a stable spreadshe
     'Closed-end balance,3000.00',
     'Dynamo balance,2000.00',
     'Margin debt,3500.00',
-    `Saved at,${savedAt}`,
+    `Exported at,${savedAt}`,
   ].join('\r\n'));
   assert.equal(serializeAllocationSnapshotCsv({ ...validSnapshot, anchor: -1 }, savedAt), null);
   assert.equal(serializeAllocationSnapshotCsv(validSnapshot, 'July 23'), null);
+});
+
+test('downloads a validated allocation snapshot CSV through injected browser boundaries', () => {
+  const blobs = [];
+  const links = [];
+  const revoked = [];
+  class FakeBlob {
+    constructor(parts, options) {
+      this.parts = parts;
+      this.options = options;
+      blobs.push(this);
+    }
+  }
+  const link = {
+    href: '',
+    download: '',
+    click() { links.push({ href: this.href, download: this.download }); },
+  };
+
+  assert.equal(downloadAllocationSnapshotCsv(
+    validSnapshot,
+    '2026-07-23T03:15:00.000Z',
+    {
+      BlobClass: FakeBlob,
+      createObjectUrl: (blob) => {
+        assert.equal(blob, blobs[0]);
+        return 'blob:synthetic-allocation-csv';
+      },
+      revokeObjectUrl: (url) => revoked.push(url),
+      createLink: () => link,
+    },
+  ), true);
+  assert.match(blobs[0].parts[0], /Exported at,2026-07-23T03:15:00.000Z/);
+  assert.deepEqual(blobs[0].options, { type: 'text/csv;charset=utf-8' });
+  assert.deepEqual(links, [{
+    href: 'blob:synthetic-allocation-csv',
+    download: 'abcds-allocation-snapshot.csv',
+  }]);
+  assert.deepEqual(revoked, ['blob:synthetic-allocation-csv']);
 });
 
 test('allocation snapshot transfer rejects legacy, extended, and invalid records', () => {
@@ -296,8 +336,7 @@ test('simulator offers an export-only aggregate snapshot CSV download', async ()
   );
 
   assert.match(simulatorPage, /id="exportAllocationSnapshotCsv"[^>]*type="button"/);
-  assert.match(simulatorPage, /serializeAllocationSnapshotCsv\(/);
-  assert.match(simulatorPage, /abcds-allocation-snapshot\.csv/);
+  assert.match(simulatorPage, /downloadAllocationSnapshotCsv\(/);
   assert.match(simulatorPage, /Aggregate allocation snapshot exported as CSV\./);
   assert.match(simulatorPage, /CSV is export-only; use JSON to import a snapshot/i);
 });
