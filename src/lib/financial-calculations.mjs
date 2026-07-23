@@ -8,6 +8,7 @@ const projectionScenarios = {
     closedEndYield: 8,
     dynamoAllocation: 10,
     dynamoYield: 10,
+    distributionCut: 0,
     dividendGrowth: 1,
     inflation: 3,
     annualNavReturn: 0,
@@ -21,6 +22,7 @@ const projectionScenarios = {
     closedEndYield: 12,
     dynamoAllocation: 20,
     dynamoYield: 18,
+    distributionCut: 0,
     dividendGrowth: 2,
     inflation: 3,
     annualNavReturn: 3,
@@ -34,11 +36,26 @@ const projectionScenarios = {
     closedEndYield: 7,
     dynamoAllocation: 10,
     dynamoYield: 8,
+    distributionCut: 25,
     dividendGrowth: -10,
     inflation: 7,
     annualNavReturn: -12,
   },
 };
+
+export function applyDistributionCut({ annualYield, cutPercent }) {
+  if (
+    !Number.isFinite(annualYield)
+    || annualYield < 0
+    || !Number.isFinite(cutPercent)
+    || cutPercent < 0
+    || cutPercent > 100
+  ) {
+    throw new RangeError('Annual yield must be non-negative and distribution cut must be from 0% to 100%.');
+  }
+
+  return annualYield * (1 - cutPercent / 100);
+}
 
 export function getProjectionScenario(name) {
   if (!Object.hasOwn(projectionScenarios, name)) {

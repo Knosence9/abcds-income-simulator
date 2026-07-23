@@ -24,6 +24,7 @@ const defaultInputs = {
   closedEndYield: 12,
   dynamoAllocation: 20,
   dynamoYield: 18,
+  distributionCut: 0,
   dividendGrowth: 4,
   annualNavReturn: 3,
   inflation: 7,
@@ -139,7 +140,7 @@ const defaultInputs = {
                 <button class="scenario-button" type="button" data-scenario="base" aria-pressed="false">Base</button>
                 <button class="scenario-button" type="button" data-scenario="stress" aria-pressed="false">Stress</button>
               </div>
-              <p class="footer-note">These presets fill transparent starting assumptions below. The stress preset includes a synthetic NAV/price decline and distribution-cut path.</p>
+              <p class="footer-note">These presets fill transparent starting assumptions below. The stress preset includes a synthetic NAV/price decline. The stress preset applies an immediate 25% distribution cut.</p>
             </fieldset>
             <fieldset class="allocation-snapshot">
               <legend>Current ABCD allocation snapshot</legend>
@@ -197,6 +198,8 @@ const defaultInputs = {
             <div class="field"><label id="closedEndYieldLabel" for="closedEndYieldNumber">Closed-end annual yield % <input id="closedEndYieldNumber" type="number" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></label><input id="closedEndYield" type="range" aria-labelledby="closedEndYieldLabel" value={defaultInputs.closedEndYield} min="0" max="80" step="0.1" /></div>
             <div class="field"><label id="dynamoAllocationLabel" for="dynamoAllocationNumber">Dynamo allocation % <input id="dynamoAllocationNumber" type="number" value={defaultInputs.dynamoAllocation} min="0" max="100" step="any" /></label><input id="dynamoAllocation" type="range" aria-labelledby="dynamoAllocationLabel" value={defaultInputs.dynamoAllocation} min="0" max="100" step="any" /></div>
             <div class="field"><label id="dynamoYieldLabel" for="dynamoYieldNumber">Dynamo annual yield % <input id="dynamoYieldNumber" type="number" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></label><input id="dynamoYield" type="range" aria-labelledby="dynamoYieldLabel" value={defaultInputs.dynamoYield} min="0" max="80" step="0.1" /></div>
+            <div class="field"><label id="distributionCutLabel" for="distributionCutNumber">Immediate distribution cut % <input id="distributionCutNumber" type="number" value={defaultInputs.distributionCut} min="0" max="100" step="0.1" /></label><input id="distributionCut" type="range" aria-labelledby="distributionCutLabel" value={defaultInputs.distributionCut} min="0" max="100" step="0.1" /></div>
+            <div class="callout compact"><b>Distribution-cut assumption:</b> this immediate proportional cut reduces every pillar yield before ongoing annual dividend growth. It affects both reinvested A/C and spendable B/D distributions.</div>
             <p id="allocationStatus" class="footer-note" aria-live="polite">Pillar allocations total 100%.</p>
             <div class="field"><label id="growthLabel" for="growthNumber">Dividend growth % <input id="growthNumber" type="number" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></label><input id="growth" type="range" aria-labelledby="growthLabel" value={defaultInputs.dividendGrowth} min="-20" max="40" step="0.1" /></div>
             <div class="field"><label id="navReturnLabel" for="navReturnNumber">Annual NAV/price return % <input id="navReturnNumber" type="number" value={defaultInputs.annualNavReturn} min="-50" max="30" step="0.1" /></label><input id="navReturn" type="range" aria-labelledby="navReturnLabel" value={defaultInputs.annualNavReturn} min="-50" max="30" step="0.1" /></div>
@@ -245,7 +248,7 @@ const defaultInputs = {
             </div>
             <div class="methodology-card">
               <h3>Assumptions, not predictions</h3>
-              <p>Returns, yields, dividend growth, inflation, and distribution behavior are smooth user-selected assumptions, not forecasts. Actual markets and fund distributions can change unevenly or abruptly.</p>
+              <p>Returns, yields, dividend growth, inflation, and distribution behavior are smooth user-selected assumptions, not forecasts. The immediate distribution cut is applied before ongoing annual dividend growth. Actual markets and fund distributions can change unevenly or abruptly.</p>
             </div>
             <div class="methodology-card">
               <h3>What is outside this model</h3>
@@ -265,12 +268,12 @@ const defaultInputs = {
     <RadialSiteMenu page="simulator" />
 
     <script>
-      import { calculateDuplicateUnderlyingExposure, calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
+      import { applyDistributionCut, calculateDuplicateUnderlyingExposure, calculateDynamoPositionCap, calculateExpenseCoverage, calculateExpenseCrossoverPeriod, calculateMarginAccount, calculateMarginRepairPeriod, calculatePeriodicMarketReturn, calculatePillarAllocationSnapshot, calculatePillarDistributions, calculatePillarMarginSnapshot, calculatePositionConcentration, calculateProjectionContributionPeriod, getProjectionScenario, parseAnonymousPositionValues, parseWeeklyContribution, preparePillarMarginSnapshotForProjection, routePillarDistributions, validatePillarAllocations } from '../lib/financial-calculations.mjs';
       import { clearAllocationSnapshot, createAllocationSnapshotImportCoordinator, downloadAllocationSnapshotCsv, getAllocationSnapshotStorage, readAllocationSnapshotImportFile, readAllocationSnapshotInputs, restoreAllocationSnapshot, saveAllocationSnapshot, serializeAllocationSnapshotExport } from '../lib/allocation-snapshot-storage.mjs';
       import { downloadProjectionSummaryCsv, serializeProjectionSummaryCsv } from '../lib/projection-summary-export.mjs';
       import { attachAllocationSnapshot, attachAllocationSnapshotStorage, attachProjectionScenarioPresets, attachSimulatorControlsToggle } from '../lib/simulator-controls.mjs';
 
-      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
+      const pairs = [['starting', 'startingNumber'], ['marginDebt', 'marginDebtNumber'], ['marginApr', 'marginAprNumber'], ['weeklyMarginRepair', 'weeklyMarginRepairNumber'], ['paycheck', 'paycheckNumber'], ['anchorAllocation', 'anchorAllocationNumber'], ['anchorYield', 'anchorYieldNumber'], ['boosterAllocation', 'boosterAllocationNumber'], ['boosterYield', 'boosterYieldNumber'], ['closedEndAllocation', 'closedEndAllocationNumber'], ['closedEndYield', 'closedEndYieldNumber'], ['dynamoAllocation', 'dynamoAllocationNumber'], ['dynamoYield', 'dynamoYieldNumber'], ['distributionCut', 'distributionCutNumber'], ['growth', 'growthNumber'], ['navReturn', 'navReturnNumber'], ['inflation', 'inflationNumber'], ['expenses', 'expensesNumber'], ['projectionYears', 'projectionYearsNumber']] as const;
       type InputId = (typeof pairs)[number][number];
       const inputIds = new Set<string>(pairs.flat());
       function $(id: InputId): HTMLInputElement;
@@ -392,7 +395,7 @@ const defaultInputs = {
           ? 'Margin debt was adjusted because it cannot exceed starting gross market value.'
           : '';
       }
-      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), weeklyMarginRepair: Number($('weeklyMarginRepair').value), paycheck: Number($('paycheck').value), pillars: { anchor: { allocation: Number($('anchorAllocation').value), annualYield: Number($('anchorYield').value) }, booster: { allocation: Number($('boosterAllocation').value), annualYield: Number($('boosterYield').value) }, closedEnd: { allocation: Number($('closedEndAllocation').value), annualYield: Number($('closedEndYield').value) }, dynamo: { allocation: Number($('dynamoAllocation').value), annualYield: Number($('dynamoYield').value) } }, g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
+      function getInputs() { return { starting: Number($('starting').value), marginDebt: Number($('marginDebt').value), marginApr: Number($('marginApr').value), weeklyMarginRepair: Number($('weeklyMarginRepair').value), paycheck: Number($('paycheck').value), pillars: { anchor: { allocation: Number($('anchorAllocation').value), annualYield: Number($('anchorYield').value) }, booster: { allocation: Number($('boosterAllocation').value), annualYield: Number($('boosterYield').value) }, closedEnd: { allocation: Number($('closedEndAllocation').value), annualYield: Number($('closedEndYield').value) }, dynamo: { allocation: Number($('dynamoAllocation').value), annualYield: Number($('dynamoYield').value) } }, distributionCut: Number($('distributionCut').value), g: Number($('growth').value) / 100, navReturn: Number($('navReturn').value), i: Number($('inflation').value) / 100, monthlyExpenses: Number($('expenses').value), projectionYears: Math.max(1, Math.round(Number($('projectionYears').value))) }; }
       function periodCount() { return 12; }
       function periodLabel() { return 'month'; }
       function announceResults() {
@@ -482,7 +485,7 @@ const defaultInputs = {
           const currentPillars = Object.fromEntries(
             Object.entries(input.pillars).map(([name, pillar]) => [
               name,
-              { ...pillar, annualYield: Math.max(0, pillar.annualYield * growthFactor) },
+              { ...pillar, annualYield: Math.max(0, applyDistributionCut({ annualYield: pillar.annualYield, cutPercent: input.distributionCut }) * growthFactor) },
             ]),
           );
           const distributions = calculatePillarDistributions({
@@ -591,6 +594,7 @@ const defaultInputs = {
             closedEndYieldPercent: input.pillars.closedEnd.annualYield,
             dynamoAllocationPercent: input.pillars.dynamo.allocation,
             dynamoYieldPercent: input.pillars.dynamo.annualYield,
+            distributionCutPercent: input.distributionCut,
             dividendGrowthPercent: input.g * 100,
             navReturnPercent: input.navReturn,
             inflationPercent: input.i * 100,
@@ -824,6 +828,7 @@ const defaultInputs = {
             closedEndYield: [$('closedEndYield'), $('closedEndYieldNumber')],
             dynamoAllocation: [$('dynamoAllocation'), $('dynamoAllocationNumber')],
             dynamoYield: [$('dynamoYield'), $('dynamoYieldNumber')],
+            distributionCut: [$('distributionCut'), $('distributionCutNumber')],
             dividendGrowth: [$('growth'), $('growthNumber')],
             annualNavReturn: [$('navReturn'), $('navReturnNumber')],
             inflation: [$('inflation'), $('inflationNumber')],

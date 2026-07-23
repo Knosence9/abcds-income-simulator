@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  applyDistributionCut,
   calculateDuplicateUnderlyingExposure,
   calculateDynamoPositionCap,
   calculatePositionConcentration,
@@ -29,6 +30,22 @@ import {
   routePillarDistributions,
   validatePillarAllocations,
 } from '../src/lib/financial-calculations.mjs';
+
+test('applies an immediate percentage cut to an annual distribution yield', () => {
+  assert.equal(applyDistributionCut({ annualYield: 12, cutPercent: 25 }), 9);
+});
+
+test('rejects invalid annual yields and distribution cuts', () => {
+  for (const input of [
+    { annualYield: -1, cutPercent: 0 },
+    { annualYield: Number.NaN, cutPercent: 0 },
+    { annualYield: 12, cutPercent: -1 },
+    { annualYield: 12, cutPercent: 100.01 },
+    { annualYield: 12, cutPercent: Number.POSITIVE_INFINITY },
+  ]) {
+    assert.throws(() => applyDistributionCut(input), { name: 'RangeError' });
+  }
+});
 
 test('flags case-insensitive anonymous duplicate-underlying groups', () => {
   assert.deepEqual(
@@ -734,6 +751,7 @@ test('provides conservative projection starting assumptions', () => {
     closedEndYield: 8,
     dynamoAllocation: 10,
     dynamoYield: 10,
+    distributionCut: 0,
     dividendGrowth: 1,
     inflation: 3,
     annualNavReturn: 0,
@@ -750,6 +768,7 @@ test('provides base projection starting assumptions', () => {
     closedEndYield: 12,
     dynamoAllocation: 20,
     dynamoYield: 18,
+    distributionCut: 0,
     dividendGrowth: 2,
     inflation: 3,
     annualNavReturn: 3,
@@ -766,6 +785,7 @@ test('provides distribution stress starting assumptions', () => {
     closedEndYield: 7,
     dynamoAllocation: 10,
     dynamoYield: 8,
+    distributionCut: 25,
     dividendGrowth: -10,
     inflation: 7,
     annualNavReturn: -12,
@@ -798,6 +818,33 @@ test('separates gross market value, margin debt, and net equity', () => {
       marginEquityPercent: 75,
     },
   );
+});
+
+test('simulator exposes an immediate distribution cut before ongoing growth', async () => {
+  const simulatorPage = await readFile(
+    new URL('../src/pages/simulator.astro', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    simulatorPage,
+    /<label id="distributionCutLabel" for="distributionCutNumber">Immediate distribution cut %/,
+  );
+  assert.match(
+    simulatorPage,
+    /<input id="distributionCut" type="range" aria-labelledby="distributionCutLabel"[^>]*min="0"[^>]*max="100"/,
+  );
+  assert.match(simulatorPage, /distributionCut: Number\(\$\('distributionCut'\)\.value\)/);
+  assert.match(
+    simulatorPage,
+    /applyDistributionCut\(\{ annualYield: pillar\.annualYield, cutPercent: input\.distributionCut \}\) \* growthFactor/,
+  );
+  assert.match(
+    simulatorPage,
+    /distributionCut: \[\$\('distributionCut'\), \$\('distributionCutNumber'\)\]/,
+  );
+  assert.match(simulatorPage, /stress preset applies an immediate 25% distribution cut/i);
+  assert.match(simulatorPage, /the immediate distribution cut is applied before ongoing annual dividend growth/i);
 });
 
 test('simulator models annual NAV price return as an accessible preset assumption', async () => {
