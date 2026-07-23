@@ -6,6 +6,7 @@ import {
   ALLOCATION_SNAPSHOT_MAX_IMPORT_BYTES,
   ALLOCATION_SNAPSHOT_STORAGE_KEY,
   clearAllocationSnapshot,
+  createAllocationSnapshotImportCoordinator,
   getAllocationSnapshotStorage,
   loadAllocationSnapshot,
   normalizeAllocationSnapshot,
@@ -141,6 +142,36 @@ test('rejects oversized allocation snapshot imports before reading file contents
 
   assert.deepEqual(await readAllocationSnapshotImportFile(oversizedFile), { status: 'too-large' });
   assert.equal(readCount, 0);
+});
+
+test('keeps only the latest allocation snapshot import request current', () => {
+  const imports = createAllocationSnapshotImportCoordinator();
+  const firstRequest = imports.begin();
+  const secondRequest = imports.begin();
+
+  assert.equal(firstRequest.isCurrent(), false);
+  assert.equal(secondRequest.isCurrent(), true);
+
+  imports.invalidate();
+  assert.equal(secondRequest.isCurrent(), false);
+});
+
+test('clears the previous snapshot file before opening a replacement picker', () => {
+  const imports = createAllocationSnapshotImportCoordinator();
+  const request = imports.begin();
+  const clicks = [];
+  const fileInput = {
+    value: 'abcds-allocation-snapshot.json',
+    click() {
+      clicks.push(this.value);
+    },
+  };
+
+  imports.openFilePicker(fileInput);
+
+  assert.equal(request.isCurrent(), false);
+  assert.equal(fileInput.value, '');
+  assert.deepEqual(clicks, ['']);
 });
 
 test('rejects an invalid injected save time without writing a record', () => {

@@ -96,6 +96,24 @@ export async function readAllocationSnapshotImportFile(file) {
   }
 }
 
+export function createAllocationSnapshotImportCoordinator() {
+  let currentRequestId = 0;
+  return {
+    begin() {
+      const requestId = ++currentRequestId;
+      return { isCurrent: () => requestId === currentRequestId };
+    },
+    invalidate() {
+      currentRequestId += 1;
+    },
+    openFilePicker(fileInput) {
+      currentRequestId += 1;
+      fileInput.value = '';
+      fileInput.click();
+    },
+  };
+}
+
 export function readAllocationSnapshotInputs(balanceInputs, marginDebtInput) {
   const inputValue = (input) => {
     const rawValue = String(input.value).trim();
