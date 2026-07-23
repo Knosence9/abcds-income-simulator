@@ -54,6 +54,45 @@ test('calculates margin state from a synthetic aggregate pillar snapshot', () =>
   });
 });
 
+test('reports a non-empty zero-debt snapshot as full equity', () => {
+  assert.deepEqual(
+    calculatePillarMarginSnapshot(
+      { anchor: 60, booster: 20, closedEnd: 10, dynamo: 10 },
+      0,
+    ),
+    {
+      totalValue: 100,
+      weights: { anchor: 60, booster: 20, closedEnd: 10, dynamo: 10 },
+      marginDebt: 0,
+      netEquity: 100,
+      marginEquityPercent: 100,
+      marginState: 'eligible-to-resume',
+    },
+  );
+});
+
+test('accepts debt at the cent-normalized gross-value ceiling', () => {
+  assert.deepEqual(
+    calculatePillarMarginSnapshot(
+      { anchor: 0.58, booster: 0.29, closedEnd: 0, dynamo: 0 },
+      0.87,
+    ),
+    {
+      totalValue: 0.87,
+      weights: {
+        anchor: (0.58 / 0.87) * 100,
+        booster: (0.29 / 0.87) * 100,
+        closedEnd: 0,
+        dynamo: 0,
+      },
+      marginDebt: 0.87,
+      netEquity: 0,
+      marginEquityPercent: 0,
+      marginState: 'repair-immediately',
+    },
+  );
+});
+
 test('rejects invalid aggregate margin debt and handles an empty snapshot explicitly', () => {
   const balances = { anchor: 3_000, booster: 2_000, closedEnd: 3_000, dynamo: 2_000 };
 

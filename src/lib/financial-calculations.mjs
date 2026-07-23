@@ -201,10 +201,13 @@ export function calculateProjectionContributionPeriod({
 
 export function calculatePillarMarginSnapshot(balances, marginDebt) {
   const allocationSnapshot = calculatePillarAllocationSnapshot(balances);
+  const normalizedMarginDebt = Number.isFinite(marginDebt)
+    ? Math.round((marginDebt + Number.EPSILON) * 100) / 100
+    : marginDebt;
   if (
     !Number.isFinite(marginDebt)
     || marginDebt < 0
-    || marginDebt > allocationSnapshot.totalValue
+    || normalizedMarginDebt > allocationSnapshot.totalValue
   ) {
     throw new RangeError(
       'Margin debt must be finite, non-negative, and no greater than gross market value.',
@@ -213,7 +216,7 @@ export function calculatePillarMarginSnapshot(balances, marginDebt) {
   if (!allocationSnapshot.weights) {
     return {
       ...allocationSnapshot,
-      marginDebt,
+      marginDebt: normalizedMarginDebt,
       netEquity: 0,
       marginEquityPercent: null,
       marginState: null,
@@ -221,12 +224,12 @@ export function calculatePillarMarginSnapshot(balances, marginDebt) {
   }
   const marginAccount = calculateMarginAccount({
     marketValue: allocationSnapshot.totalValue,
-    marginDebt,
+    marginDebt: normalizedMarginDebt,
   });
 
   return {
     ...allocationSnapshot,
-    marginDebt,
+    marginDebt: normalizedMarginDebt,
     netEquity: marginAccount.netEquity,
     marginEquityPercent: marginAccount.marginEquityPercent,
     marginState: classifyMarginRepairState(marginAccount.marginEquityPercent),
@@ -244,7 +247,11 @@ export function calculatePillarAllocationSnapshot(balances) {
   ) {
     throw new RangeError('Pillar balances must contain four finite, non-negative values.');
   }
-  const totalValue = values.reduce((total, balance) => total + balance, 0);
+  const rawTotalValue = values.reduce((total, balance) => total + balance, 0);
+  if (!Number.isFinite(rawTotalValue)) {
+    throw new RangeError('Pillar balance total must be finite.');
+  }
+  const totalValue = Math.round((rawTotalValue + Number.EPSILON) * 100) / 100;
   if (!Number.isFinite(totalValue)) {
     throw new RangeError('Pillar balance total must be finite.');
   }
