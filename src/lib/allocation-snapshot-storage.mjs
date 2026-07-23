@@ -69,6 +69,21 @@ function parseAllocationSnapshot(serializedSnapshot) {
   }
 }
 
+export function serializeAllocationSnapshotCsv(snapshot, savedAt) {
+  const normalized = normalizeAllocationSnapshot(snapshot);
+  if (!normalized || !isValidSavedAt(savedAt)) return null;
+
+  return [
+    'Category,Amount or timestamp',
+    `Anchor balance,${normalized.anchor.toFixed(2)}`,
+    `Booster balance,${normalized.booster.toFixed(2)}`,
+    `Closed-end balance,${normalized.closedEnd.toFixed(2)}`,
+    `Dynamo balance,${normalized.dynamo.toFixed(2)}`,
+    `Margin debt,${normalized.marginDebt.toFixed(2)}`,
+    `Saved at,${savedAt}`,
+  ].join('\r\n');
+}
+
 export function serializeAllocationSnapshotExport(snapshot, savedAt) {
   const normalized = normalizeAllocationSnapshot(snapshot);
   if (!normalized || !isValidSavedAt(savedAt)) return null;
