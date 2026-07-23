@@ -275,6 +275,7 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
         createWeeklyBudgetImportCoordinator,
         getWeeklyBudgetStorage,
         loadWeeklyBudget,
+        parseWeeklyBudgetInputValue,
         readWeeklyBudgetImportFile,
         saveWeeklyBudget,
         serializeWeeklyBudgetCsv,
@@ -297,7 +298,8 @@ const weekly200 = monthlyToWeekly(200).toFixed(2);
       const weeklyCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
       const weeklyValue = (id: WeeklyBudgetInputId) => {
         const input = document.getElementById(id);
-        return Number(input instanceof HTMLInputElement ? input.value : undefined);
+        if (!(input instanceof HTMLInputElement)) return Number.NaN;
+        return parseWeeklyBudgetInputValue(input.value);
       };
       const weeklySnapshot = () => Object.fromEntries(
         weeklyBudgetIds.map((id) => [id, weeklyValue(id)]),

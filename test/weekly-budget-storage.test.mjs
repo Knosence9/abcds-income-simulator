@@ -9,6 +9,7 @@ import {
   loadWeeklyBudget,
   normalizeWeeklyBudgetSnapshot,
   parseWeeklyBudgetImport,
+  parseWeeklyBudgetInputValue,
   parseWeeklyBudgetSnapshot,
   readWeeklyBudgetImportFile,
   saveWeeklyBudget,
@@ -49,6 +50,26 @@ test('rejects weekly amounts above the planner calculation bound', () => {
     }),
     null,
   );
+});
+
+test('preserves cleared required budget inputs as invalid export values', async () => {
+  assert.equal(Number.isNaN(parseWeeklyBudgetInputValue('')), true);
+  assert.equal(Number.isNaN(parseWeeklyBudgetInputValue('   ')), true);
+  assert.equal(parseWeeklyBudgetInputValue('0'), 0);
+  assert.equal(parseWeeklyBudgetInputValue('12.34'), 12.34);
+
+  const clearedSnapshot = {
+    ...validSnapshot,
+    weeklyIncome: parseWeeklyBudgetInputValue(''),
+  };
+  assert.equal(serializeWeeklyBudgetCsv(clearedSnapshot), null);
+  assert.equal(serializeWeeklyBudgetExport(clearedSnapshot), null);
+
+  const budgetPage = await readFile(
+    new URL('../src/pages/budget.astro', import.meta.url),
+    'utf8',
+  );
+  assert.match(budgetPage, /return parseWeeklyBudgetInputValue\(input\.value\)/);
 });
 
 test('ignores malformed or invalid stored weekly budgets', () => {

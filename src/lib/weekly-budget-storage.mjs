@@ -54,6 +54,10 @@ export function normalizeWeeklyBudgetSnapshot(snapshot) {
   return normalized;
 }
 
+export function parseWeeklyBudgetInputValue(value) {
+  return String(value).trim() === '' ? Number.NaN : Number(value);
+}
+
 export function parseWeeklyBudgetSnapshot(serializedSnapshot) {
   try {
     return normalizeWeeklyBudgetSnapshot(JSON.parse(serializedSnapshot));
